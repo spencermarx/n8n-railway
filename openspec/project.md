@@ -100,7 +100,8 @@ alfred/
 │   │   ├── daily_schedule_preferences.json
 │   │   ├── scheduled_tasks.json
 │   │   ├── time_management.json
-│   │   └── slack_message.json
+│   │   ├── slack_message.json
+│   │   └── web_search.json
 │   │
 │   ├── triggers/            # Main entry-point workflows
 │   │   ├── team_assistant.json    # Primary Alfred agent
@@ -217,6 +218,7 @@ Full integration with user's Google account:
 | Anthropic | `iKUsIHimnjBUibjJ` | Claude API |
 | Google Calendar | `yBNZEWLXitD9cSiU` | Spencer's OAuth |
 | Gmail | `v2wjW0tm9a1TxnZP` | Spencer's OAuth |
+| OpenAI | `K0dJSGlrxig3qa2p` | Web Search API |
 
 ### Workflow IDs
 | Workflow | ID | Status |
@@ -231,6 +233,7 @@ Full integration with user's Google account:
 | Unified Task Scheduler | `RUHxLZdoh1kNNXvs` | Active |
 | Approval Handler | `iuU0eyfTN2We4uPR` | Active |
 | Approval Guard | `1S0dhI1K4X0528Dy` | Active |
+| Web Search | `F0TUHVEzA79rroyS` | Active |
 
 ### External URLs
 - **n8n Instance**: `https://wrkbelt-ai-team.up.railway.app`

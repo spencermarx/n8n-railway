@@ -26,7 +26,8 @@ alfred/
 │   │   ├── google_calendar.json   # Calendar operations
 │   │   ├── gmail.json             # Email operations
 │   │   ├── google_docs.json       # Docs operations
-│   │   └── google_sheets.json     # Sheets operations
+│   │   ├── google_sheets.json     # Sheets operations
+│   │   └── web_search.json        # Web search via OpenAI
 │   ├── triggers/                  # Main entry-point workflows
 │   └── cron/                      # Scheduled workflows
 │
@@ -102,6 +103,7 @@ Run each migration file in numerical order.
 | Gmail | `v2wjW0tm9a1TxnZP` | Spencer's OAuth |
 | Anthropic | `iKUsIHimnjBUibjJ` | API key |
 | Slack | `apG1iXE1E50lr9RH` | Bot token |
+| OpenAI | `K0dJSGlrxig3qa2p` | Web Search API |
 
 ## Workflow IDs
 
@@ -119,6 +121,7 @@ Run each migration file in numerical order.
 | 📧 Tool \| Gmail | `psE4SWIXWBtxKbXr` | Needs implementation |
 | 📄 Tool \| Google Docs | `47994CB1Uhj0KELL` | Needs implementation |
 | 📊 Tool \| Google Sheets | `NKxdmK1mn5lLCFow` | Needs implementation |
+| 🌐 Tool \| Web Search | `F0TUHVEzA79rroyS` | Active |
 
 ## Conversation Memory
 
@@ -236,6 +239,50 @@ The Google tools support a **hybrid authentication model**:
 | gmail | list_messages, get_message, send_email |
 | google_docs | get_document, create_document, append_text |
 | google_sheets | read_range, write_range, append_rows, create_spreadsheet |
+
+## Web Search
+
+Alfred can search the web for real-time information using OpenAI's Responses API with the `web_search_preview` tool.
+
+### Capabilities
+
+- Search for current news and events
+- Look up real-time information not in training data
+- Domain filtering (limit searches to specific websites)
+- Returns results with cited sources formatted for Slack
+
+### Usage Examples
+
+```
+@Alfred what's the latest news about AI regulation?
+@Alfred search openai.com for the latest API updates
+@Alfred what's the current weather in Chicago?
+```
+
+### How It Works
+
+1. Alfred receives a request requiring current information
+2. Invokes `web_search` tool with the query
+3. OpenAI performs web search and returns cited results
+4. Results are formatted with Slack-friendly citation links
+
+### Tool Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `query` | Yes | The search query |
+| `context` | No | Additional context to improve results |
+| `allowed_domains` | No | Comma-separated list of domains to limit search |
+
+### Output Format
+
+```
+[Search results with inline information]
+
+📚 Sources:
+• <url|Source Title 1>
+• <url|Source Title 2>
+```
 
 ## Related Documentation
 
