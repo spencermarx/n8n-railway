@@ -12,10 +12,7 @@
       "name": "Slack Interaction Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        200,
-        300
-      ],
+      "position": [200, 300],
       "webhookId": "approval-handler",
       "parameters": {
         "path": "approval-handler",
@@ -29,10 +26,7 @@
       "name": "Parse Slack Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        420,
-        300
-      ],
+      "position": [420, 300],
       "parameters": {
         "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
       }
@@ -42,22 +36,14 @@
       "name": "Lookup Pending Action",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        640,
-        300
-      ],
+      "position": [640, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
-        "options": {
-          "queryReplacement": "={{ [$json.pending_action_id] }}"
-        }
+        "options": { "queryReplacement": "={{ [$json.pending_action_id] }}" }
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -65,10 +51,7 @@
       "name": "Validate Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        860,
-        300
-      ],
+      "position": [860, 300],
       "parameters": {
         "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    action_type: parsed.action_id,\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: action.payload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
       }
@@ -78,10 +61,7 @@
       "name": "Is Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        1080,
-        300
-      ],
+      "position": [1080, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -96,10 +76,7 @@
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ]
         }
@@ -110,10 +87,7 @@
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        1300,
-        200
-      ],
+      "position": [1300, 200],
       "parameters": {
         "mode": "rules",
         "rules": {
@@ -131,10 +105,7 @@
                   {
                     "leftValue": "={{ $json.action_type }}",
                     "rightValue": "approve_action",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -154,10 +125,7 @@
                   {
                     "leftValue": "={{ $json.action_type }}",
                     "rightValue": "reject_action",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -166,9 +134,7 @@
             }
           ]
         },
-        "options": {
-          "fallbackOutput": "extra"
-        }
+        "options": { "fallbackOutput": "extra" }
       }
     },
     {
@@ -176,10 +142,7 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        1520,
-        100
-      ],
+      "position": [1520, 100],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -201,10 +164,7 @@
       "name": "Build MIME Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1740,
-        100
-      ],
+      "position": [1740, 100],
       "parameters": {
         "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
       }
@@ -214,10 +174,7 @@
       "name": "Send Email via Gmail",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1960,
-        100
-      ],
+      "position": [1960, 100],
       "parameters": {
         "method": "POST",
         "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
@@ -228,21 +185,13 @@
               "name": "Authorization",
               "value": "=Bearer {{ $json.access_token }}"
             },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
-          "parameters": [
-            {
-              "name": "raw",
-              "value": "={{ $json.raw }}"
-            }
-          ]
+          "parameters": [{ "name": "raw", "value": "={{ $json.raw }}" }]
         },
         "options": {}
       }
@@ -252,10 +201,7 @@
       "name": "Update DB - Approved",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        2180,
-        100
-      ],
+      "position": [2180, 100],
       "parameters": {
         "operation": "executeQuery",
         "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
@@ -264,10 +210,7 @@
         }
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -275,20 +218,14 @@
       "name": "Update Slack Card - Approved",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        2400,
-        100
-      ],
+      "position": [2400, 100],
       "parameters": {
         "method": "POST",
         "url": "={{ $('Validate Action').first().json.response_url }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -302,10 +239,7 @@
       "name": "Update DB - Rejected",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        1520,
-        300
-      ],
+      "position": [1520, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
@@ -314,10 +248,7 @@
         }
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -325,20 +256,14 @@
       "name": "Update Slack Card - Rejected",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1740,
-        300
-      ],
+      "position": [1740, 300],
       "parameters": {
         "method": "POST",
         "url": "={{ $('Validate Action').first().json.response_url }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -352,20 +277,14 @@
       "name": "Send Error Response",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1300,
-        450
-      ],
+      "position": [1300, 450],
       "parameters": {
         "method": "POST",
         "url": "={{ $json.response_url }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -379,10 +298,7 @@
       "name": "Respond OK - Approved",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        2620,
-        100
-      ],
+      "position": [2620, 100],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
@@ -394,10 +310,7 @@
       "name": "Respond OK - Rejected",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        1960,
-        300
-      ],
+      "position": [1960, 300],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
@@ -409,10 +322,7 @@
       "name": "Respond Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        1520,
-        450
-      ],
+      "position": [1520, 450],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"ok\": false }",
@@ -424,10 +334,7 @@
       "name": "Feedback - Email Sent",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        2620,
-        100
-      ],
+      "position": [2620, 100],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -452,10 +359,7 @@
       "name": "Feedback - Email Cancelled",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        1960,
-        300
-      ],
+      "position": [1960, 300],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -478,193 +382,71 @@
   ],
   "connections": {
     "Slack Interaction Webhook": {
-      "main": [
-        [
-          {
-            "node": "Parse Slack Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Parse Slack Payload", "type": "main", "index": 0 }]]
     },
     "Parse Slack Payload": {
       "main": [
-        [
-          {
-            "node": "Lookup Pending Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Lookup Pending Action", "type": "main", "index": 0 }]
       ]
     },
     "Lookup Pending Action": {
-      "main": [
-        [
-          {
-            "node": "Validate Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Validate Action", "type": "main", "index": 0 }]]
     },
     "Validate Action": {
-      "main": [
-        [
-          {
-            "node": "Is Valid?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
     },
     "Is Valid?": {
       "main": [
-        [
-          {
-            "node": "Route by Action",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Route by Action", "type": "main", "index": 0 }],
+        [{ "node": "Send Error Response", "type": "main", "index": 0 }]
       ]
     },
     "Route by Action": {
       "main": [
-        [
-          {
-            "node": "Get Google Auth",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Update DB - Rejected",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Get Google Auth", "type": "main", "index": 0 }],
+        [{ "node": "Update DB - Rejected", "type": "main", "index": 0 }]
       ]
     },
     "Get Google Auth": {
-      "main": [
-        [
-          {
-            "node": "Build MIME Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Build MIME Email", "type": "main", "index": 0 }]]
     },
     "Build MIME Email": {
-      "main": [
-        [
-          {
-            "node": "Send Email via Gmail",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Send Email via Gmail", "type": "main", "index": 0 }]]
     },
     "Send Email via Gmail": {
-      "main": [
-        [
-          {
-            "node": "Update DB - Approved",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Update DB - Approved", "type": "main", "index": 0 }]]
     },
     "Update DB - Approved": {
       "main": [
-        [
-          {
-            "node": "Update Slack Card - Approved",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Slack Card - Approved", "type": "main", "index": 0 }]
       ]
     },
     "Update DB - Rejected": {
       "main": [
-        [
-          {
-            "node": "Update Slack Card - Rejected",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Slack Card - Rejected", "type": "main", "index": 0 }]
       ]
     },
     "Send Error Response": {
-      "main": [
-        [
-          {
-            "node": "Respond Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Respond Error", "type": "main", "index": 0 }]]
     },
     "Update Slack Card - Approved": {
       "main": [
-        [
-          {
-            "node": "Feedback - Email Sent",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Feedback - Email Sent", "type": "main", "index": 0 }]
       ]
     },
     "Feedback - Email Sent": {
       "main": [
-        [
-          {
-            "node": "Respond OK - Approved",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Respond OK - Approved", "type": "main", "index": 0 }]
       ]
     },
     "Update Slack Card - Rejected": {
       "main": [
-        [
-          {
-            "node": "Feedback - Email Cancelled",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Feedback - Email Cancelled", "type": "main", "index": 0 }]
       ]
     },
     "Feedback - Email Cancelled": {
       "main": [
-        [
-          {
-            "node": "Respond OK - Rejected",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Respond OK - Rejected", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -678,7 +460,7 @@
   "pinData": null,
   "versionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
   "activeVersionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
-  "versionCounter": 17,
+  "versionCounter": 20,
   "triggerCount": 1,
   "shared": [
     {
@@ -703,7 +485,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -746,10 +528,7 @@
         "name": "Slack Interaction Webhook",
         "type": "n8n-nodes-base.webhook",
         "typeVersion": 2,
-        "position": [
-          200,
-          300
-        ],
+        "position": [200, 300],
         "webhookId": "approval-handler",
         "parameters": {
           "path": "approval-handler",
@@ -763,10 +542,7 @@
         "name": "Parse Slack Payload",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          420,
-          300
-        ],
+        "position": [420, 300],
         "parameters": {
           "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
         }
@@ -776,22 +552,14 @@
         "name": "Lookup Pending Action",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          640,
-          300
-        ],
+        "position": [640, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
-          "options": {
-            "queryReplacement": "={{ [$json.pending_action_id] }}"
-          }
+          "options": { "queryReplacement": "={{ [$json.pending_action_id] }}" }
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -799,10 +567,7 @@
         "name": "Validate Action",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          860,
-          300
-        ],
+        "position": [860, 300],
         "parameters": {
           "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    action_type: parsed.action_id,\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: action.payload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
         }
@@ -812,10 +577,7 @@
         "name": "Is Valid?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [
-          1080,
-          300
-        ],
+        "position": [1080, 300],
         "parameters": {
           "conditions": {
             "options": {
@@ -830,10 +592,7 @@
                 "id": "valid-check",
                 "leftValue": "={{ $json.valid }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
+                "operator": { "type": "boolean", "operation": "equals" }
               }
             ]
           }
@@ -844,10 +603,7 @@
         "name": "Route by Action",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [
-          1300,
-          200
-        ],
+        "position": [1300, 200],
         "parameters": {
           "mode": "rules",
           "rules": {
@@ -865,10 +621,7 @@
                     {
                       "leftValue": "={{ $json.action_type }}",
                       "rightValue": "approve_action",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -888,10 +641,7 @@
                     {
                       "leftValue": "={{ $json.action_type }}",
                       "rightValue": "reject_action",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -900,9 +650,7 @@
               }
             ]
           },
-          "options": {
-            "fallbackOutput": "extra"
-          }
+          "options": { "fallbackOutput": "extra" }
         }
       },
       {
@@ -910,10 +658,7 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          1520,
-          100
-        ],
+        "position": [1520, 100],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -935,10 +680,7 @@
         "name": "Build MIME Email",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1740,
-          100
-        ],
+        "position": [1740, 100],
         "parameters": {
           "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
         }
@@ -948,10 +690,7 @@
         "name": "Send Email via Gmail",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1960,
-          100
-        ],
+        "position": [1960, 100],
         "parameters": {
           "method": "POST",
           "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
@@ -962,21 +701,13 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $json.access_token }}"
               },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
           "contentType": "json",
           "bodyParameters": {
-            "parameters": [
-              {
-                "name": "raw",
-                "value": "={{ $json.raw }}"
-              }
-            ]
+            "parameters": [{ "name": "raw", "value": "={{ $json.raw }}" }]
           },
           "options": {}
         }
@@ -986,10 +717,7 @@
         "name": "Update DB - Approved",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          2180,
-          100
-        ],
+        "position": [2180, 100],
         "parameters": {
           "operation": "executeQuery",
           "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
@@ -998,10 +726,7 @@
           }
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -1009,20 +734,14 @@
         "name": "Update Slack Card - Approved",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          2400,
-          100
-        ],
+        "position": [2400, 100],
         "parameters": {
           "method": "POST",
           "url": "={{ $('Validate Action').first().json.response_url }}",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1036,10 +755,7 @@
         "name": "Update DB - Rejected",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          1520,
-          300
-        ],
+        "position": [1520, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
@@ -1048,10 +764,7 @@
           }
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -1059,20 +772,14 @@
         "name": "Update Slack Card - Rejected",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1740,
-          300
-        ],
+        "position": [1740, 300],
         "parameters": {
           "method": "POST",
           "url": "={{ $('Validate Action').first().json.response_url }}",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1086,20 +793,14 @@
         "name": "Send Error Response",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1300,
-          450
-        ],
+        "position": [1300, 450],
         "parameters": {
           "method": "POST",
           "url": "={{ $json.response_url }}",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1113,10 +814,7 @@
         "name": "Respond OK - Approved",
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
-        "position": [
-          2620,
-          100
-        ],
+        "position": [2620, 100],
         "parameters": {
           "respondWith": "json",
           "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
@@ -1128,10 +826,7 @@
         "name": "Respond OK - Rejected",
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
-        "position": [
-          1960,
-          300
-        ],
+        "position": [1960, 300],
         "parameters": {
           "respondWith": "json",
           "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
@@ -1143,10 +838,7 @@
         "name": "Respond Error",
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
-        "position": [
-          1520,
-          450
-        ],
+        "position": [1520, 450],
         "parameters": {
           "respondWith": "json",
           "responseBody": "={ \"ok\": false }",
@@ -1158,10 +850,7 @@
         "name": "Feedback - Email Sent",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          2620,
-          100
-        ],
+        "position": [2620, 100],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -1186,10 +875,7 @@
         "name": "Feedback - Email Cancelled",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          1960,
-          300
-        ],
+        "position": [1960, 300],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -1213,115 +899,43 @@
     "connections": {
       "Slack Interaction Webhook": {
         "main": [
-          [
-            {
-              "node": "Parse Slack Payload",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Parse Slack Payload", "type": "main", "index": 0 }]
         ]
       },
       "Parse Slack Payload": {
         "main": [
-          [
-            {
-              "node": "Lookup Pending Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Lookup Pending Action", "type": "main", "index": 0 }]
         ]
       },
       "Lookup Pending Action": {
-        "main": [
-          [
-            {
-              "node": "Validate Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Validate Action", "type": "main", "index": 0 }]]
       },
       "Validate Action": {
-        "main": [
-          [
-            {
-              "node": "Is Valid?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
       },
       "Is Valid?": {
         "main": [
-          [
-            {
-              "node": "Route by Action",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Send Error Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Route by Action", "type": "main", "index": 0 }],
+          [{ "node": "Send Error Response", "type": "main", "index": 0 }]
         ]
       },
       "Route by Action": {
         "main": [
-          [
-            {
-              "node": "Get Google Auth",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Update DB - Rejected",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Get Google Auth", "type": "main", "index": 0 }],
+          [{ "node": "Update DB - Rejected", "type": "main", "index": 0 }]
         ]
       },
       "Get Google Auth": {
-        "main": [
-          [
-            {
-              "node": "Build MIME Email",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Build MIME Email", "type": "main", "index": 0 }]]
       },
       "Build MIME Email": {
         "main": [
-          [
-            {
-              "node": "Send Email via Gmail",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Send Email via Gmail", "type": "main", "index": 0 }]
         ]
       },
       "Send Email via Gmail": {
         "main": [
-          [
-            {
-              "node": "Update DB - Approved",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Update DB - Approved", "type": "main", "index": 0 }]
         ]
       },
       "Update DB - Approved": {
@@ -1347,58 +961,26 @@
         ]
       },
       "Send Error Response": {
-        "main": [
-          [
-            {
-              "node": "Respond Error",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Respond Error", "type": "main", "index": 0 }]]
       },
       "Update Slack Card - Approved": {
         "main": [
-          [
-            {
-              "node": "Feedback - Email Sent",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Feedback - Email Sent", "type": "main", "index": 0 }]
         ]
       },
       "Feedback - Email Sent": {
         "main": [
-          [
-            {
-              "node": "Respond OK - Approved",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Respond OK - Approved", "type": "main", "index": 0 }]
         ]
       },
       "Update Slack Card - Rejected": {
         "main": [
-          [
-            {
-              "node": "Feedback - Email Cancelled",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Feedback - Email Cancelled", "type": "main", "index": 0 }]
         ]
       },
       "Feedback - Email Cancelled": {
         "main": [
-          [
-            {
-              "node": "Respond OK - Rejected",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Respond OK - Rejected", "type": "main", "index": 0 }]
         ]
       }
     },

@@ -12,21 +12,12 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "scopes",
-              "type": "string"
-            }
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "scopes", "type": "string" }
           ]
         }
       }
@@ -36,20 +27,14 @@
       "name": "Lookup User Auth",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        470,
-        300
-      ],
+      "position": [470, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT email, google_auth_method, google_calendar_credential_id, gmail_credential_id, google_docs_credential_id, google_sheets_credential_id, google_drive_credential_id FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}'",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -57,10 +42,7 @@
       "name": "Check Auth Method",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        690,
-        300
-      ],
+      "position": [690, 300],
       "parameters": {
         "rules": {
           "values": [
@@ -70,10 +52,7 @@
                   {
                     "leftValue": "={{ $json.google_auth_method }}",
                     "rightValue": "service_account",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -86,10 +65,7 @@
                   {
                     "leftValue": "={{ $json.google_auth_method }}",
                     "rightValue": "oauth_credential",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -98,9 +74,7 @@
             }
           ]
         },
-        "options": {
-          "fallbackOutput": "extra"
-        }
+        "options": { "fallbackOutput": "extra" }
       }
     },
     {
@@ -108,10 +82,7 @@
       "name": "Generate JWT",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        910,
-        140
-      ],
+      "position": [910, 140],
       "parameters": {
         "jsCode": "const crypto = require('crypto');\n\n// Get service account key from environment variable\nconst keyBase64 = $env.GOOGLE_SERVICE_ACCOUNT_KEY;\nif (!keyBase64) {\n  throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY environment variable not set');\n}\n\n// Parse the service account key\nconst keyJson = JSON.parse(Buffer.from(keyBase64, 'base64').toString('utf8'));\nconst privateKey = keyJson.private_key;\nconst serviceAccountEmail = keyJson.client_email;\n\n// Get user email to impersonate and scopes\nconst userEmail = $input.first().json.email;\nconst scopes = $('Workflow Input').first().json.scopes || 'https://www.googleapis.com/auth/calendar';\n\n// JWT Header\nconst header = {\n  alg: 'RS256',\n  typ: 'JWT'\n};\n\n// JWT Payload\nconst now = Math.floor(Date.now() / 1000);\nconst payload = {\n  iss: serviceAccountEmail,\n  sub: userEmail,  // Impersonate this user\n  aud: 'https://oauth2.googleapis.com/token',\n  iat: now,\n  exp: now + 3600,\n  scope: scopes\n};\n\n// Base64url encode function\nfunction base64url(data) {\n  return Buffer.from(JSON.stringify(data))\n    .toString('base64')\n    .replace(/=/g, '')\n    .replace(/\\+/g, '-')\n    .replace(/\\//g, '_');\n}\n\n// Create signature input\nconst signatureInput = base64url(header) + '.' + base64url(payload);\n\n// Sign with RS256\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(privateKey, 'base64')\n  .replace(/=/g, '')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_');\n\n// Combine to create JWT\nconst jwt = signatureInput + '.' + signature;\n\nreturn [{\n  json: {\n    jwt,\n    user_email: userEmail,\n    service_account: serviceAccountEmail,\n    scopes\n  }\n}];"
       }
@@ -121,10 +92,7 @@
       "name": "Exchange for Access Token",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1130,
-        140
-      ],
+      "position": [1130, 140],
       "parameters": {
         "method": "POST",
         "url": "https://oauth2.googleapis.com/token",
@@ -136,10 +104,7 @@
               "name": "grant_type",
               "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
             },
-            {
-              "name": "assertion",
-              "value": "={{ $json.jwt }}"
-            }
+            { "name": "assertion", "value": "={{ $json.jwt }}" }
           ]
         },
         "options": {}
@@ -150,10 +115,7 @@
       "name": "Format Service Account Result",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        1350,
-        140
-      ],
+      "position": [1350, 140],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -204,10 +166,7 @@
       "name": "Format OAuth Result",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        910,
-        300
-      ],
+      "position": [910, 300],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -270,10 +229,7 @@
       "name": "No Auth Configured",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        910,
-        460
-      ],
+      "position": [910, 460],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -304,61 +260,21 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Lookup User Auth",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Lookup User Auth", "type": "main", "index": 0 }]]
     },
     "Lookup User Auth": {
-      "main": [
-        [
-          {
-            "node": "Check Auth Method",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Auth Method", "type": "main", "index": 0 }]]
     },
     "Check Auth Method": {
       "main": [
-        [
-          {
-            "node": "Generate JWT",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Format OAuth Result",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "No Auth Configured",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Generate JWT", "type": "main", "index": 0 }],
+        [{ "node": "Format OAuth Result", "type": "main", "index": 0 }],
+        [{ "node": "No Auth Configured", "type": "main", "index": 0 }]
       ]
     },
     "Generate JWT": {
       "main": [
-        [
-          {
-            "node": "Exchange for Access Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Exchange for Access Token", "type": "main", "index": 0 }]
       ]
     },
     "Exchange for Access Token": {
@@ -383,7 +299,7 @@
   "pinData": null,
   "versionId": "a8fbecf3-8863-4ebe-9abb-f36c5cdce33d",
   "activeVersionId": "a8fbecf3-8863-4ebe-9abb-f36c5cdce33d",
-  "versionCounter": 15,
+  "versionCounter": 18,
   "triggerCount": 0,
   "shared": [
     {
@@ -408,7 +324,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -451,21 +367,12 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "scopes",
-                "type": "string"
-              }
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "scopes", "type": "string" }
             ]
           }
         }
@@ -475,20 +382,14 @@
         "name": "Lookup User Auth",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          470,
-          300
-        ],
+        "position": [470, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "SELECT email, google_auth_method, google_calendar_credential_id, gmail_credential_id, google_docs_credential_id, google_sheets_credential_id, google_drive_credential_id FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}'",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -496,10 +397,7 @@
         "name": "Check Auth Method",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [
-          690,
-          300
-        ],
+        "position": [690, 300],
         "parameters": {
           "rules": {
             "values": [
@@ -509,10 +407,7 @@
                     {
                       "leftValue": "={{ $json.google_auth_method }}",
                       "rightValue": "service_account",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -525,10 +420,7 @@
                     {
                       "leftValue": "={{ $json.google_auth_method }}",
                       "rightValue": "oauth_credential",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -537,9 +429,7 @@
               }
             ]
           },
-          "options": {
-            "fallbackOutput": "extra"
-          }
+          "options": { "fallbackOutput": "extra" }
         }
       },
       {
@@ -547,10 +437,7 @@
         "name": "Generate JWT",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          910,
-          140
-        ],
+        "position": [910, 140],
         "parameters": {
           "jsCode": "const crypto = require('crypto');\n\n// Get service account key from environment variable\nconst keyBase64 = $env.GOOGLE_SERVICE_ACCOUNT_KEY;\nif (!keyBase64) {\n  throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY environment variable not set');\n}\n\n// Parse the service account key\nconst keyJson = JSON.parse(Buffer.from(keyBase64, 'base64').toString('utf8'));\nconst privateKey = keyJson.private_key;\nconst serviceAccountEmail = keyJson.client_email;\n\n// Get user email to impersonate and scopes\nconst userEmail = $input.first().json.email;\nconst scopes = $('Workflow Input').first().json.scopes || 'https://www.googleapis.com/auth/calendar';\n\n// JWT Header\nconst header = {\n  alg: 'RS256',\n  typ: 'JWT'\n};\n\n// JWT Payload\nconst now = Math.floor(Date.now() / 1000);\nconst payload = {\n  iss: serviceAccountEmail,\n  sub: userEmail,  // Impersonate this user\n  aud: 'https://oauth2.googleapis.com/token',\n  iat: now,\n  exp: now + 3600,\n  scope: scopes\n};\n\n// Base64url encode function\nfunction base64url(data) {\n  return Buffer.from(JSON.stringify(data))\n    .toString('base64')\n    .replace(/=/g, '')\n    .replace(/\\+/g, '-')\n    .replace(/\\//g, '_');\n}\n\n// Create signature input\nconst signatureInput = base64url(header) + '.' + base64url(payload);\n\n// Sign with RS256\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(privateKey, 'base64')\n  .replace(/=/g, '')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_');\n\n// Combine to create JWT\nconst jwt = signatureInput + '.' + signature;\n\nreturn [{\n  json: {\n    jwt,\n    user_email: userEmail,\n    service_account: serviceAccountEmail,\n    scopes\n  }\n}];"
         }
@@ -560,10 +447,7 @@
         "name": "Exchange for Access Token",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1130,
-          140
-        ],
+        "position": [1130, 140],
         "parameters": {
           "method": "POST",
           "url": "https://oauth2.googleapis.com/token",
@@ -575,10 +459,7 @@
                 "name": "grant_type",
                 "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
               },
-              {
-                "name": "assertion",
-                "value": "={{ $json.jwt }}"
-              }
+              { "name": "assertion", "value": "={{ $json.jwt }}" }
             ]
           },
           "options": {}
@@ -589,10 +470,7 @@
         "name": "Format Service Account Result",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          1350,
-          140
-        ],
+        "position": [1350, 140],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -643,10 +521,7 @@
         "name": "Format OAuth Result",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          910,
-          300
-        ],
+        "position": [910, 300],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -709,10 +584,7 @@
         "name": "No Auth Configured",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          910,
-          460
-        ],
+        "position": [910, 460],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -743,61 +615,21 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Lookup User Auth",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Lookup User Auth", "type": "main", "index": 0 }]]
       },
       "Lookup User Auth": {
-        "main": [
-          [
-            {
-              "node": "Check Auth Method",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Check Auth Method", "type": "main", "index": 0 }]]
       },
       "Check Auth Method": {
         "main": [
-          [
-            {
-              "node": "Generate JWT",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Format OAuth Result",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "No Auth Configured",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Generate JWT", "type": "main", "index": 0 }],
+          [{ "node": "Format OAuth Result", "type": "main", "index": 0 }],
+          [{ "node": "No Auth Configured", "type": "main", "index": 0 }]
         ]
       },
       "Generate JWT": {
         "main": [
-          [
-            {
-              "node": "Exchange for Access Token",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Exchange for Access Token", "type": "main", "index": 0 }]
         ]
       },
       "Exchange for Access Token": {

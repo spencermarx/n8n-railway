@@ -8,17 +8,12 @@
   "isArchived": false,
   "nodes": [
     {
-      "parameters": {
-        "inputSource": "passthrough"
-      },
+      "parameters": { "inputSource": "passthrough" },
       "id": "trigger",
       "name": "Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        256,
-        320
-      ]
+      "position": [256, 320]
     },
     {
       "parameters": {
@@ -29,9 +24,7 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {
-            "slack_user_id": "={{ $json.slack_user_id }}"
-          }
+          "value": { "slack_user_id": "={{ $json.slack_user_id }}" }
         },
         "options": {}
       },
@@ -39,10 +32,7 @@
       "name": "Get User Timezone",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        480,
-        320
-      ]
+      "position": [480, 320]
     },
     {
       "parameters": {
@@ -52,10 +42,7 @@
       "name": "Prepare Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        704,
-        320
-      ]
+      "position": [704, 320]
     },
     {
       "parameters": {
@@ -72,10 +59,7 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "get_context",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -92,10 +76,7 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "get_window",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -112,10 +93,7 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "evaluate_events",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -123,18 +101,13 @@
             }
           ]
         },
-        "options": {
-          "fallbackOutput": "extra"
-        }
+        "options": { "fallbackOutput": "extra" }
       },
       "id": "route-action",
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        928,
-        320
-      ]
+      "position": [928, 320]
     },
     {
       "parameters": {
@@ -144,10 +117,7 @@
       "name": "Action: Get Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        160
-      ]
+      "position": [1200, 160]
     },
     {
       "parameters": {
@@ -157,10 +127,7 @@
       "name": "Action: Get Window",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        320
-      ]
+      "position": [1200, 320]
     },
     {
       "parameters": {
@@ -170,10 +137,7 @@
       "name": "Action: Evaluate Events",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        480
-      ]
+      "position": [1200, 480]
     },
     {
       "parameters": {
@@ -183,76 +147,25 @@
       "name": "Unknown Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        640
-      ]
+      "position": [1200, 640]
     }
   ],
   "connections": {
     "Trigger": {
-      "main": [
-        [
-          {
-            "node": "Get User Timezone",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get User Timezone", "type": "main", "index": 0 }]]
     },
     "Get User Timezone": {
-      "main": [
-        [
-          {
-            "node": "Prepare Context",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Prepare Context", "type": "main", "index": 0 }]]
     },
     "Prepare Context": {
-      "main": [
-        [
-          {
-            "node": "Route by Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
     },
     "Route by Action": {
       "main": [
-        [
-          {
-            "node": "Action: Get Context",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Action: Get Window",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Action: Evaluate Events",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Unknown Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Action: Get Context", "type": "main", "index": 0 }],
+        [{ "node": "Action: Get Window", "type": "main", "index": 0 }],
+        [{ "node": "Action: Evaluate Events", "type": "main", "index": 0 }],
+        [{ "node": "Unknown Action", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -266,7 +179,7 @@
   "pinData": {},
   "versionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
   "activeVersionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
-  "versionCounter": 9,
+  "versionCounter": 12,
   "triggerCount": 0,
   "shared": [
     {
@@ -291,7 +204,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -330,17 +243,12 @@
     "workflowId": "fhb6nIQYs2L1YPVm",
     "nodes": [
       {
-        "parameters": {
-          "inputSource": "passthrough"
-        },
+        "parameters": { "inputSource": "passthrough" },
         "id": "trigger",
         "name": "Trigger",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          256,
-          320
-        ]
+        "position": [256, 320]
       },
       {
         "parameters": {
@@ -351,9 +259,7 @@
           },
           "workflowInputs": {
             "mappingMode": "defineBelow",
-            "value": {
-              "slack_user_id": "={{ $json.slack_user_id }}"
-            }
+            "value": { "slack_user_id": "={{ $json.slack_user_id }}" }
           },
           "options": {}
         },
@@ -361,10 +267,7 @@
         "name": "Get User Timezone",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          480,
-          320
-        ]
+        "position": [480, 320]
       },
       {
         "parameters": {
@@ -374,10 +277,7 @@
         "name": "Prepare Context",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          704,
-          320
-        ]
+        "position": [704, 320]
       },
       {
         "parameters": {
@@ -394,10 +294,7 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "get_context",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -414,10 +311,7 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "get_window",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -434,10 +328,7 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "evaluate_events",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -445,18 +336,13 @@
               }
             ]
           },
-          "options": {
-            "fallbackOutput": "extra"
-          }
+          "options": { "fallbackOutput": "extra" }
         },
         "id": "route-action",
         "name": "Route by Action",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [
-          928,
-          320
-        ]
+        "position": [928, 320]
       },
       {
         "parameters": {
@@ -466,10 +352,7 @@
         "name": "Action: Get Context",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1200,
-          160
-        ]
+        "position": [1200, 160]
       },
       {
         "parameters": {
@@ -479,10 +362,7 @@
         "name": "Action: Get Window",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1200,
-          320
-        ]
+        "position": [1200, 320]
       },
       {
         "parameters": {
@@ -492,10 +372,7 @@
         "name": "Action: Evaluate Events",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1200,
-          480
-        ]
+        "position": [1200, 480]
       },
       {
         "parameters": {
@@ -505,76 +382,25 @@
         "name": "Unknown Action",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1200,
-          640
-        ]
+        "position": [1200, 640]
       }
     ],
     "connections": {
       "Trigger": {
-        "main": [
-          [
-            {
-              "node": "Get User Timezone",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Get User Timezone", "type": "main", "index": 0 }]]
       },
       "Get User Timezone": {
-        "main": [
-          [
-            {
-              "node": "Prepare Context",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Prepare Context", "type": "main", "index": 0 }]]
       },
       "Prepare Context": {
-        "main": [
-          [
-            {
-              "node": "Route by Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
       },
       "Route by Action": {
         "main": [
-          [
-            {
-              "node": "Action: Get Context",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Action: Get Window",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Action: Evaluate Events",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Unknown Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Action: Get Context", "type": "main", "index": 0 }],
+          [{ "node": "Action: Get Window", "type": "main", "index": 0 }],
+          [{ "node": "Action: Evaluate Events", "type": "main", "index": 0 }],
+          [{ "node": "Unknown Action", "type": "main", "index": 0 }]
         ]
       }
     },

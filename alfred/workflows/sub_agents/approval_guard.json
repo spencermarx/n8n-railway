@@ -11,29 +11,13 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "action_type"
-            },
-            {
-              "name": "user_id"
-            },
-            {
-              "name": "slack_user_id"
-            },
-            {
-              "name": "slack_channel_id"
-            },
-            {
-              "name": "slack_thread_ts"
-            },
-            {
-              "name": "payload",
-              "type": "object"
-            },
-            {
-              "name": "expiry_minutes",
-              "type": "number"
-            }
+            { "name": "action_type" },
+            { "name": "user_id" },
+            { "name": "slack_user_id" },
+            { "name": "slack_channel_id" },
+            { "name": "slack_thread_ts" },
+            { "name": "payload", "type": "object" },
+            { "name": "expiry_minutes", "type": "number" }
           ]
         }
       },
@@ -41,10 +25,7 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        208,
-        304
-      ]
+      "position": [208, 304]
     },
     {
       "parameters": {
@@ -54,10 +35,7 @@
       "name": "Prepare Pending Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        432,
-        304
-      ]
+      "position": [432, 304]
     },
     {
       "parameters": {
@@ -71,15 +49,9 @@
       "name": "Insert Pending Action",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        640,
-        304
-      ],
+      "position": [640, 304],
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -90,10 +62,7 @@
       "name": "Build Slack Approval Card",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        864,
-        304
-      ]
+      "position": [864, 304]
     },
     {
       "parameters": {
@@ -107,15 +76,9 @@
       "name": "Update with Message TS",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        1312,
-        304
-      ],
+      "position": [1312, 304],
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -126,20 +89,14 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1520,
-        304
-      ]
+      "position": [1520, 304]
     },
     {
       "id": "call-slack-service",
       "name": "Send Approval Card to Slack",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        1088,
-        304
-      ],
+      "position": [1088, 304],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -165,68 +122,30 @@
   "connections": {
     "Workflow Input": {
       "main": [
-        [
-          {
-            "node": "Prepare Pending Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Prepare Pending Action", "type": "main", "index": 0 }]
       ]
     },
     "Prepare Pending Action": {
       "main": [
-        [
-          {
-            "node": "Insert Pending Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Insert Pending Action", "type": "main", "index": 0 }]
       ]
     },
     "Insert Pending Action": {
       "main": [
-        [
-          {
-            "node": "Build Slack Approval Card",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Build Slack Approval Card", "type": "main", "index": 0 }]
       ]
     },
     "Update with Message TS": {
-      "main": [
-        [
-          {
-            "node": "Format Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
     },
     "Build Slack Approval Card": {
       "main": [
-        [
-          {
-            "node": "Send Approval Card to Slack",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Send Approval Card to Slack", "type": "main", "index": 0 }]
       ]
     },
     "Send Approval Card to Slack": {
       "main": [
-        [
-          {
-            "node": "Update with Message TS",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update with Message TS", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -240,7 +159,7 @@
   "pinData": {},
   "versionId": "6cb9d8fb-6051-4a69-9338-e41e45945be2",
   "activeVersionId": "6cb9d8fb-6051-4a69-9338-e41e45945be2",
-  "versionCounter": 30,
+  "versionCounter": 33,
   "triggerCount": 0,
   "shared": [
     {
@@ -265,7 +184,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -307,29 +226,13 @@
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "action_type"
-              },
-              {
-                "name": "user_id"
-              },
-              {
-                "name": "slack_user_id"
-              },
-              {
-                "name": "slack_channel_id"
-              },
-              {
-                "name": "slack_thread_ts"
-              },
-              {
-                "name": "payload",
-                "type": "object"
-              },
-              {
-                "name": "expiry_minutes",
-                "type": "number"
-              }
+              { "name": "action_type" },
+              { "name": "user_id" },
+              { "name": "slack_user_id" },
+              { "name": "slack_channel_id" },
+              { "name": "slack_thread_ts" },
+              { "name": "payload", "type": "object" },
+              { "name": "expiry_minutes", "type": "number" }
             ]
           }
         },
@@ -337,10 +240,7 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          208,
-          304
-        ]
+        "position": [208, 304]
       },
       {
         "parameters": {
@@ -350,10 +250,7 @@
         "name": "Prepare Pending Action",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          432,
-          304
-        ]
+        "position": [432, 304]
       },
       {
         "parameters": {
@@ -367,15 +264,9 @@
         "name": "Insert Pending Action",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          640,
-          304
-        ],
+        "position": [640, 304],
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -386,10 +277,7 @@
         "name": "Build Slack Approval Card",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          864,
-          304
-        ]
+        "position": [864, 304]
       },
       {
         "parameters": {
@@ -403,15 +291,9 @@
         "name": "Update with Message TS",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          1312,
-          304
-        ],
+        "position": [1312, 304],
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -422,20 +304,14 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1520,
-          304
-        ]
+        "position": [1520, 304]
       },
       {
         "id": "call-slack-service",
         "name": "Send Approval Card to Slack",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          1088,
-          304
-        ],
+        "position": [1088, 304],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -461,47 +337,21 @@
     "connections": {
       "Workflow Input": {
         "main": [
-          [
-            {
-              "node": "Prepare Pending Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Prepare Pending Action", "type": "main", "index": 0 }]
         ]
       },
       "Prepare Pending Action": {
         "main": [
-          [
-            {
-              "node": "Insert Pending Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Insert Pending Action", "type": "main", "index": 0 }]
         ]
       },
       "Insert Pending Action": {
         "main": [
-          [
-            {
-              "node": "Build Slack Approval Card",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Build Slack Approval Card", "type": "main", "index": 0 }]
         ]
       },
       "Update with Message TS": {
-        "main": [
-          [
-            {
-              "node": "Format Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
       },
       "Build Slack Approval Card": {
         "main": [
@@ -516,13 +366,7 @@
       },
       "Send Approval Card to Slack": {
         "main": [
-          [
-            {
-              "node": "Update with Message TS",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Update with Message TS", "type": "main", "index": 0 }]
         ]
       }
     },

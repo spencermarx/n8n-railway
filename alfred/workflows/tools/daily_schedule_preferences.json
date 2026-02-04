@@ -12,37 +12,16 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "action",
-              "type": "string"
-            },
-            {
-              "name": "enabled",
-              "type": "string"
-            },
-            {
-              "name": "time",
-              "type": "string"
-            },
-            {
-              "name": "timezone",
-              "type": "string"
-            },
-            {
-              "name": "channels",
-              "type": "string"
-            }
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "action", "type": "string" },
+            { "name": "enabled", "type": "string" },
+            { "name": "time", "type": "string" },
+            { "name": "timezone", "type": "string" },
+            { "name": "channels", "type": "string" }
           ]
         }
       }
@@ -52,20 +31,14 @@
       "name": "Get User",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "=SELECT u.id, u.slack_user_id, u.slack_username, u.email, u.preferences->>'timezone' as user_timezone, st.id as task_id, st.scheduled_time, st.channels, st.is_active, st.next_run_at FROM alfred.users u LEFT JOIN alfred.scheduled_tasks st ON st.user_id = u.id AND st.name = 'Daily Schedule' WHERE u.slack_user_id = '{{ $json.slack_user_id }}'",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -73,10 +46,7 @@
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        670,
-        300
-      ],
+      "position": [670, 300],
       "parameters": {
         "mode": "rules",
         "rules": {
@@ -94,10 +64,7 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "get",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -117,10 +84,7 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "update",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -140,10 +104,7 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "disable",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               },
@@ -152,9 +113,7 @@
             }
           ]
         },
-        "options": {
-          "fallbackOutput": "extra"
-        }
+        "options": { "fallbackOutput": "extra" }
       }
     },
     {
@@ -162,10 +121,7 @@
       "name": "Format Get Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        890,
-        140
-      ],
+      "position": [890, 140],
       "parameters": {
         "jsCode": "const user = $input.first().json;\nconst userTimezone = user.user_timezone || 'America/New_York';\n\n// Check if user has a Daily Schedule task\nif (!user.task_id) {\n  return [{\n    json: {\n      success: true,\n      action: 'get',\n      timezone: userTimezone,\n      daily_schedule: {\n        enabled: false,\n        time: null,\n        channels: []\n      },\n      message: 'Daily schedule is not configured. Use update action to set it up.'\n    }\n  }];\n}\n\nconst settings = {\n  enabled: user.is_active,\n  time: user.scheduled_time ? user.scheduled_time.substring(0, 5) : '08:00',\n  channels: user.channels || ['slack']\n};\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get',\n    timezone: userTimezone,\n    daily_schedule: settings,\n    next_run: user.next_run_at,\n    message: settings.enabled \n      ? `Daily schedule is enabled at ${settings.time} (${userTimezone}) via ${settings.channels.join(' and ')}. Next run: ${user.next_run_at}`\n      : 'Daily schedule is currently disabled.'\n  }\n}];"
       }
@@ -175,10 +131,7 @@
       "name": "Build Update Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        890,
-        300
-      ],
+      "position": [890, 300],
       "parameters": {
         "jsCode": "const input = $('Workflow Input').item.json;\nconst user = $('Get User').first().json;\n\n// Parse inputs\nconst enabled = input.enabled === 'true' || input.enabled === true || input.enabled === undefined;\nconst time = input.time || '08:00';\nconst timezoneUpdate = input.timezone || null;\nconst userTimezone = timezoneUpdate || user.user_timezone || 'America/New_York';\n\n// Parse channels\nlet channels = ['slack'];\nif (input.channels) {\n  if (typeof input.channels === 'string') {\n    channels = input.channels.split(',').map(c => c.trim().toLowerCase());\n  } else if (Array.isArray(input.channels)) {\n    channels = input.channels;\n  }\n}\n\n// Validate channels\nconst validChannels = ['slack', 'email'];\nchannels = channels.filter(c => validChannels.includes(c));\nif (channels.length === 0) channels = ['slack'];\n\n// Validate time format (HH:MM)\nconst timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;\nif (!timeRegex.test(time)) {\n  return [{\n    json: {\n      success: false,\n      is_valid: false,\n      error: `Invalid time format '${time}'. Please use HH:MM format (e.g., 08:00, 14:30).`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    slack_user_id: input.slack_user_id,\n    task_id: user.task_id,\n    has_existing_task: !!user.task_id,\n    time: time,\n    channels: channels,\n    timezone: userTimezone,\n    timezone_update: timezoneUpdate,\n    is_active: enabled,\n    is_valid: true\n  }\n}];"
       }
@@ -188,10 +141,7 @@
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        1110,
-        300
-      ],
+      "position": [1110, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -205,10 +155,7 @@
             {
               "leftValue": "={{ $json.is_valid }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              },
+              "operator": { "type": "boolean", "operation": "equals" },
               "id": "condition-1770198624080-6plp9don3"
             }
           ]
@@ -220,10 +167,7 @@
       "name": "Has Existing Task?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        1330,
-        240
-      ],
+      "position": [1330, 240],
       "parameters": {
         "conditions": {
           "options": {
@@ -237,10 +181,7 @@
             {
               "leftValue": "={{ $json.has_existing_task }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              },
+              "operator": { "type": "boolean", "operation": "equals" },
               "id": "condition-1770198624080-f4y0qbhz8"
             }
           ]
@@ -252,20 +193,14 @@
       "name": "Update Existing Task",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        1550,
-        180
-      ],
+      "position": [1550, 180],
       "parameters": {
         "operation": "executeQuery",
         "query": "=WITH updated_task AS (\n  UPDATE alfred.scheduled_tasks\n  SET \n    scheduled_time = '{{ $json.time }}'::TIME,\n    channels = ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n    is_active = {{ $json.is_active }},\n    next_run_at = alfred.calculate_next_run(\n      'daily',\n      '{{ $json.timezone }}',\n      NULL,\n      '{{ $json.time }}'::TIME,\n      NULL,\n      NULL,\n      NULL\n    ),\n    updated_at = NOW()\n  WHERE id = {{ $json.task_id }}\n  RETURNING id, scheduled_time, channels, is_active, next_run_at\n)\n{{ $json.timezone_update ? \"UPDATE alfred.users SET preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\\\"\" + $json.timezone_update + \"\\\"'::jsonb) WHERE slack_user_id = '\" + $json.slack_user_id + \"';\" : '' }}\nSELECT * FROM updated_task;",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -273,20 +208,14 @@
       "name": "Create New Task",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        1550,
-        300
-      ],
+      "position": [1550, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "=WITH new_task AS (\n  INSERT INTO alfred.scheduled_tasks (\n    user_id, name, description, request, schedule_type, \n    scheduled_time, channels, is_active, next_run_at\n  ) VALUES (\n    {{ $json.user_id }},\n    'Daily Schedule',\n    'Daily calendar summary',\n    'Get my calendar events for today and send me a comprehensive summary. Include key meetings, work time stats, and any preparation notes for important meetings.',\n    'daily',\n    '{{ $json.time }}'::TIME,\n    ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n    {{ $json.is_active }},\n    alfred.calculate_next_run(\n      'daily',\n      '{{ $json.timezone }}',\n      NULL,\n      '{{ $json.time }}'::TIME,\n      NULL,\n      NULL,\n      NULL\n    )\n  )\n  RETURNING id, scheduled_time, channels, is_active, next_run_at\n)\n{{ $json.timezone_update ? \"UPDATE alfred.users SET preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\\\"\" + $json.timezone_update + \"\\\"'::jsonb) WHERE slack_user_id = '\" + $json.slack_user_id + \"';\" : '' }}\nSELECT * FROM new_task;",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -294,10 +223,7 @@
       "name": "Format Update Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1770,
-        240
-      ],
+      "position": [1770, 240],
       "parameters": {
         "jsCode": "const result = $input.first().json;\nconst buildData = $('Build Update Query').first().json;\nconst time = result.scheduled_time ? result.scheduled_time.substring(0, 5) : buildData.time;\nconst timezone = buildData.timezone;\nconst channels = result.channels || buildData.channels;\n\nlet message = '';\nif (result.is_active) {\n  message = `Daily schedule enabled! You'll receive your schedule at ${time} (${timezone}) via ${channels.join(' and ')}. Next run: ${result.next_run_at}`;\n} else {\n  message = 'Daily schedule has been disabled.';\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update',\n    timezone: timezone,\n    daily_schedule: {\n      enabled: result.is_active,\n      time: time,\n      channels: channels\n    },\n    next_run: result.next_run_at,\n    message: message\n  }\n}];"
       }
@@ -307,20 +233,14 @@
       "name": "Disable Schedule",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        890,
-        460
-      ],
+      "position": [890, 460],
       "parameters": {
         "operation": "executeQuery",
         "query": "=UPDATE alfred.scheduled_tasks SET is_active = false, updated_at = NOW() WHERE user_id = {{ $('Get User').first().json.id }} AND name = 'Daily Schedule' RETURNING id, is_active",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -328,10 +248,7 @@
       "name": "Format Disable Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        1110,
-        460
-      ],
+      "position": [1110, 460],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -363,10 +280,7 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        890,
-        600
-      ],
+      "position": [890, 600],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -392,10 +306,7 @@
       "name": "Validation Error",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        1330,
-        380
-      ],
+      "position": [1330, 380],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -419,137 +330,47 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Get User",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get User", "type": "main", "index": 0 }]]
     },
     "Get User": {
-      "main": [
-        [
-          {
-            "node": "Route by Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
     },
     "Route by Action": {
       "main": [
-        [
-          {
-            "node": "Format Get Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Build Update Query",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Disable Schedule",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Invalid Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Get Response", "type": "main", "index": 0 }],
+        [{ "node": "Build Update Query", "type": "main", "index": 0 }],
+        [{ "node": "Disable Schedule", "type": "main", "index": 0 }],
+        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
       ]
     },
     "Build Update Query": {
-      "main": [
-        [
-          {
-            "node": "Check Valid",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
     },
     "Check Valid": {
       "main": [
-        [
-          {
-            "node": "Has Existing Task?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Validation Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Has Existing Task?", "type": "main", "index": 0 }],
+        [{ "node": "Validation Error", "type": "main", "index": 0 }]
       ]
     },
     "Has Existing Task?": {
       "main": [
-        [
-          {
-            "node": "Update Existing Task",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create New Task",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Existing Task", "type": "main", "index": 0 }],
+        [{ "node": "Create New Task", "type": "main", "index": 0 }]
       ]
     },
     "Update Existing Task": {
       "main": [
-        [
-          {
-            "node": "Format Update Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Update Response", "type": "main", "index": 0 }]
       ]
     },
     "Create New Task": {
       "main": [
-        [
-          {
-            "node": "Format Update Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Update Response", "type": "main", "index": 0 }]
       ]
     },
     "Disable Schedule": {
       "main": [
-        [
-          {
-            "node": "Format Disable Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Disable Response", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -563,7 +384,7 @@
   "pinData": null,
   "versionId": "eda1d448-6c78-4e3a-9883-036da92f907a",
   "activeVersionId": "eda1d448-6c78-4e3a-9883-036da92f907a",
-  "versionCounter": 17,
+  "versionCounter": 20,
   "triggerCount": 0,
   "shared": [
     {
@@ -588,7 +409,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -631,37 +452,16 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "action",
-                "type": "string"
-              },
-              {
-                "name": "enabled",
-                "type": "string"
-              },
-              {
-                "name": "time",
-                "type": "string"
-              },
-              {
-                "name": "timezone",
-                "type": "string"
-              },
-              {
-                "name": "channels",
-                "type": "string"
-              }
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "action", "type": "string" },
+              { "name": "enabled", "type": "string" },
+              { "name": "time", "type": "string" },
+              { "name": "timezone", "type": "string" },
+              { "name": "channels", "type": "string" }
             ]
           }
         }
@@ -671,20 +471,14 @@
         "name": "Get User",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.6,
-        "position": [
-          450,
-          300
-        ],
+        "position": [450, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "=SELECT u.id, u.slack_user_id, u.slack_username, u.email, u.preferences->>'timezone' as user_timezone, st.id as task_id, st.scheduled_time, st.channels, st.is_active, st.next_run_at FROM alfred.users u LEFT JOIN alfred.scheduled_tasks st ON st.user_id = u.id AND st.name = 'Daily Schedule' WHERE u.slack_user_id = '{{ $json.slack_user_id }}'",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -692,10 +486,7 @@
         "name": "Route by Action",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [
-          670,
-          300
-        ],
+        "position": [670, 300],
         "parameters": {
           "mode": "rules",
           "rules": {
@@ -713,10 +504,7 @@
                     {
                       "leftValue": "={{ $('Workflow Input').item.json.action }}",
                       "rightValue": "get",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -736,10 +524,7 @@
                     {
                       "leftValue": "={{ $('Workflow Input').item.json.action }}",
                       "rightValue": "update",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -759,10 +544,7 @@
                     {
                       "leftValue": "={{ $('Workflow Input').item.json.action }}",
                       "rightValue": "disable",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ]
                 },
@@ -771,9 +553,7 @@
               }
             ]
           },
-          "options": {
-            "fallbackOutput": "extra"
-          }
+          "options": { "fallbackOutput": "extra" }
         }
       },
       {
@@ -781,10 +561,7 @@
         "name": "Format Get Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          890,
-          140
-        ],
+        "position": [890, 140],
         "parameters": {
           "jsCode": "const user = $input.first().json;\nconst userTimezone = user.user_timezone || 'America/New_York';\n\n// Check if user has a Daily Schedule task\nif (!user.task_id) {\n  return [{\n    json: {\n      success: true,\n      action: 'get',\n      timezone: userTimezone,\n      daily_schedule: {\n        enabled: false,\n        time: null,\n        channels: []\n      },\n      message: 'Daily schedule is not configured. Use update action to set it up.'\n    }\n  }];\n}\n\nconst settings = {\n  enabled: user.is_active,\n  time: user.scheduled_time ? user.scheduled_time.substring(0, 5) : '08:00',\n  channels: user.channels || ['slack']\n};\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get',\n    timezone: userTimezone,\n    daily_schedule: settings,\n    next_run: user.next_run_at,\n    message: settings.enabled \n      ? `Daily schedule is enabled at ${settings.time} (${userTimezone}) via ${settings.channels.join(' and ')}. Next run: ${user.next_run_at}`\n      : 'Daily schedule is currently disabled.'\n  }\n}];"
         }
@@ -794,10 +571,7 @@
         "name": "Build Update Query",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          890,
-          300
-        ],
+        "position": [890, 300],
         "parameters": {
           "jsCode": "const input = $('Workflow Input').item.json;\nconst user = $('Get User').first().json;\n\n// Parse inputs\nconst enabled = input.enabled === 'true' || input.enabled === true || input.enabled === undefined;\nconst time = input.time || '08:00';\nconst timezoneUpdate = input.timezone || null;\nconst userTimezone = timezoneUpdate || user.user_timezone || 'America/New_York';\n\n// Parse channels\nlet channels = ['slack'];\nif (input.channels) {\n  if (typeof input.channels === 'string') {\n    channels = input.channels.split(',').map(c => c.trim().toLowerCase());\n  } else if (Array.isArray(input.channels)) {\n    channels = input.channels;\n  }\n}\n\n// Validate channels\nconst validChannels = ['slack', 'email'];\nchannels = channels.filter(c => validChannels.includes(c));\nif (channels.length === 0) channels = ['slack'];\n\n// Validate time format (HH:MM)\nconst timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;\nif (!timeRegex.test(time)) {\n  return [{\n    json: {\n      success: false,\n      is_valid: false,\n      error: `Invalid time format '${time}'. Please use HH:MM format (e.g., 08:00, 14:30).`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    slack_user_id: input.slack_user_id,\n    task_id: user.task_id,\n    has_existing_task: !!user.task_id,\n    time: time,\n    channels: channels,\n    timezone: userTimezone,\n    timezone_update: timezoneUpdate,\n    is_active: enabled,\n    is_valid: true\n  }\n}];"
         }
@@ -807,10 +581,7 @@
         "name": "Check Valid",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [
-          1110,
-          300
-        ],
+        "position": [1110, 300],
         "parameters": {
           "conditions": {
             "options": {
@@ -824,10 +595,7 @@
               {
                 "leftValue": "={{ $json.is_valid }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                },
+                "operator": { "type": "boolean", "operation": "equals" },
                 "id": "condition-1770198624080-6plp9don3"
               }
             ]
@@ -839,10 +607,7 @@
         "name": "Has Existing Task?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [
-          1330,
-          240
-        ],
+        "position": [1330, 240],
         "parameters": {
           "conditions": {
             "options": {
@@ -856,10 +621,7 @@
               {
                 "leftValue": "={{ $json.has_existing_task }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                },
+                "operator": { "type": "boolean", "operation": "equals" },
                 "id": "condition-1770198624080-f4y0qbhz8"
               }
             ]
@@ -871,20 +633,14 @@
         "name": "Update Existing Task",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.6,
-        "position": [
-          1550,
-          180
-        ],
+        "position": [1550, 180],
         "parameters": {
           "operation": "executeQuery",
           "query": "=WITH updated_task AS (\n  UPDATE alfred.scheduled_tasks\n  SET \n    scheduled_time = '{{ $json.time }}'::TIME,\n    channels = ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n    is_active = {{ $json.is_active }},\n    next_run_at = alfred.calculate_next_run(\n      'daily',\n      '{{ $json.timezone }}',\n      NULL,\n      '{{ $json.time }}'::TIME,\n      NULL,\n      NULL,\n      NULL\n    ),\n    updated_at = NOW()\n  WHERE id = {{ $json.task_id }}\n  RETURNING id, scheduled_time, channels, is_active, next_run_at\n)\n{{ $json.timezone_update ? \"UPDATE alfred.users SET preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\\\"\" + $json.timezone_update + \"\\\"'::jsonb) WHERE slack_user_id = '\" + $json.slack_user_id + \"';\" : '' }}\nSELECT * FROM updated_task;",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -892,20 +648,14 @@
         "name": "Create New Task",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.6,
-        "position": [
-          1550,
-          300
-        ],
+        "position": [1550, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "=WITH new_task AS (\n  INSERT INTO alfred.scheduled_tasks (\n    user_id, name, description, request, schedule_type, \n    scheduled_time, channels, is_active, next_run_at\n  ) VALUES (\n    {{ $json.user_id }},\n    'Daily Schedule',\n    'Daily calendar summary',\n    'Get my calendar events for today and send me a comprehensive summary. Include key meetings, work time stats, and any preparation notes for important meetings.',\n    'daily',\n    '{{ $json.time }}'::TIME,\n    ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n    {{ $json.is_active }},\n    alfred.calculate_next_run(\n      'daily',\n      '{{ $json.timezone }}',\n      NULL,\n      '{{ $json.time }}'::TIME,\n      NULL,\n      NULL,\n      NULL\n    )\n  )\n  RETURNING id, scheduled_time, channels, is_active, next_run_at\n)\n{{ $json.timezone_update ? \"UPDATE alfred.users SET preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\\\"\" + $json.timezone_update + \"\\\"'::jsonb) WHERE slack_user_id = '\" + $json.slack_user_id + \"';\" : '' }}\nSELECT * FROM new_task;",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -913,10 +663,7 @@
         "name": "Format Update Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1770,
-          240
-        ],
+        "position": [1770, 240],
         "parameters": {
           "jsCode": "const result = $input.first().json;\nconst buildData = $('Build Update Query').first().json;\nconst time = result.scheduled_time ? result.scheduled_time.substring(0, 5) : buildData.time;\nconst timezone = buildData.timezone;\nconst channels = result.channels || buildData.channels;\n\nlet message = '';\nif (result.is_active) {\n  message = `Daily schedule enabled! You'll receive your schedule at ${time} (${timezone}) via ${channels.join(' and ')}. Next run: ${result.next_run_at}`;\n} else {\n  message = 'Daily schedule has been disabled.';\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update',\n    timezone: timezone,\n    daily_schedule: {\n      enabled: result.is_active,\n      time: time,\n      channels: channels\n    },\n    next_run: result.next_run_at,\n    message: message\n  }\n}];"
         }
@@ -926,20 +673,14 @@
         "name": "Disable Schedule",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.6,
-        "position": [
-          890,
-          460
-        ],
+        "position": [890, 460],
         "parameters": {
           "operation": "executeQuery",
           "query": "=UPDATE alfred.scheduled_tasks SET is_active = false, updated_at = NOW() WHERE user_id = {{ $('Get User').first().json.id }} AND name = 'Daily Schedule' RETURNING id, is_active",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -947,10 +688,7 @@
         "name": "Format Disable Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          1110,
-          460
-        ],
+        "position": [1110, 460],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -982,10 +720,7 @@
         "name": "Invalid Action",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          890,
-          600
-        ],
+        "position": [890, 600],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1011,10 +746,7 @@
         "name": "Validation Error",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          1330,
-          380
-        ],
+        "position": [1330, 380],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1038,137 +770,47 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Get User",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Get User", "type": "main", "index": 0 }]]
       },
       "Get User": {
-        "main": [
-          [
-            {
-              "node": "Route by Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
       },
       "Route by Action": {
         "main": [
-          [
-            {
-              "node": "Format Get Response",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Build Update Query",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Disable Schedule",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Invalid Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Get Response", "type": "main", "index": 0 }],
+          [{ "node": "Build Update Query", "type": "main", "index": 0 }],
+          [{ "node": "Disable Schedule", "type": "main", "index": 0 }],
+          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
         ]
       },
       "Build Update Query": {
-        "main": [
-          [
-            {
-              "node": "Check Valid",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
       },
       "Check Valid": {
         "main": [
-          [
-            {
-              "node": "Has Existing Task?",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Validation Error",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Has Existing Task?", "type": "main", "index": 0 }],
+          [{ "node": "Validation Error", "type": "main", "index": 0 }]
         ]
       },
       "Has Existing Task?": {
         "main": [
-          [
-            {
-              "node": "Update Existing Task",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Create New Task",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Update Existing Task", "type": "main", "index": 0 }],
+          [{ "node": "Create New Task", "type": "main", "index": 0 }]
         ]
       },
       "Update Existing Task": {
         "main": [
-          [
-            {
-              "node": "Format Update Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Update Response", "type": "main", "index": 0 }]
         ]
       },
       "Create New Task": {
         "main": [
-          [
-            {
-              "node": "Format Update Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Update Response", "type": "main", "index": 0 }]
         ]
       },
       "Disable Schedule": {
         "main": [
-          [
-            {
-              "node": "Format Disable Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Disable Response", "type": "main", "index": 0 }]
         ]
       }
     },

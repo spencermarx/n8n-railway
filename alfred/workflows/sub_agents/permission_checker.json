@@ -12,21 +12,12 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "effective_permissions",
-              "type": "object"
-            },
-            {
-              "name": "required_permission",
-              "type": "string"
-            }
+            { "name": "effective_permissions", "type": "object" },
+            { "name": "required_permission", "type": "string" }
           ]
         }
       }
@@ -36,10 +27,7 @@
       "name": "Check Permission",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "const permissions = $input.first().json.effective_permissions;\nconst required = $input.first().json.required_permission;\n\n// Check if permission exists and is true\nconst hasPermission = permissions && permissions[required] === true;\n\n// Denial messages map\nconst denialMessages = {\n  // Workflow permissions\n  workflows_create: \"Creating new automations requires admin privileges. I can describe what the workflow would look like, or I can notify an admin to create it for you.\",\n  workflows_activate: \"Activating workflows requires admin privileges. Would you like me to notify an admin?\",\n  workflows_delete: \"Deleting workflows requires admin privileges. Would you like me to notify an admin?\",\n  workflows_view: \"Viewing workflows requires at least member access.\",\n  \n  // Email permissions\n  email_send: \"I can draft emails for you, but sending requires member access. Would you like me to prepare a draft?\",\n  email_read: \"Reading emails requires member access.\",\n  email_delete: \"Deleting emails requires admin privileges for safety reasons.\",\n  \n  // Calendar permissions\n  calendar_write: \"I can show you calendar availability, but creating or modifying events requires member access.\",\n  calendar_read: \"Reading calendar data requires at least guest access.\",\n  \n  // Document permissions\n  docs_write: \"I can read documents for you, but editing requires member access.\",\n  docs_create: \"Creating documents requires member access.\",\n  docs_read: \"Reading documents requires at least guest access.\",\n  \n  // Sheets permissions\n  sheets_write: \"I can read spreadsheets for you, but editing requires member access.\",\n  sheets_read: \"Reading spreadsheets requires at least guest access.\",\n  \n  // Drive permissions\n  drive_write: \"I can browse files for you, but uploading or modifying requires member access.\",\n  drive_share: \"Sharing files requires admin privileges.\",\n  drive_read: \"Accessing Drive requires at least guest access.\",\n  \n  // Task permissions\n  tasks_write: \"I can show you tasks, but creating or updating them requires member access.\",\n  tasks_read: \"Reading tasks requires at least guest access.\",\n  \n  // Admin permissions\n  admin_manage_users: \"User management requires admin privileges.\",\n  admin_view_all_data: \"Viewing all user data requires admin privileges.\",\n  \n  // Research\n  research_web: \"Web research requires at least guest access.\"\n};\n\nconst denialMessage = hasPermission ? null : (denialMessages[required] || `This action requires the '${required}' permission.`);\n\nreturn [{\n  json: {\n    permitted: hasPermission,\n    required_permission: required,\n    denial_message: denialMessage\n  }\n}];"
@@ -48,15 +36,7 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Check Permission",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Permission", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -69,7 +49,7 @@
   "pinData": null,
   "versionId": "f7703dc8-689f-4692-a4c0-ac0b798c418d",
   "activeVersionId": "f7703dc8-689f-4692-a4c0-ac0b798c418d",
-  "versionCounter": 11,
+  "versionCounter": 14,
   "triggerCount": 0,
   "shared": [
     {
@@ -94,7 +74,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -137,21 +117,12 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "effective_permissions",
-                "type": "object"
-              },
-              {
-                "name": "required_permission",
-                "type": "string"
-              }
+              { "name": "effective_permissions", "type": "object" },
+              { "name": "required_permission", "type": "string" }
             ]
           }
         }
@@ -161,10 +132,7 @@
         "name": "Check Permission",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          450,
-          300
-        ],
+        "position": [450, 300],
         "parameters": {
           "mode": "runOnceForAllItems",
           "jsCode": "const permissions = $input.first().json.effective_permissions;\nconst required = $input.first().json.required_permission;\n\n// Check if permission exists and is true\nconst hasPermission = permissions && permissions[required] === true;\n\n// Denial messages map\nconst denialMessages = {\n  // Workflow permissions\n  workflows_create: \"Creating new automations requires admin privileges. I can describe what the workflow would look like, or I can notify an admin to create it for you.\",\n  workflows_activate: \"Activating workflows requires admin privileges. Would you like me to notify an admin?\",\n  workflows_delete: \"Deleting workflows requires admin privileges. Would you like me to notify an admin?\",\n  workflows_view: \"Viewing workflows requires at least member access.\",\n  \n  // Email permissions\n  email_send: \"I can draft emails for you, but sending requires member access. Would you like me to prepare a draft?\",\n  email_read: \"Reading emails requires member access.\",\n  email_delete: \"Deleting emails requires admin privileges for safety reasons.\",\n  \n  // Calendar permissions\n  calendar_write: \"I can show you calendar availability, but creating or modifying events requires member access.\",\n  calendar_read: \"Reading calendar data requires at least guest access.\",\n  \n  // Document permissions\n  docs_write: \"I can read documents for you, but editing requires member access.\",\n  docs_create: \"Creating documents requires member access.\",\n  docs_read: \"Reading documents requires at least guest access.\",\n  \n  // Sheets permissions\n  sheets_write: \"I can read spreadsheets for you, but editing requires member access.\",\n  sheets_read: \"Reading spreadsheets requires at least guest access.\",\n  \n  // Drive permissions\n  drive_write: \"I can browse files for you, but uploading or modifying requires member access.\",\n  drive_share: \"Sharing files requires admin privileges.\",\n  drive_read: \"Accessing Drive requires at least guest access.\",\n  \n  // Task permissions\n  tasks_write: \"I can show you tasks, but creating or updating them requires member access.\",\n  tasks_read: \"Reading tasks requires at least guest access.\",\n  \n  // Admin permissions\n  admin_manage_users: \"User management requires admin privileges.\",\n  admin_view_all_data: \"Viewing all user data requires admin privileges.\",\n  \n  // Research\n  research_web: \"Web research requires at least guest access.\"\n};\n\nconst denialMessage = hasPermission ? null : (denialMessages[required] || `This action requires the '${required}' permission.`);\n\nreturn [{\n  json: {\n    permitted: hasPermission,\n    required_permission: required,\n    denial_message: denialMessage\n  }\n}];"
@@ -173,15 +141,7 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Check Permission",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Check Permission", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",

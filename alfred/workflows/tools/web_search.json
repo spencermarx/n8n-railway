@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-02-04T20:47:16.919Z",
+  "updatedAt": "2026-02-04T20:49:00.095Z",
   "createdAt": "2026-02-04T19:40:11.006Z",
   "id": "F0TUHVEzA79rroyS",
   "name": "🌐 Tool | Web Search",
   "description": null,
-  "active": false,
+  "active": true,
   "isArchived": false,
   "nodes": [
     {
@@ -12,25 +12,13 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        256,
-        192
-      ],
+      "position": [256, 192],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "query",
-              "type": "string"
-            },
-            {
-              "name": "context",
-              "type": "string"
-            },
-            {
-              "name": "allowed_domains",
-              "type": "string"
-            }
+            { "name": "query", "type": "string" },
+            { "name": "context", "type": "string" },
+            { "name": "allowed_domains", "type": "string" }
           ]
         }
       }
@@ -40,10 +28,7 @@
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        480,
-        192
-      ],
+      "position": [480, 192],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\nconst query = input.query;\nconst context = input.context || '';\nconst allowedDomains = input.allowed_domains || '';\n\n// Validate required fields\nif (!query || query.trim() === '') {\n  return [{\n    json: {\n      valid: false,\n      error: 'Search query is required.',\n      action: 'web_search'\n    }\n  }];\n}\n\n// Parse allowed domains if provided\nlet domainsList = [];\nif (allowedDomains && allowedDomains.trim()) {\n  domainsList = allowedDomains.split(',').map(d => d.trim()).filter(d => d.length > 0);\n}\n\nreturn [{\n  json: {\n    valid: true,\n    query: query.trim(),\n    context: context.trim(),\n    allowed_domains: domainsList\n  }\n}];"
       }
@@ -53,10 +38,7 @@
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        704,
-        192
-      ],
+      "position": [704, 192],
       "parameters": {
         "conditions": {
           "options": {
@@ -70,10 +52,7 @@
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -86,10 +65,7 @@
       "name": "Build API Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        928,
-        96
-      ],
+      "position": [928, 96],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\n// Build the tool configuration\nconst webSearchTool = {\n  type: 'web_search_preview'\n};\n\n// Add domain filtering if specified\nif (input.allowed_domains && input.allowed_domains.length > 0) {\n  webSearchTool.search_context_size = 'medium';\n  webSearchTool.user_location = {\n    type: 'approximate',\n    country: 'US'\n  };\n}\n\n// Build the user message with context if provided\nlet userMessage = input.query;\nif (input.context && input.context.length > 0) {\n  userMessage = `Context: ${input.context}\\n\\nSearch query: ${input.query}`;\n}\n\n// Build the request body\nconst requestBody = {\n  model: 'gpt-4o',\n  tools: [webSearchTool],\n  input: userMessage\n};\n\nreturn [{\n  json: {\n    requestBody: requestBody,\n    query: input.query,\n    context: input.context,\n    allowed_domains: input.allowed_domains\n  }\n}];"
       }
@@ -99,10 +75,7 @@
       "name": "Call OpenAI Web Search",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1152,
-        96
-      ],
+      "position": [1152, 96],
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/responses",
@@ -112,19 +85,12 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
         "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          },
+          "response": { "response": { "fullResponse": true } },
           "timeout": 60000
         }
       },
       "credentials": {
-        "openAiApi": {
-          "id": "K0dJSGlrxig3qa2p",
-          "name": "OpenAi account"
-        }
+        "openAiApi": { "id": "K0dJSGlrxig3qa2p", "name": "OpenAi account" }
       }
     },
     {
@@ -132,10 +98,7 @@
       "name": "Check API Response",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        1376,
-        96
-      ],
+      "position": [1376, 96],
       "parameters": {
         "conditions": {
           "options": {
@@ -149,10 +112,7 @@
               "id": "status-check",
               "leftValue": "={{ $json.statusCode }}",
               "rightValue": 200,
-              "operator": {
-                "type": "number",
-                "operation": "equals"
-              }
+              "operator": { "type": "number", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -165,10 +125,7 @@
       "name": "Format Citations",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1600,
-        0
-      ],
+      "position": [1600, 0],
       "parameters": {
         "jsCode": "const response = $input.first().json;\nconst body = response.body;\nconst originalQuery = $('Build API Request').first().json.query;\n\n// Extract the output from the response\nlet outputText = '';\nlet sources = [];\nlet searchQueries = [];\n\ntry {\n  // Parse the response - OpenAI Responses API format\n  if (body && body.output) {\n    // Get the text output\n    for (const item of body.output) {\n      if (item.type === 'message' && item.content) {\n        for (const content of item.content) {\n          if (content.type === 'output_text') {\n            outputText = content.text || '';\n            \n            // Extract citations from annotations\n            if (content.annotations) {\n              for (const annotation of content.annotations) {\n                if (annotation.type === 'url_citation') {\n                  sources.push({\n                    url: annotation.url,\n                    title: annotation.title || annotation.url\n                  });\n                }\n              }\n            }\n          }\n        }\n      }\n      \n      // Capture search queries used\n      if (item.type === 'web_search_call') {\n        searchQueries.push(item.query || originalQuery);\n      }\n    }\n  }\n  \n  // Deduplicate sources by URL\n  const uniqueSources = [];\n  const seenUrls = new Set();\n  for (const source of sources) {\n    if (!seenUrls.has(source.url)) {\n      seenUrls.add(source.url);\n      uniqueSources.push(source);\n    }\n  }\n  \n  // Format sources for Slack mrkdwn\n  let formattedResult = outputText;\n  \n  if (uniqueSources.length > 0) {\n    formattedResult += '\\n\\n📚 *Sources:*';\n    for (const source of uniqueSources) {\n      formattedResult += `\\n• <${source.url}|${source.title}>`;\n    }\n  }\n  \n  return [{\n    json: {\n      success: true,\n      result: formattedResult,\n      raw_text: outputText,\n      sources: uniqueSources,\n      search_queries: searchQueries.length > 0 ? searchQueries : [originalQuery],\n      action: 'web_search',\n      query: originalQuery\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      success: false,\n      error: 'Failed to parse search results: ' + error.message,\n      action: 'web_search',\n      query: originalQuery\n    }\n  }];\n}"
       }
@@ -178,10 +135,7 @@
       "name": "Handle API Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1600,
-        192
-      ],
+      "position": [1600, 192],
       "parameters": {
         "jsCode": "const response = $input.first().json;\nconst originalQuery = $('Build API Request').first().json.query;\n\nlet errorMessage = 'Web search failed.';\n\n// Handle specific error cases\nconst statusCode = response.statusCode || 0;\nconst body = response.body || {};\n\nif (statusCode === 429) {\n  errorMessage = 'Rate limit exceeded. Please try again in a moment.';\n} else if (statusCode === 401 || statusCode === 403) {\n  errorMessage = 'API authentication error. Please check configuration.';\n} else if (statusCode >= 500) {\n  errorMessage = 'Search service temporarily unavailable. Please try again.';\n} else if (body.error && body.error.message) {\n  errorMessage = body.error.message;\n}\n\nreturn [{\n  json: {\n    success: false,\n    error: errorMessage,\n    error_type: statusCode === 429 ? 'rate_limit' : statusCode >= 500 ? 'service_error' : 'api_error',\n    action: 'web_search',\n    query: originalQuery\n  }\n}];"
       }
@@ -191,10 +145,7 @@
       "name": "Validation Error",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        928,
-        288
-      ],
+      "position": [928, 288],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -224,83 +175,29 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Validate Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
     },
     "Validate Input": {
-      "main": [
-        [
-          {
-            "node": "Check Valid",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
     },
     "Check Valid": {
       "main": [
-        [
-          {
-            "node": "Build API Request",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Validation Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Build API Request", "type": "main", "index": 0 }],
+        [{ "node": "Validation Error", "type": "main", "index": 0 }]
       ]
     },
     "Build API Request": {
       "main": [
-        [
-          {
-            "node": "Call OpenAI Web Search",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Call OpenAI Web Search", "type": "main", "index": 0 }]
       ]
     },
     "Call OpenAI Web Search": {
-      "main": [
-        [
-          {
-            "node": "Check API Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check API Response", "type": "main", "index": 0 }]]
     },
     "Check API Response": {
       "main": [
-        [
-          {
-            "node": "Format Citations",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Handle API Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Citations", "type": "main", "index": 0 }],
+        [{ "node": "Handle API Error", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -313,5 +210,277 @@
   "meta": null,
   "pinData": null,
   "versionId": "05464d9b-ae30-497f-a807-95978f182ceb",
-  "triggerCount": 0
+  "activeVersionId": "05464d9b-ae30-497f-a807-95978f182ceb",
+  "versionCounter": 8,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-04T19:40:11.006Z",
+      "createdAt": "2026-02-04T19:40:11.006Z",
+      "role": "workflow:owner",
+      "workflowId": "F0TUHVEzA79rroyS",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T21:36:26.759Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-04T20:48:53.100Z",
+    "createdAt": "2026-02-04T20:47:16.921Z",
+    "versionId": "05464d9b-ae30-497f-a807-95978f182ceb",
+    "workflowId": "F0TUHVEzA79rroyS",
+    "nodes": [
+      {
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [256, 192],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              { "name": "query", "type": "string" },
+              { "name": "context", "type": "string" },
+              { "name": "allowed_domains", "type": "string" }
+            ]
+          }
+        }
+      },
+      {
+        "id": "validate-input",
+        "name": "Validate Input",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [480, 192],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nconst query = input.query;\nconst context = input.context || '';\nconst allowedDomains = input.allowed_domains || '';\n\n// Validate required fields\nif (!query || query.trim() === '') {\n  return [{\n    json: {\n      valid: false,\n      error: 'Search query is required.',\n      action: 'web_search'\n    }\n  }];\n}\n\n// Parse allowed domains if provided\nlet domainsList = [];\nif (allowedDomains && allowedDomains.trim()) {\n  domainsList = allowedDomains.split(',').map(d => d.trim()).filter(d => d.length > 0);\n}\n\nreturn [{\n  json: {\n    valid: true,\n    query: query.trim(),\n    context: context.trim(),\n    allowed_domains: domainsList\n  }\n}];"
+        }
+      },
+      {
+        "id": "check-valid",
+        "name": "Check Valid",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [704, 192],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "valid-check",
+                "leftValue": "={{ $json.valid }}",
+                "rightValue": true,
+                "operator": { "type": "boolean", "operation": "equals" }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "build-request",
+        "name": "Build API Request",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [928, 96],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\n// Build the tool configuration\nconst webSearchTool = {\n  type: 'web_search_preview'\n};\n\n// Add domain filtering if specified\nif (input.allowed_domains && input.allowed_domains.length > 0) {\n  webSearchTool.search_context_size = 'medium';\n  webSearchTool.user_location = {\n    type: 'approximate',\n    country: 'US'\n  };\n}\n\n// Build the user message with context if provided\nlet userMessage = input.query;\nif (input.context && input.context.length > 0) {\n  userMessage = `Context: ${input.context}\\n\\nSearch query: ${input.query}`;\n}\n\n// Build the request body\nconst requestBody = {\n  model: 'gpt-4o',\n  tools: [webSearchTool],\n  input: userMessage\n};\n\nreturn [{\n  json: {\n    requestBody: requestBody,\n    query: input.query,\n    context: input.context,\n    allowed_domains: input.allowed_domains\n  }\n}];"
+        }
+      },
+      {
+        "id": "openai-request",
+        "name": "Call OpenAI Web Search",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1152, 96],
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.openai.com/v1/responses",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "openAiApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+          "options": {
+            "response": { "response": { "fullResponse": true } },
+            "timeout": 60000
+          }
+        },
+        "credentials": {
+          "openAiApi": { "id": "K0dJSGlrxig3qa2p", "name": "OpenAi account" }
+        }
+      },
+      {
+        "id": "check-response",
+        "name": "Check API Response",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [1376, 96],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "status-check",
+                "leftValue": "={{ $json.statusCode }}",
+                "rightValue": 200,
+                "operator": { "type": "number", "operation": "equals" }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-citations",
+        "name": "Format Citations",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [1600, 0],
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst body = response.body;\nconst originalQuery = $('Build API Request').first().json.query;\n\n// Extract the output from the response\nlet outputText = '';\nlet sources = [];\nlet searchQueries = [];\n\ntry {\n  // Parse the response - OpenAI Responses API format\n  if (body && body.output) {\n    // Get the text output\n    for (const item of body.output) {\n      if (item.type === 'message' && item.content) {\n        for (const content of item.content) {\n          if (content.type === 'output_text') {\n            outputText = content.text || '';\n            \n            // Extract citations from annotations\n            if (content.annotations) {\n              for (const annotation of content.annotations) {\n                if (annotation.type === 'url_citation') {\n                  sources.push({\n                    url: annotation.url,\n                    title: annotation.title || annotation.url\n                  });\n                }\n              }\n            }\n          }\n        }\n      }\n      \n      // Capture search queries used\n      if (item.type === 'web_search_call') {\n        searchQueries.push(item.query || originalQuery);\n      }\n    }\n  }\n  \n  // Deduplicate sources by URL\n  const uniqueSources = [];\n  const seenUrls = new Set();\n  for (const source of sources) {\n    if (!seenUrls.has(source.url)) {\n      seenUrls.add(source.url);\n      uniqueSources.push(source);\n    }\n  }\n  \n  // Format sources for Slack mrkdwn\n  let formattedResult = outputText;\n  \n  if (uniqueSources.length > 0) {\n    formattedResult += '\\n\\n📚 *Sources:*';\n    for (const source of uniqueSources) {\n      formattedResult += `\\n• <${source.url}|${source.title}>`;\n    }\n  }\n  \n  return [{\n    json: {\n      success: true,\n      result: formattedResult,\n      raw_text: outputText,\n      sources: uniqueSources,\n      search_queries: searchQueries.length > 0 ? searchQueries : [originalQuery],\n      action: 'web_search',\n      query: originalQuery\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      success: false,\n      error: 'Failed to parse search results: ' + error.message,\n      action: 'web_search',\n      query: originalQuery\n    }\n  }];\n}"
+        }
+      },
+      {
+        "id": "api-error",
+        "name": "Handle API Error",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [1600, 192],
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst originalQuery = $('Build API Request').first().json.query;\n\nlet errorMessage = 'Web search failed.';\n\n// Handle specific error cases\nconst statusCode = response.statusCode || 0;\nconst body = response.body || {};\n\nif (statusCode === 429) {\n  errorMessage = 'Rate limit exceeded. Please try again in a moment.';\n} else if (statusCode === 401 || statusCode === 403) {\n  errorMessage = 'API authentication error. Please check configuration.';\n} else if (statusCode >= 500) {\n  errorMessage = 'Search service temporarily unavailable. Please try again.';\n} else if (body.error && body.error.message) {\n  errorMessage = body.error.message;\n}\n\nreturn [{\n  json: {\n    success: false,\n    error: errorMessage,\n    error_type: statusCode === 429 ? 'rate_limit' : statusCode >= 500 ? 'service_error' : 'api_error',\n    action: 'web_search',\n    query: originalQuery\n  }\n}];"
+        }
+      },
+      {
+        "id": "validation-error",
+        "name": "Validation Error",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [928, 288],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.error }}",
+                "type": "string"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "web_search",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
+      },
+      "Validate Input": {
+        "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
+      },
+      "Check Valid": {
+        "main": [
+          [{ "node": "Build API Request", "type": "main", "index": 0 }],
+          [{ "node": "Validation Error", "type": "main", "index": 0 }]
+        ]
+      },
+      "Build API Request": {
+        "main": [
+          [{ "node": "Call OpenAI Web Search", "type": "main", "index": 0 }]
+        ]
+      },
+      "Call OpenAI Web Search": {
+        "main": [[{ "node": "Check API Response", "type": "main", "index": 0 }]]
+      },
+      "Check API Response": {
+        "main": [
+          [{ "node": "Format Citations", "type": "main", "index": 0 }],
+          [{ "node": "Handle API Error", "type": "main", "index": 0 }]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": "Version 05464d9b",
+    "description": "",
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-04T20:48:53.096Z",
+        "id": 251,
+        "workflowId": "F0TUHVEzA79rroyS",
+        "versionId": "05464d9b-ae30-497f-a807-95978f182ceb",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

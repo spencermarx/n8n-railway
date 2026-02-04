@@ -12,41 +12,17 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "action",
-              "type": "string"
-            },
-            {
-              "name": "resource",
-              "type": "string"
-            },
-            {
-              "name": "permitted",
-              "type": "boolean"
-            },
-            {
-              "name": "denial_reason",
-              "type": "string"
-            },
-            {
-              "name": "request_summary",
-              "type": "string"
-            },
-            {
-              "name": "metadata",
-              "type": "object"
-            }
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "action", "type": "string" },
+            { "name": "resource", "type": "string" },
+            { "name": "permitted", "type": "boolean" },
+            { "name": "denial_reason", "type": "string" },
+            { "name": "request_summary", "type": "string" },
+            { "name": "metadata", "type": "object" }
           ]
         }
       }
@@ -56,10 +32,7 @@
       "name": "Prepare Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\n// Safely stringify metadata\nlet metadataJson = '{}';\ntry {\n  if (input.metadata && typeof input.metadata === 'object') {\n    metadataJson = JSON.stringify(input.metadata);\n  } else if (typeof input.metadata === 'string') {\n    JSON.parse(input.metadata);\n    metadataJson = input.metadata;\n  }\n} catch (e) {\n  metadataJson = JSON.stringify({ error: 'Failed to serialize metadata' });\n}\n\n// Escape single quotes for SQL\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';\n  if (typeof val === 'number') return String(val);\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nconst slack_user_id = sqlEscape(input.slack_user_id || '');\nconst action = sqlEscape(input.action || 'unknown');\nconst resource = input.resource ? sqlEscape(input.resource) : 'NULL';\nconst permitted = input.permitted === true ? 'TRUE' : 'FALSE';\nconst denial_reason = input.denial_reason ? sqlEscape(input.denial_reason) : 'NULL';\nconst request_summary = input.request_summary ? sqlEscape(input.request_summary) : 'NULL';\nconst metadata = sqlEscape(metadataJson);\n\nconst sql = `INSERT INTO alfred.audit_log (slack_user_id, action, resource, permitted, denial_reason, request_summary, metadata)\nVALUES (${slack_user_id}, ${action}, ${resource}, ${permitted}, ${denial_reason}, ${request_summary}, ${metadata}::jsonb)\nRETURNING id, timestamp;`;\n\nreturn [{ json: { query: sql } }];"
       }
@@ -69,20 +42,14 @@
       "name": "Insert Audit Log",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        650,
-        300
-      ],
+      "position": [650, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "={{ $json.query }}",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -90,10 +57,7 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        850,
-        300
-      ],
+      "position": [850, 300],
       "parameters": {
         "mode": "manual",
         "duplicateItem": false,
@@ -125,37 +89,13 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Prepare Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Prepare Data", "type": "main", "index": 0 }]]
     },
     "Prepare Data": {
-      "main": [
-        [
-          {
-            "node": "Insert Audit Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Insert Audit Log", "type": "main", "index": 0 }]]
     },
     "Insert Audit Log": {
-      "main": [
-        [
-          {
-            "node": "Format Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -168,7 +108,7 @@
   "pinData": null,
   "versionId": "e8f2902d-5709-4c76-a81c-0de9cb556ae4",
   "activeVersionId": "e8f2902d-5709-4c76-a81c-0de9cb556ae4",
-  "versionCounter": 17,
+  "versionCounter": 20,
   "triggerCount": 0,
   "shared": [
     {
@@ -193,7 +133,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -236,41 +176,17 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "action",
-                "type": "string"
-              },
-              {
-                "name": "resource",
-                "type": "string"
-              },
-              {
-                "name": "permitted",
-                "type": "boolean"
-              },
-              {
-                "name": "denial_reason",
-                "type": "string"
-              },
-              {
-                "name": "request_summary",
-                "type": "string"
-              },
-              {
-                "name": "metadata",
-                "type": "object"
-              }
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "action", "type": "string" },
+              { "name": "resource", "type": "string" },
+              { "name": "permitted", "type": "boolean" },
+              { "name": "denial_reason", "type": "string" },
+              { "name": "request_summary", "type": "string" },
+              { "name": "metadata", "type": "object" }
             ]
           }
         }
@@ -280,10 +196,7 @@
         "name": "Prepare Data",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          450,
-          300
-        ],
+        "position": [450, 300],
         "parameters": {
           "jsCode": "const input = $input.first().json;\n\n// Safely stringify metadata\nlet metadataJson = '{}';\ntry {\n  if (input.metadata && typeof input.metadata === 'object') {\n    metadataJson = JSON.stringify(input.metadata);\n  } else if (typeof input.metadata === 'string') {\n    JSON.parse(input.metadata);\n    metadataJson = input.metadata;\n  }\n} catch (e) {\n  metadataJson = JSON.stringify({ error: 'Failed to serialize metadata' });\n}\n\n// Escape single quotes for SQL\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';\n  if (typeof val === 'number') return String(val);\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nconst slack_user_id = sqlEscape(input.slack_user_id || '');\nconst action = sqlEscape(input.action || 'unknown');\nconst resource = input.resource ? sqlEscape(input.resource) : 'NULL';\nconst permitted = input.permitted === true ? 'TRUE' : 'FALSE';\nconst denial_reason = input.denial_reason ? sqlEscape(input.denial_reason) : 'NULL';\nconst request_summary = input.request_summary ? sqlEscape(input.request_summary) : 'NULL';\nconst metadata = sqlEscape(metadataJson);\n\nconst sql = `INSERT INTO alfred.audit_log (slack_user_id, action, resource, permitted, denial_reason, request_summary, metadata)\nVALUES (${slack_user_id}, ${action}, ${resource}, ${permitted}, ${denial_reason}, ${request_summary}, ${metadata}::jsonb)\nRETURNING id, timestamp;`;\n\nreturn [{ json: { query: sql } }];"
         }
@@ -293,20 +206,14 @@
         "name": "Insert Audit Log",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          650,
-          300
-        ],
+        "position": [650, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "={{ $json.query }}",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -314,10 +221,7 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          850,
-          300
-        ],
+        "position": [850, 300],
         "parameters": {
           "mode": "manual",
           "duplicateItem": false,
@@ -349,37 +253,13 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Prepare Data",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Prepare Data", "type": "main", "index": 0 }]]
       },
       "Prepare Data": {
-        "main": [
-          [
-            {
-              "node": "Insert Audit Log",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Insert Audit Log", "type": "main", "index": 0 }]]
       },
       "Insert Audit Log": {
-        "main": [
-          [
-            {
-              "node": "Format Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",

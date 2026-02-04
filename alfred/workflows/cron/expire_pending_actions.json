@@ -12,19 +12,9 @@
       "name": "Every 5 Minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [
-        200,
-        300
-      ],
+      "position": [200, 300],
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 5
-            }
-          ]
-        }
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
       }
     },
     {
@@ -32,20 +22,14 @@
       "name": "Find Expired Actions",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        420,
-        300
-      ],
+      "position": [420, 300],
       "parameters": {
         "operation": "executeQuery",
         "query": "UPDATE alfred.pending_actions\nSET \n  status = 'expired',\n  resolved_at = NOW(),\n  resolution_note = 'Automatically expired after timeout'\nWHERE \n  status = 'pending' \n  AND expires_at < NOW()\nRETURNING \n  id,\n  action_type,\n  slack_user_id,\n  approval_channel_id,\n  approval_message_ts,\n  payload,\n  expires_at,\n  created_at;",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -53,10 +37,7 @@
       "name": "Has Expired Actions?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        640,
-        300
-      ],
+      "position": [640, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -71,10 +52,7 @@
               "id": "expired-check",
               "leftValue": "={{ $json.id }}",
               "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "notEmpty"
-              }
+              "operator": { "type": "string", "operation": "notEmpty" }
             }
           ]
         }
@@ -85,24 +63,15 @@
       "name": "Process Each Expired",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [
-        860,
-        200
-      ],
-      "parameters": {
-        "batchSize": 1,
-        "options": {}
-      }
+      "position": [860, 200],
+      "parameters": { "batchSize": 1, "options": {} }
     },
     {
       "id": "build-expired-card",
       "name": "Build Expired Card",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1080,
-        200
-      ],
+      "position": [1080, 200],
       "parameters": {
         "jsCode": "const item = $input.first().json;\nconst payload = item.payload || {};\n\nconst blocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: 'Email Expired',\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    fields: [\n      {\n        type: 'mrkdwn',\n        text: `*To:*\\n${payload.to || 'Not specified'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*Subject:*\\n${payload.subject || 'No subject'}`\n      }\n    ]\n  },\n  {\n    type: 'context',\n    elements: [\n      {\n        type: 'mrkdwn',\n        text: `Expired - no action taken. Originally requested by <@${item.slack_user_id}>`\n      }\n    ]\n  }\n];\n\nreturn [{\n  json: {\n    ...item,\n    blocks: blocks\n  }\n}];"
       }
@@ -112,10 +81,7 @@
       "name": "Loop Complete",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [
-        1520,
-        200
-      ],
+      "position": [1520, 200],
       "parameters": {}
     },
     {
@@ -123,10 +89,7 @@
       "name": "No Expired Actions",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [
-        860,
-        400
-      ],
+      "position": [860, 400],
       "parameters": {}
     },
     {
@@ -134,10 +97,7 @@
       "name": "Update Slack Card - Expired",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        1300,
-        200
-      ],
+      "position": [1300, 200],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -161,84 +121,30 @@
   ],
   "connections": {
     "Every 5 Minutes": {
-      "main": [
-        [
-          {
-            "node": "Find Expired Actions",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Find Expired Actions", "type": "main", "index": 0 }]]
     },
     "Find Expired Actions": {
-      "main": [
-        [
-          {
-            "node": "Has Expired Actions?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Has Expired Actions?", "type": "main", "index": 0 }]]
     },
     "Has Expired Actions?": {
       "main": [
-        [
-          {
-            "node": "Process Each Expired",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "No Expired Actions",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Process Each Expired", "type": "main", "index": 0 }],
+        [{ "node": "No Expired Actions", "type": "main", "index": 0 }]
       ]
     },
     "Process Each Expired": {
       "main": [
-        [
-          {
-            "node": "Build Expired Card",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Loop Complete",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Build Expired Card", "type": "main", "index": 0 }],
+        [{ "node": "Loop Complete", "type": "main", "index": 0 }]
       ]
     },
     "Build Expired Card": {
       "main": [
-        [
-          {
-            "node": "Update Slack Card - Expired",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Slack Card - Expired", "type": "main", "index": 0 }]
       ]
     },
     "Update Slack Card - Expired": {
-      "main": [
-        [
-          {
-            "node": "Process Each Expired",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Process Each Expired", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -246,16 +152,12 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "staticData": {
-    "node:Every 5 Minutes": {
-      "recurrenceRules": []
-    }
-  },
+  "staticData": { "node:Every 5 Minutes": { "recurrenceRules": [] } },
   "meta": null,
   "pinData": null,
   "versionId": "b3fe69e6-8edc-4f9c-8b78-685a5019d703",
   "activeVersionId": "b3fe69e6-8edc-4f9c-8b78-685a5019d703",
-  "versionCounter": 9,
+  "versionCounter": 12,
   "triggerCount": 1,
   "shared": [
     {
@@ -280,7 +182,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -323,19 +225,9 @@
         "name": "Every 5 Minutes",
         "type": "n8n-nodes-base.scheduleTrigger",
         "typeVersion": 1.2,
-        "position": [
-          200,
-          300
-        ],
+        "position": [200, 300],
         "parameters": {
-          "rule": {
-            "interval": [
-              {
-                "field": "minutes",
-                "minutesInterval": 5
-              }
-            ]
-          }
+          "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
         }
       },
       {
@@ -343,20 +235,14 @@
         "name": "Find Expired Actions",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          420,
-          300
-        ],
+        "position": [420, 300],
         "parameters": {
           "operation": "executeQuery",
           "query": "UPDATE alfred.pending_actions\nSET \n  status = 'expired',\n  resolved_at = NOW(),\n  resolution_note = 'Automatically expired after timeout'\nWHERE \n  status = 'pending' \n  AND expires_at < NOW()\nRETURNING \n  id,\n  action_type,\n  slack_user_id,\n  approval_channel_id,\n  approval_message_ts,\n  payload,\n  expires_at,\n  created_at;",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -364,10 +250,7 @@
         "name": "Has Expired Actions?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [
-          640,
-          300
-        ],
+        "position": [640, 300],
         "parameters": {
           "conditions": {
             "options": {
@@ -382,10 +265,7 @@
                 "id": "expired-check",
                 "leftValue": "={{ $json.id }}",
                 "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "notEmpty"
-                }
+                "operator": { "type": "string", "operation": "notEmpty" }
               }
             ]
           }
@@ -396,24 +276,15 @@
         "name": "Process Each Expired",
         "type": "n8n-nodes-base.splitInBatches",
         "typeVersion": 3,
-        "position": [
-          860,
-          200
-        ],
-        "parameters": {
-          "batchSize": 1,
-          "options": {}
-        }
+        "position": [860, 200],
+        "parameters": { "batchSize": 1, "options": {} }
       },
       {
         "id": "build-expired-card",
         "name": "Build Expired Card",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1080,
-          200
-        ],
+        "position": [1080, 200],
         "parameters": {
           "jsCode": "const item = $input.first().json;\nconst payload = item.payload || {};\n\nconst blocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: 'Email Expired',\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    fields: [\n      {\n        type: 'mrkdwn',\n        text: `*To:*\\n${payload.to || 'Not specified'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*Subject:*\\n${payload.subject || 'No subject'}`\n      }\n    ]\n  },\n  {\n    type: 'context',\n    elements: [\n      {\n        type: 'mrkdwn',\n        text: `Expired - no action taken. Originally requested by <@${item.slack_user_id}>`\n      }\n    ]\n  }\n];\n\nreturn [{\n  json: {\n    ...item,\n    blocks: blocks\n  }\n}];"
         }
@@ -423,10 +294,7 @@
         "name": "Loop Complete",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
-        "position": [
-          1520,
-          200
-        ],
+        "position": [1520, 200],
         "parameters": {}
       },
       {
@@ -434,10 +302,7 @@
         "name": "No Expired Actions",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
-        "position": [
-          860,
-          400
-        ],
+        "position": [860, 400],
         "parameters": {}
       },
       {
@@ -445,10 +310,7 @@
         "name": "Update Slack Card - Expired",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          1300,
-          200
-        ],
+        "position": [1300, 200],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -473,60 +335,24 @@
     "connections": {
       "Every 5 Minutes": {
         "main": [
-          [
-            {
-              "node": "Find Expired Actions",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Find Expired Actions", "type": "main", "index": 0 }]
         ]
       },
       "Find Expired Actions": {
         "main": [
-          [
-            {
-              "node": "Has Expired Actions?",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Has Expired Actions?", "type": "main", "index": 0 }]
         ]
       },
       "Has Expired Actions?": {
         "main": [
-          [
-            {
-              "node": "Process Each Expired",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "No Expired Actions",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Process Each Expired", "type": "main", "index": 0 }],
+          [{ "node": "No Expired Actions", "type": "main", "index": 0 }]
         ]
       },
       "Process Each Expired": {
         "main": [
-          [
-            {
-              "node": "Build Expired Card",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Loop Complete",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Build Expired Card", "type": "main", "index": 0 }],
+          [{ "node": "Loop Complete", "type": "main", "index": 0 }]
         ]
       },
       "Build Expired Card": {
@@ -542,13 +368,7 @@
       },
       "Update Slack Card - Expired": {
         "main": [
-          [
-            {
-              "node": "Process Each Expired",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Process Each Expired", "type": "main", "index": 0 }]
         ]
       }
     },

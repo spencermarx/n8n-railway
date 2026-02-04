@@ -11,19 +11,10 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id"
-            },
-            {
-              "name": "mode"
-            },
-            {
-              "name": "count",
-              "type": "number"
-            },
-            {
-              "name": "message_ids"
-            }
+            { "name": "slack_user_id" },
+            { "name": "mode" },
+            { "name": "count", "type": "number" },
+            { "name": "message_ids" }
           ]
         }
       },
@@ -31,10 +22,7 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        208,
-        304
-      ]
+      "position": [208, 304]
     },
     {
       "parameters": {
@@ -56,10 +44,7 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        432,
-        304
-      ]
+      "position": [432, 304]
     },
     {
       "parameters": {
@@ -76,10 +61,7 @@
               "id": "auth-check",
               "leftValue": "={{ $json.success }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ]
         },
@@ -89,20 +71,13 @@
       "name": "Check Auth",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        640,
-        304
-      ]
+      "position": [640, 304]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
+            { "name": "success", "value": false, "type": "boolean" },
             {
               "name": "error",
               "value": "={{ $json.error || 'Google authentication failed' }}",
@@ -116,10 +91,7 @@
       "name": "Auth Failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        864,
-        464
-      ]
+      "position": [864, 464]
     },
     {
       "parameters": {
@@ -129,10 +101,7 @@
       "name": "Prepare Fetch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        864,
-        208
-      ]
+      "position": [864, 208]
     },
     {
       "parameters": {
@@ -140,14 +109,8 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {
-              "name": "q",
-              "value": "in:sent"
-            },
-            {
-              "name": "maxResults",
-              "value": "={{ $json.count }}"
-            }
+            { "name": "q", "value": "in:sent" },
+            { "name": "maxResults", "value": "={{ $json.count }}" }
           ]
         },
         "sendHeaders": true,
@@ -165,10 +128,7 @@
       "name": "List Sent Emails",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1088,
-        208
-      ]
+      "position": [1088, 208]
     },
     {
       "parameters": {
@@ -178,10 +138,7 @@
       "name": "Extract Message IDs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1312,
-        208
-      ]
+      "position": [1312, 208]
     },
     {
       "parameters": {
@@ -191,10 +148,7 @@
       "name": "Fetch Email Contents",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1520,
-        208
-      ]
+      "position": [1520, 208]
     },
     {
       "parameters": {
@@ -204,10 +158,7 @@
       "name": "Prepare AI Analysis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1744,
-        208
-      ]
+      "position": [1744, 208]
     },
     {
       "parameters": {
@@ -224,10 +175,7 @@
               "id": "ready-check",
               "leftValue": "={{ $json.ready }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ]
         },
@@ -237,20 +185,13 @@
       "name": "Ready for Analysis?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        1968,
-        208
-      ]
+      "position": [1968, 208]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
+            { "name": "success", "value": false, "type": "boolean" },
             {
               "name": "error",
               "value": "={{ $json.error }}",
@@ -269,18 +210,11 @@
       "name": "Not Enough Emails",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        2192,
-        352
-      ]
+      "position": [2192, 352]
     },
     {
       "parameters": {
-        "modelId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "gpt-4o"
-        },
+        "modelId": { "__rl": true, "mode": "list", "value": "gpt-4o" },
         "messages": {
           "values": [
             {
@@ -288,24 +222,15 @@
             }
           ]
         },
-        "options": {
-          "maxTokens": 4000,
-          "temperature": 0.3
-        }
+        "options": { "maxTokens": 4000, "temperature": 0.3 }
       },
       "id": "ai-analysis",
       "name": "AI Tone Analysis",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
-      "position": [
-        2016,
-        -48
-      ],
+      "position": [2016, -48],
       "credentials": {
-        "openAiApi": {
-          "id": "CJqdVmJ3kVvMHRk5",
-          "name": "OpenAI API"
-        }
+        "openAiApi": { "id": "CJqdVmJ3kVvMHRk5", "name": "OpenAI API" }
       }
     },
     {
@@ -316,10 +241,7 @@
       "name": "Validate & Format Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        2400,
-        112
-      ]
+      "position": [2400, 112]
     },
     {
       "parameters": {
@@ -333,15 +255,9 @@
       "name": "Save to User Preferences",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        2624,
-        112
-      ],
+      "position": [2624, 112],
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -352,158 +268,55 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        2848,
-        112
-      ]
+      "position": [2848, 112]
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Get Google Auth",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
     },
     "Get Google Auth": {
-      "main": [
-        [
-          {
-            "node": "Check Auth",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Auth", "type": "main", "index": 0 }]]
     },
     "Check Auth": {
       "main": [
-        [
-          {
-            "node": "Prepare Fetch",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Auth Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Prepare Fetch", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed", "type": "main", "index": 0 }]
       ]
     },
     "Prepare Fetch": {
-      "main": [
-        [
-          {
-            "node": "List Sent Emails",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "List Sent Emails", "type": "main", "index": 0 }]]
     },
     "List Sent Emails": {
-      "main": [
-        [
-          {
-            "node": "Extract Message IDs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Extract Message IDs", "type": "main", "index": 0 }]]
     },
     "Extract Message IDs": {
-      "main": [
-        [
-          {
-            "node": "Fetch Email Contents",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Fetch Email Contents", "type": "main", "index": 0 }]]
     },
     "Fetch Email Contents": {
-      "main": [
-        [
-          {
-            "node": "Prepare AI Analysis",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Prepare AI Analysis", "type": "main", "index": 0 }]]
     },
     "Prepare AI Analysis": {
-      "main": [
-        [
-          {
-            "node": "Ready for Analysis?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Ready for Analysis?", "type": "main", "index": 0 }]]
     },
     "Ready for Analysis?": {
       "main": [
-        [
-          {
-            "node": "AI Tone Analysis",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Not Enough Emails",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "AI Tone Analysis", "type": "main", "index": 0 }],
+        [{ "node": "Not Enough Emails", "type": "main", "index": 0 }]
       ]
     },
     "AI Tone Analysis": {
       "main": [
-        [
-          {
-            "node": "Validate & Format Output",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Validate & Format Output", "type": "main", "index": 0 }]
       ]
     },
     "Validate & Format Output": {
       "main": [
-        [
-          {
-            "node": "Save to User Preferences",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Save to User Preferences", "type": "main", "index": 0 }]
       ]
     },
     "Save to User Preferences": {
-      "main": [
-        [
-          {
-            "node": "Format Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -516,7 +329,7 @@
   "pinData": {},
   "versionId": "27eb1cb0-b099-4967-a483-729b03469af0",
   "activeVersionId": "27eb1cb0-b099-4967-a483-729b03469af0",
-  "versionCounter": 12,
+  "versionCounter": 15,
   "triggerCount": 0,
   "shared": [
     {
@@ -541,7 +354,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -583,19 +396,10 @@
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id"
-              },
-              {
-                "name": "mode"
-              },
-              {
-                "name": "count",
-                "type": "number"
-              },
-              {
-                "name": "message_ids"
-              }
+              { "name": "slack_user_id" },
+              { "name": "mode" },
+              { "name": "count", "type": "number" },
+              { "name": "message_ids" }
             ]
           }
         },
@@ -603,10 +407,7 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          208,
-          304
-        ]
+        "position": [208, 304]
       },
       {
         "parameters": {
@@ -628,10 +429,7 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          432,
-          304
-        ]
+        "position": [432, 304]
       },
       {
         "parameters": {
@@ -648,10 +446,7 @@
                 "id": "auth-check",
                 "leftValue": "={{ $json.success }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
+                "operator": { "type": "boolean", "operation": "equals" }
               }
             ]
           },
@@ -661,20 +456,13 @@
         "name": "Check Auth",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [
-          640,
-          304
-        ]
+        "position": [640, 304]
       },
       {
         "parameters": {
           "assignments": {
             "assignments": [
-              {
-                "name": "success",
-                "value": false,
-                "type": "boolean"
-              },
+              { "name": "success", "value": false, "type": "boolean" },
               {
                 "name": "error",
                 "value": "={{ $json.error || 'Google authentication failed' }}",
@@ -688,10 +476,7 @@
         "name": "Auth Failed",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          864,
-          464
-        ]
+        "position": [864, 464]
       },
       {
         "parameters": {
@@ -701,10 +486,7 @@
         "name": "Prepare Fetch",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          864,
-          208
-        ]
+        "position": [864, 208]
       },
       {
         "parameters": {
@@ -712,14 +494,8 @@
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
-              {
-                "name": "q",
-                "value": "in:sent"
-              },
-              {
-                "name": "maxResults",
-                "value": "={{ $json.count }}"
-              }
+              { "name": "q", "value": "in:sent" },
+              { "name": "maxResults", "value": "={{ $json.count }}" }
             ]
           },
           "sendHeaders": true,
@@ -737,10 +513,7 @@
         "name": "List Sent Emails",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1088,
-          208
-        ]
+        "position": [1088, 208]
       },
       {
         "parameters": {
@@ -750,10 +523,7 @@
         "name": "Extract Message IDs",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1312,
-          208
-        ]
+        "position": [1312, 208]
       },
       {
         "parameters": {
@@ -763,10 +533,7 @@
         "name": "Fetch Email Contents",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1520,
-          208
-        ]
+        "position": [1520, 208]
       },
       {
         "parameters": {
@@ -776,10 +543,7 @@
         "name": "Prepare AI Analysis",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1744,
-          208
-        ]
+        "position": [1744, 208]
       },
       {
         "parameters": {
@@ -796,10 +560,7 @@
                 "id": "ready-check",
                 "leftValue": "={{ $json.ready }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
+                "operator": { "type": "boolean", "operation": "equals" }
               }
             ]
           },
@@ -809,20 +570,13 @@
         "name": "Ready for Analysis?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [
-          1968,
-          208
-        ]
+        "position": [1968, 208]
       },
       {
         "parameters": {
           "assignments": {
             "assignments": [
-              {
-                "name": "success",
-                "value": false,
-                "type": "boolean"
-              },
+              { "name": "success", "value": false, "type": "boolean" },
               {
                 "name": "error",
                 "value": "={{ $json.error }}",
@@ -841,18 +595,11 @@
         "name": "Not Enough Emails",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          2192,
-          352
-        ]
+        "position": [2192, 352]
       },
       {
         "parameters": {
-          "modelId": {
-            "__rl": true,
-            "mode": "list",
-            "value": "gpt-4o"
-          },
+          "modelId": { "__rl": true, "mode": "list", "value": "gpt-4o" },
           "messages": {
             "values": [
               {
@@ -860,24 +607,15 @@
               }
             ]
           },
-          "options": {
-            "maxTokens": 4000,
-            "temperature": 0.3
-          }
+          "options": { "maxTokens": 4000, "temperature": 0.3 }
         },
         "id": "ai-analysis",
         "name": "AI Tone Analysis",
         "type": "@n8n/n8n-nodes-langchain.openAi",
         "typeVersion": 1.8,
-        "position": [
-          2016,
-          -48
-        ],
+        "position": [2016, -48],
         "credentials": {
-          "openAiApi": {
-            "id": "CJqdVmJ3kVvMHRk5",
-            "name": "OpenAI API"
-          }
+          "openAiApi": { "id": "CJqdVmJ3kVvMHRk5", "name": "OpenAI API" }
         }
       },
       {
@@ -888,10 +626,7 @@
         "name": "Validate & Format Output",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          2400,
-          112
-        ]
+        "position": [2400, 112]
       },
       {
         "parameters": {
@@ -905,15 +640,9 @@
         "name": "Save to User Preferences",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          2624,
-          112
-        ],
+        "position": [2624, 112],
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -924,158 +653,63 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          2848,
-          112
-        ]
+        "position": [2848, 112]
       }
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Get Google Auth",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
       },
       "Get Google Auth": {
-        "main": [
-          [
-            {
-              "node": "Check Auth",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Check Auth", "type": "main", "index": 0 }]]
       },
       "Check Auth": {
         "main": [
-          [
-            {
-              "node": "Prepare Fetch",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Auth Failed",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Prepare Fetch", "type": "main", "index": 0 }],
+          [{ "node": "Auth Failed", "type": "main", "index": 0 }]
         ]
       },
       "Prepare Fetch": {
-        "main": [
-          [
-            {
-              "node": "List Sent Emails",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "List Sent Emails", "type": "main", "index": 0 }]]
       },
       "List Sent Emails": {
         "main": [
-          [
-            {
-              "node": "Extract Message IDs",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Extract Message IDs", "type": "main", "index": 0 }]
         ]
       },
       "Extract Message IDs": {
         "main": [
-          [
-            {
-              "node": "Fetch Email Contents",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Fetch Email Contents", "type": "main", "index": 0 }]
         ]
       },
       "Fetch Email Contents": {
         "main": [
-          [
-            {
-              "node": "Prepare AI Analysis",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Prepare AI Analysis", "type": "main", "index": 0 }]
         ]
       },
       "Prepare AI Analysis": {
         "main": [
-          [
-            {
-              "node": "Ready for Analysis?",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Ready for Analysis?", "type": "main", "index": 0 }]
         ]
       },
       "Ready for Analysis?": {
         "main": [
-          [
-            {
-              "node": "AI Tone Analysis",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Not Enough Emails",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "AI Tone Analysis", "type": "main", "index": 0 }],
+          [{ "node": "Not Enough Emails", "type": "main", "index": 0 }]
         ]
       },
       "AI Tone Analysis": {
         "main": [
-          [
-            {
-              "node": "Validate & Format Output",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Validate & Format Output", "type": "main", "index": 0 }]
         ]
       },
       "Validate & Format Output": {
         "main": [
-          [
-            {
-              "node": "Save to User Preferences",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Save to User Preferences", "type": "main", "index": 0 }]
         ]
       },
       "Save to User Preferences": {
-        "main": [
-          [
-            {
-              "node": "Format Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",

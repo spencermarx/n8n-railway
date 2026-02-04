@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-03T23:48:11.855Z",
+  "updatedAt": "2026-02-04T21:38:34.641Z",
   "createdAt": "2026-02-03T11:35:31.882Z",
   "id": "XQIgdUEsFw2nH6a7",
   "name": "🔧 Tool | Update User Preferences",
@@ -12,25 +12,13 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "preference_key",
-              "type": "string"
-            },
-            {
-              "name": "preference_value",
-              "type": "string"
-            }
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "preference_key", "type": "string" },
+            { "name": "preference_value", "type": "string" }
           ]
         }
       }
@@ -40,12 +28,9 @@
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        450,
-        300
-      ],
+      "position": [450, 300],
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst key = input.preference_key;\nconst value = input.preference_value;\n\n// Define allowed root-level preferences and their types\nconst allowedPreferences = {\n  'timezone': { type: 'string', description: 'IANA timezone (e.g., America/New_York)' },\n  'personality': { type: 'enum', values: ['alfred', 'donna', 'jarvis', 'jim'], description: 'AI personality' },\n  'verbosity': { type: 'enum', values: ['concise', 'detailed'], description: 'Response verbosity' },\n  'proactive_notifications': { type: 'boolean', description: 'Allow proactive notifications' }\n};\n\n// Check if key is allowed\nif (!allowedPreferences[key]) {\n  const allowedKeys = Object.keys(allowedPreferences).join(', ');\n  return [{\n    json: {\n      is_valid: false,\n      error: `Invalid preference key '${key}'. Allowed keys: ${allowedKeys}. For daily_schedule settings, use the Daily Schedule Preferences tool.`\n    }\n  }];\n}\n\nconst pref = allowedPreferences[key];\nlet parsedValue = value;\n\n// Type validation and parsing\nif (pref.type === 'boolean') {\n  if (value === 'true' || value === true) parsedValue = true;\n  else if (value === 'false' || value === false) parsedValue = false;\n  else {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value for '${key}'. Expected true or false.`\n      }\n    }];\n  }\n} else if (pref.type === 'enum') {\n  if (!pref.values.includes(value)) {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value '${value}' for '${key}'. Allowed values: ${pref.values.join(', ')}`\n      }\n    }];\n  }\n  parsedValue = value;\n} else {\n  parsedValue = value;\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    slack_user_id: input.slack_user_id,\n    preference_key: key,\n    preference_value: parsedValue,\n    value_type: pref.type === 'boolean' ? 'boolean' : 'string'\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\nconst key = input.preference_key;\nconst value = input.preference_value;\n\n// Define allowed root-level preferences and their types\nconst allowedPreferences = {\n  'timezone': { type: 'string', description: 'IANA timezone (e.g., America/New_York)' },\n  'personality': { type: 'enum', values: ['alfred', 'donna', 'jarvis', 'jim'], description: 'AI personality' },\n  'verbosity': { type: 'enum', values: ['concise', 'detailed'], description: 'Response verbosity' },\n  'proactive_notifications': { type: 'boolean', description: 'Allow proactive notifications' }\n};\n\n// Check if key is allowed\nif (!allowedPreferences[key]) {\n  const allowedKeys = Object.keys(allowedPreferences).join(', ');\n  return [{\n    json: {\n      is_valid: false,\n      error: `Invalid preference key '${key}'. Allowed keys: ${allowedKeys}. For daily_schedule settings, use the Daily Schedule Preferences tool.`\n    }\n  }];\n}\n\nconst pref = allowedPreferences[key];\nlet parsedValue = value;\nlet jsonValue; // Pre-formatted JSON value for PostgreSQL\n\n// Type validation and parsing\nif (pref.type === 'boolean') {\n  if (value === 'true' || value === true) {\n    parsedValue = true;\n    jsonValue = 'true'; // JSON boolean literal\n  } else if (value === 'false' || value === false) {\n    parsedValue = false;\n    jsonValue = 'false'; // JSON boolean literal\n  } else {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value for '${key}'. Expected true or false.`\n      }\n    }];\n  }\n} else if (pref.type === 'enum') {\n  if (!pref.values.includes(value)) {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value '${value}' for '${key}'. Allowed values: ${pref.values.join(', ')}`\n      }\n    }];\n  }\n  parsedValue = value;\n  // For strings/enums, wrap in quotes for valid JSON string\n  jsonValue = JSON.stringify(value);\n} else {\n  parsedValue = value;\n  // For strings, wrap in quotes for valid JSON string\n  jsonValue = JSON.stringify(value);\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    slack_user_id: input.slack_user_id,\n    preference_key: key,\n    preference_value: parsedValue,\n    json_value: jsonValue // Pre-formatted for PostgreSQL jsonb\n  }\n}];"
       }
     },
     {
@@ -53,10 +38,7 @@
       "name": "Is Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        650,
-        300
-      ],
+      "position": [650, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -70,10 +52,8 @@
             {
               "leftValue": "={{ $json.is_valid }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" },
+              "id": "condition-1770241102489-oq2p35n8z"
             }
           ]
         }
@@ -84,20 +64,14 @@
       "name": "Update Preferences",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        850,
-        240
-      ],
+      "position": [850, 240],
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE alfred.users\nSET preferences = \n  CASE \n    WHEN '{{ $json.value_type }}' = 'boolean' THEN\n      jsonb_set(COALESCE(preferences, '{}'::jsonb), ARRAY['{{ $json.preference_key }}'], '{{ $json.preference_value }}'::jsonb)\n    ELSE\n      jsonb_set(COALESCE(preferences, '{}'::jsonb), ARRAY['{{ $json.preference_key }}'], to_jsonb('{{ $json.preference_value }}'::text))\n  END,\nupdated_at = NOW()\nWHERE slack_user_id = '{{ $json.slack_user_id }}'\nRETURNING slack_user_id, preferences;",
+        "query": "=UPDATE alfred.users\nSET preferences = jsonb_set(\n  COALESCE(preferences, '{}'::jsonb),\n  ARRAY['{{ $json.preference_key }}'],\n  '{{ $json.json_value }}'::jsonb\n),\nupdated_at = NOW()\nWHERE slack_user_id = '{{ $json.slack_user_id }}'\nRETURNING slack_user_id, preferences;",
         "options": {}
       },
       "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
       }
     },
     {
@@ -105,10 +79,7 @@
       "name": "Format Result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1050,
-        240
-      ],
+      "position": [1050, 240],
       "parameters": {
         "jsCode": "const input = $('Validate Input').first().json;\nconst result = $input.first().json;\n\nif (result && result.slack_user_id) {\n  return [{\n    json: {\n      success: true,\n      message: `Successfully updated ${input.preference_key} to ${input.preference_value}`,\n      updated_preferences: result.preferences\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      message: 'Failed to update preference. User may not exist.'\n    }\n  }];\n}"
       }
@@ -118,10 +89,7 @@
       "name": "Error Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        850,
-        380
-      ],
+      "position": [850, 380],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -145,55 +113,19 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Validate Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
     },
     "Validate Input": {
-      "main": [
-        [
-          {
-            "node": "Is Valid?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
     },
     "Is Valid?": {
       "main": [
-        [
-          {
-            "node": "Update Preferences",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Preferences", "type": "main", "index": 0 }],
+        [{ "node": "Error Response", "type": "main", "index": 0 }]
       ]
     },
     "Update Preferences": {
-      "main": [
-        [
-          {
-            "node": "Format Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Result", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -204,9 +136,9 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "fb34d942-bb31-465c-9d35-20b0f69ea58c",
-  "activeVersionId": "fb34d942-bb31-465c-9d35-20b0f69ea58c",
-  "versionCounter": 18,
+  "versionId": "77ae0efb-d576-4325-b21c-fcb30e9c994b",
+  "activeVersionId": "77ae0efb-d576-4325-b21c-fcb30e9c994b",
+  "versionCounter": 27,
   "triggerCount": 0,
   "shared": [
     {
@@ -231,7 +163,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -271,9 +203,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-03T23:48:11.855Z",
-    "createdAt": "2026-02-03T23:48:11.855Z",
-    "versionId": "fb34d942-bb31-465c-9d35-20b0f69ea58c",
+    "updatedAt": "2026-02-04T21:38:34.643Z",
+    "createdAt": "2026-02-04T21:38:34.643Z",
+    "versionId": "77ae0efb-d576-4325-b21c-fcb30e9c994b",
     "workflowId": "XQIgdUEsFw2nH6a7",
     "nodes": [
       {
@@ -281,25 +213,13 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "preference_key",
-                "type": "string"
-              },
-              {
-                "name": "preference_value",
-                "type": "string"
-              }
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "preference_key", "type": "string" },
+              { "name": "preference_value", "type": "string" }
             ]
           }
         }
@@ -309,12 +229,9 @@
         "name": "Validate Input",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          450,
-          300
-        ],
+        "position": [450, 300],
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst key = input.preference_key;\nconst value = input.preference_value;\n\n// Define allowed root-level preferences and their types\nconst allowedPreferences = {\n  'timezone': { type: 'string', description: 'IANA timezone (e.g., America/New_York)' },\n  'personality': { type: 'enum', values: ['alfred', 'donna', 'jarvis', 'jim'], description: 'AI personality' },\n  'verbosity': { type: 'enum', values: ['concise', 'detailed'], description: 'Response verbosity' },\n  'proactive_notifications': { type: 'boolean', description: 'Allow proactive notifications' }\n};\n\n// Check if key is allowed\nif (!allowedPreferences[key]) {\n  const allowedKeys = Object.keys(allowedPreferences).join(', ');\n  return [{\n    json: {\n      is_valid: false,\n      error: `Invalid preference key '${key}'. Allowed keys: ${allowedKeys}. For daily_schedule settings, use the Daily Schedule Preferences tool.`\n    }\n  }];\n}\n\nconst pref = allowedPreferences[key];\nlet parsedValue = value;\n\n// Type validation and parsing\nif (pref.type === 'boolean') {\n  if (value === 'true' || value === true) parsedValue = true;\n  else if (value === 'false' || value === false) parsedValue = false;\n  else {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value for '${key}'. Expected true or false.`\n      }\n    }];\n  }\n} else if (pref.type === 'enum') {\n  if (!pref.values.includes(value)) {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value '${value}' for '${key}'. Allowed values: ${pref.values.join(', ')}`\n      }\n    }];\n  }\n  parsedValue = value;\n} else {\n  parsedValue = value;\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    slack_user_id: input.slack_user_id,\n    preference_key: key,\n    preference_value: parsedValue,\n    value_type: pref.type === 'boolean' ? 'boolean' : 'string'\n  }\n}];"
+          "jsCode": "const input = $input.first().json;\nconst key = input.preference_key;\nconst value = input.preference_value;\n\n// Define allowed root-level preferences and their types\nconst allowedPreferences = {\n  'timezone': { type: 'string', description: 'IANA timezone (e.g., America/New_York)' },\n  'personality': { type: 'enum', values: ['alfred', 'donna', 'jarvis', 'jim'], description: 'AI personality' },\n  'verbosity': { type: 'enum', values: ['concise', 'detailed'], description: 'Response verbosity' },\n  'proactive_notifications': { type: 'boolean', description: 'Allow proactive notifications' }\n};\n\n// Check if key is allowed\nif (!allowedPreferences[key]) {\n  const allowedKeys = Object.keys(allowedPreferences).join(', ');\n  return [{\n    json: {\n      is_valid: false,\n      error: `Invalid preference key '${key}'. Allowed keys: ${allowedKeys}. For daily_schedule settings, use the Daily Schedule Preferences tool.`\n    }\n  }];\n}\n\nconst pref = allowedPreferences[key];\nlet parsedValue = value;\nlet jsonValue; // Pre-formatted JSON value for PostgreSQL\n\n// Type validation and parsing\nif (pref.type === 'boolean') {\n  if (value === 'true' || value === true) {\n    parsedValue = true;\n    jsonValue = 'true'; // JSON boolean literal\n  } else if (value === 'false' || value === false) {\n    parsedValue = false;\n    jsonValue = 'false'; // JSON boolean literal\n  } else {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value for '${key}'. Expected true or false.`\n      }\n    }];\n  }\n} else if (pref.type === 'enum') {\n  if (!pref.values.includes(value)) {\n    return [{\n      json: {\n        is_valid: false,\n        error: `Invalid value '${value}' for '${key}'. Allowed values: ${pref.values.join(', ')}`\n      }\n    }];\n  }\n  parsedValue = value;\n  // For strings/enums, wrap in quotes for valid JSON string\n  jsonValue = JSON.stringify(value);\n} else {\n  parsedValue = value;\n  // For strings, wrap in quotes for valid JSON string\n  jsonValue = JSON.stringify(value);\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    slack_user_id: input.slack_user_id,\n    preference_key: key,\n    preference_value: parsedValue,\n    json_value: jsonValue // Pre-formatted for PostgreSQL jsonb\n  }\n}];"
         }
       },
       {
@@ -322,10 +239,7 @@
         "name": "Is Valid?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [
-          650,
-          300
-        ],
+        "position": [650, 300],
         "parameters": {
           "conditions": {
             "options": {
@@ -339,10 +253,8 @@
               {
                 "leftValue": "={{ $json.is_valid }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
+                "operator": { "type": "boolean", "operation": "equals" },
+                "id": "condition-1770241102489-oq2p35n8z"
               }
             ]
           }
@@ -353,20 +265,14 @@
         "name": "Update Preferences",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [
-          850,
-          240
-        ],
+        "position": [850, 240],
         "parameters": {
           "operation": "executeQuery",
-          "query": "UPDATE alfred.users\nSET preferences = \n  CASE \n    WHEN '{{ $json.value_type }}' = 'boolean' THEN\n      jsonb_set(COALESCE(preferences, '{}'::jsonb), ARRAY['{{ $json.preference_key }}'], '{{ $json.preference_value }}'::jsonb)\n    ELSE\n      jsonb_set(COALESCE(preferences, '{}'::jsonb), ARRAY['{{ $json.preference_key }}'], to_jsonb('{{ $json.preference_value }}'::text))\n  END,\nupdated_at = NOW()\nWHERE slack_user_id = '{{ $json.slack_user_id }}'\nRETURNING slack_user_id, preferences;",
+          "query": "=UPDATE alfred.users\nSET preferences = jsonb_set(\n  COALESCE(preferences, '{}'::jsonb),\n  ARRAY['{{ $json.preference_key }}'],\n  '{{ $json.json_value }}'::jsonb\n),\nupdated_at = NOW()\nWHERE slack_user_id = '{{ $json.slack_user_id }}'\nRETURNING slack_user_id, preferences;",
           "options": {}
         },
         "credentials": {
-          "postgres": {
-            "id": "8nTSHxonyIBczkvN",
-            "name": "Postgres account"
-          }
+          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
         }
       },
       {
@@ -374,10 +280,7 @@
         "name": "Format Result",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1050,
-          240
-        ],
+        "position": [1050, 240],
         "parameters": {
           "jsCode": "const input = $('Validate Input').first().json;\nconst result = $input.first().json;\n\nif (result && result.slack_user_id) {\n  return [{\n    json: {\n      success: true,\n      message: `Successfully updated ${input.preference_key} to ${input.preference_value}`,\n      updated_preferences: result.preferences\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      message: 'Failed to update preference. User may not exist.'\n    }\n  }];\n}"
         }
@@ -387,10 +290,7 @@
         "name": "Error Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          850,
-          380
-        ],
+        "position": [850, 380],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -414,55 +314,19 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Validate Input",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
       },
       "Validate Input": {
-        "main": [
-          [
-            {
-              "node": "Is Valid?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
       },
       "Is Valid?": {
         "main": [
-          [
-            {
-              "node": "Update Preferences",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Error Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Update Preferences", "type": "main", "index": 0 }],
+          [{ "node": "Error Response", "type": "main", "index": 0 }]
         ]
       },
       "Update Preferences": {
-        "main": [
-          [
-            {
-              "node": "Format Result",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format Result", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",
@@ -471,10 +335,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-03T23:48:11.980Z",
-        "id": 152,
+        "createdAt": "2026-02-04T21:38:34.718Z",
+        "id": 257,
         "workflowId": "XQIgdUEsFw2nH6a7",
-        "versionId": "fb34d942-bb31-465c-9d35-20b0f69ea58c",
+        "versionId": "77ae0efb-d576-4325-b21c-fcb30e9c994b",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }

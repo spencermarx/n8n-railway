@@ -12,33 +12,15 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "response_text",
-              "type": "string"
-            },
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "channel_id",
-              "type": "string"
-            },
-            {
-              "name": "thread_ts",
-              "type": "string"
-            },
-            {
-              "name": "response_type",
-              "type": "string"
-            }
+            { "name": "response_text", "type": "string" },
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "channel_id", "type": "string" },
+            { "name": "thread_ts", "type": "string" },
+            { "name": "response_type", "type": "string" }
           ]
         }
       }
@@ -48,10 +30,7 @@
       "name": "Build Block Kit Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        580,
-        300
-      ],
+      "position": [580, 300],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst formatterResult = input;\nconst originalInput = $('Workflow Input').first().json;\n\n// Use the pre-formatted text from the Slack Formatter utility\nconst text = formatterResult.formatted || originalInput.response_text || '';\n\n// Slack limits\nconst MAX_TEXT_LENGTH = 2900;  // Slack section text limit with buffer\nconst MAX_BLOCKS = 45;         // Leave room for continuation indicator\nconst MAX_TOTAL_CHARS = 15000; // Approximate safe total for a single message\n\nfunction textSection(text) {\n  return { type: 'section', text: { type: 'mrkdwn', text: text.substring(0, MAX_TEXT_LENGTH) } };\n}\n\nfunction headerBlock(text) {\n  return { type: 'header', text: { type: 'plain_text', text: text.substring(0, 150), emoji: true } };\n}\n\nfunction divider() {\n  return { type: 'divider' };\n}\n\nfunction contextBlock(elements) {\n  return { type: 'context', elements: elements.map(el => ({ type: 'mrkdwn', text: el.substring(0, 300) })) };\n}\n\n// Split long text into chunks that respect word boundaries\nfunction splitIntoChunks(text, maxLength) {\n  const chunks = [];\n  let remaining = text;\n  \n  while (remaining.length > 0) {\n    if (remaining.length <= maxLength) {\n      chunks.push(remaining);\n      break;\n    }\n    \n    // Find a good break point (newline, period, space)\n    let breakPoint = maxLength;\n    const newlineIdx = remaining.lastIndexOf('\\n', maxLength);\n    const periodIdx = remaining.lastIndexOf('. ', maxLength);\n    const spaceIdx = remaining.lastIndexOf(' ', maxLength);\n    \n    if (newlineIdx > maxLength * 0.5) breakPoint = newlineIdx + 1;\n    else if (periodIdx > maxLength * 0.5) breakPoint = periodIdx + 2;\n    else if (spaceIdx > maxLength * 0.5) breakPoint = spaceIdx + 1;\n    \n    chunks.push(remaining.substring(0, breakPoint));\n    remaining = remaining.substring(breakPoint);\n  }\n  \n  return chunks;\n}\n\nfunction parseToBlocks(text) {\n  const blocks = [];\n  const lines = text.split('\\n');\n  let currentSection = [];\n  let inCodeBlock = false;\n  let codeContent = [];\n  let totalChars = 0;\n  \n  function addBlock(block) {\n    if (blocks.length >= MAX_BLOCKS) return false;\n    const blockText = JSON.stringify(block);\n    if (totalChars + blockText.length > MAX_TOTAL_CHARS) return false;\n    blocks.push(block);\n    totalChars += blockText.length;\n    return true;\n  }\n  \n  function flushSection() {\n    if (currentSection.length > 0) {\n      const content = currentSection.join('\\n').trim();\n      if (content) {\n        // Split long sections into multiple blocks\n        const chunks = splitIntoChunks(content, MAX_TEXT_LENGTH);\n        for (const chunk of chunks) {\n          if (!addBlock(textSection(chunk))) return false;\n        }\n      }\n      currentSection = [];\n    }\n    return true;\n  }\n  \n  function flushCode() {\n    if (codeContent.length > 0) {\n      const code = codeContent.join('\\n');\n      addBlock(textSection('```' + code.substring(0, MAX_TEXT_LENGTH - 10) + '```'));\n      codeContent = [];\n    }\n  }\n  \n  for (let i = 0; i < lines.length && blocks.length < MAX_BLOCKS; i++) {\n    const line = lines[i];\n    \n    if (line.trim().startsWith('```')) {\n      if (inCodeBlock) { flushCode(); inCodeBlock = false; }\n      else { if (!flushSection()) break; inCodeBlock = true; }\n      continue;\n    }\n    \n    if (inCodeBlock) { codeContent.push(line); continue; }\n    \n    // Headers: # Header or ## Header\n    const headerMatch = line.match(/^#{1,3}\\s+(.+)$/);\n    if (headerMatch) { \n      if (!flushSection()) break;\n      addBlock(headerBlock(headerMatch[1].replace(/\\*+/g, '').trim())); \n      continue; \n    }\n    \n    // Bold headers like **Title:** or *Title:*\n    const boldHeaderMatch = line.match(/^\\*{1,2}([^*]+):\\*{1,2}\\s*$/);\n    if (boldHeaderMatch) { \n      if (!flushSection()) break;\n      addBlock(headerBlock(boldHeaderMatch[1].trim())); \n      continue; \n    }\n    \n    // Dividers - but consolidate to avoid too many\n    if (line.match(/^[\\-=_]{3,}$/)) {\n      // Only add divider if we have content and not too many dividers already\n      const dividerCount = blocks.filter(b => b.type === 'divider').length;\n      if (dividerCount < 5) {\n        if (!flushSection()) break;\n        addBlock(divider());\n      }\n      continue;\n    }\n    \n    // Empty lines\n    if (line.trim() === '') {\n      if (currentSection.length > 0) currentSection.push('');\n      continue;\n    }\n    \n    // List items\n    const listMatch = line.match(/^\\s*[\\-\\*•]\\s+(.+)$/);\n    if (listMatch) { currentSection.push('• ' + listMatch[1]); continue; }\n    \n    // Numbered lists\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)\\-]\\s+(.+)$/);\n    if (numberedMatch) { currentSection.push(numberedMatch[1] + '. ' + numberedMatch[2]); continue; }\n    \n    currentSection.push(line);\n  }\n  \n  if (inCodeBlock) flushCode();\n  flushSection();\n  \n  return blocks;\n}\n\nlet blocks = parseToBlocks(text);\nlet wasTruncated = false;\n\n// Check if we hit limits\nif (blocks.length >= MAX_BLOCKS || text.length > MAX_TOTAL_CHARS) {\n  wasTruncated = true;\n  blocks.push(contextBlock(['_Content condensed for Slack. Full response available in workflow execution._']));\n}\n\nif (blocks.length === 0) {\n  blocks = [textSection(text.substring(0, MAX_TEXT_LENGTH) || 'I processed your request.')];\n}\n\n// Validate blocks\nlet isValid = true;\nfor (let i = 0; i < blocks.length; i++) {\n  const block = blocks[i];\n  if (!block.type) { isValid = false; break; }\n  if (block.type === 'section' && (!block.text || !block.text.text)) { isValid = false; break; }\n  if (block.type === 'header' && (!block.text || !block.text.text)) { isValid = false; break; }\n}\n\n// Build fallback plain text (Slack API text field limit is high, but keep it reasonable)\nconst fallbackText = text.substring(0, 4000) + (text.length > 4000 ? '...' : '');\n\nreturn [{\n  json: {\n    ...originalInput,\n    blocks: isValid ? blocks : [textSection(fallbackText.substring(0, MAX_TEXT_LENGTH))],\n    fallback_text: fallbackText,\n    is_valid: isValid,\n    block_count: blocks.length,\n    was_truncated: wasTruncated,\n    original_length: text.length\n  }\n}];"
       }
@@ -61,10 +40,7 @@
       "name": "Route by Type",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        690,
-        300
-      ],
+      "position": [690, 300],
       "parameters": {
         "mode": "rules",
         "rules": {
@@ -82,10 +58,7 @@
                   {
                     "leftValue": "={{ $json.response_type }}",
                     "rightValue": "dm",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -104,10 +77,7 @@
                   {
                     "leftValue": "={{ $json.response_type }}",
                     "rightValue": "channel",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -126,10 +96,7 @@
                   {
                     "leftValue": "={{ $json.response_type }}",
                     "rightValue": "thread",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -137,9 +104,7 @@
             }
           ]
         },
-        "options": {
-          "fallbackOutput": "extra"
-        }
+        "options": { "fallbackOutput": "extra" }
       }
     },
     {
@@ -147,10 +112,7 @@
       "name": "Format for Slack",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        360,
-        300
-      ],
+      "position": [360, 300],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -159,9 +121,7 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {
-            "text": "={{ $json.response_text }}"
-          }
+          "value": { "text": "={{ $json.response_text }}" }
         },
         "options": {}
       }
@@ -171,10 +131,7 @@
       "name": "Send DM",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        940,
-        60
-      ],
+      "position": [940, 60],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -200,10 +157,7 @@
       "name": "Send to Channel",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        940,
-        220
-      ],
+      "position": [940, 220],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -229,10 +183,7 @@
       "name": "Reply in Thread",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        940,
-        380
-      ],
+      "position": [940, 380],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -259,10 +210,7 @@
       "name": "Fallback to DM",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        940,
-        540
-      ],
+      "position": [940, 540],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -286,68 +234,22 @@
   ],
   "connections": {
     "Build Block Kit Message": {
-      "main": [
-        [
-          {
-            "node": "Route by Type",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Route by Type", "type": "main", "index": 0 }]]
     },
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Format for Slack",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format for Slack", "type": "main", "index": 0 }]]
     },
     "Format for Slack": {
       "main": [
-        [
-          {
-            "node": "Build Block Kit Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Build Block Kit Message", "type": "main", "index": 0 }]
       ]
     },
     "Route by Type": {
       "main": [
-        [
-          {
-            "node": "Send DM",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send to Channel",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Reply in Thread",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Fallback to DM",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Send DM", "type": "main", "index": 0 }],
+        [{ "node": "Send to Channel", "type": "main", "index": 0 }],
+        [{ "node": "Reply in Thread", "type": "main", "index": 0 }],
+        [{ "node": "Fallback to DM", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -361,7 +263,7 @@
   "pinData": null,
   "versionId": "78153239-3253-46ac-a3a7-318132d58153",
   "activeVersionId": "78153239-3253-46ac-a3a7-318132d58153",
-  "versionCounter": 52,
+  "versionCounter": 55,
   "triggerCount": 0,
   "shared": [
     {
@@ -386,7 +288,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T21:36:26.759Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -429,33 +331,15 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "response_text",
-                "type": "string"
-              },
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "channel_id",
-                "type": "string"
-              },
-              {
-                "name": "thread_ts",
-                "type": "string"
-              },
-              {
-                "name": "response_type",
-                "type": "string"
-              }
+              { "name": "response_text", "type": "string" },
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "channel_id", "type": "string" },
+              { "name": "thread_ts", "type": "string" },
+              { "name": "response_type", "type": "string" }
             ]
           }
         }
@@ -465,10 +349,7 @@
         "name": "Build Block Kit Message",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          580,
-          300
-        ],
+        "position": [580, 300],
         "parameters": {
           "jsCode": "const input = $input.first().json;\nconst formatterResult = input;\nconst originalInput = $('Workflow Input').first().json;\n\n// Use the pre-formatted text from the Slack Formatter utility\nconst text = formatterResult.formatted || originalInput.response_text || '';\n\n// Slack limits\nconst MAX_TEXT_LENGTH = 2900;  // Slack section text limit with buffer\nconst MAX_BLOCKS = 45;         // Leave room for continuation indicator\nconst MAX_TOTAL_CHARS = 15000; // Approximate safe total for a single message\n\nfunction textSection(text) {\n  return { type: 'section', text: { type: 'mrkdwn', text: text.substring(0, MAX_TEXT_LENGTH) } };\n}\n\nfunction headerBlock(text) {\n  return { type: 'header', text: { type: 'plain_text', text: text.substring(0, 150), emoji: true } };\n}\n\nfunction divider() {\n  return { type: 'divider' };\n}\n\nfunction contextBlock(elements) {\n  return { type: 'context', elements: elements.map(el => ({ type: 'mrkdwn', text: el.substring(0, 300) })) };\n}\n\n// Split long text into chunks that respect word boundaries\nfunction splitIntoChunks(text, maxLength) {\n  const chunks = [];\n  let remaining = text;\n  \n  while (remaining.length > 0) {\n    if (remaining.length <= maxLength) {\n      chunks.push(remaining);\n      break;\n    }\n    \n    // Find a good break point (newline, period, space)\n    let breakPoint = maxLength;\n    const newlineIdx = remaining.lastIndexOf('\\n', maxLength);\n    const periodIdx = remaining.lastIndexOf('. ', maxLength);\n    const spaceIdx = remaining.lastIndexOf(' ', maxLength);\n    \n    if (newlineIdx > maxLength * 0.5) breakPoint = newlineIdx + 1;\n    else if (periodIdx > maxLength * 0.5) breakPoint = periodIdx + 2;\n    else if (spaceIdx > maxLength * 0.5) breakPoint = spaceIdx + 1;\n    \n    chunks.push(remaining.substring(0, breakPoint));\n    remaining = remaining.substring(breakPoint);\n  }\n  \n  return chunks;\n}\n\nfunction parseToBlocks(text) {\n  const blocks = [];\n  const lines = text.split('\\n');\n  let currentSection = [];\n  let inCodeBlock = false;\n  let codeContent = [];\n  let totalChars = 0;\n  \n  function addBlock(block) {\n    if (blocks.length >= MAX_BLOCKS) return false;\n    const blockText = JSON.stringify(block);\n    if (totalChars + blockText.length > MAX_TOTAL_CHARS) return false;\n    blocks.push(block);\n    totalChars += blockText.length;\n    return true;\n  }\n  \n  function flushSection() {\n    if (currentSection.length > 0) {\n      const content = currentSection.join('\\n').trim();\n      if (content) {\n        // Split long sections into multiple blocks\n        const chunks = splitIntoChunks(content, MAX_TEXT_LENGTH);\n        for (const chunk of chunks) {\n          if (!addBlock(textSection(chunk))) return false;\n        }\n      }\n      currentSection = [];\n    }\n    return true;\n  }\n  \n  function flushCode() {\n    if (codeContent.length > 0) {\n      const code = codeContent.join('\\n');\n      addBlock(textSection('```' + code.substring(0, MAX_TEXT_LENGTH - 10) + '```'));\n      codeContent = [];\n    }\n  }\n  \n  for (let i = 0; i < lines.length && blocks.length < MAX_BLOCKS; i++) {\n    const line = lines[i];\n    \n    if (line.trim().startsWith('```')) {\n      if (inCodeBlock) { flushCode(); inCodeBlock = false; }\n      else { if (!flushSection()) break; inCodeBlock = true; }\n      continue;\n    }\n    \n    if (inCodeBlock) { codeContent.push(line); continue; }\n    \n    // Headers: # Header or ## Header\n    const headerMatch = line.match(/^#{1,3}\\s+(.+)$/);\n    if (headerMatch) { \n      if (!flushSection()) break;\n      addBlock(headerBlock(headerMatch[1].replace(/\\*+/g, '').trim())); \n      continue; \n    }\n    \n    // Bold headers like **Title:** or *Title:*\n    const boldHeaderMatch = line.match(/^\\*{1,2}([^*]+):\\*{1,2}\\s*$/);\n    if (boldHeaderMatch) { \n      if (!flushSection()) break;\n      addBlock(headerBlock(boldHeaderMatch[1].trim())); \n      continue; \n    }\n    \n    // Dividers - but consolidate to avoid too many\n    if (line.match(/^[\\-=_]{3,}$/)) {\n      // Only add divider if we have content and not too many dividers already\n      const dividerCount = blocks.filter(b => b.type === 'divider').length;\n      if (dividerCount < 5) {\n        if (!flushSection()) break;\n        addBlock(divider());\n      }\n      continue;\n    }\n    \n    // Empty lines\n    if (line.trim() === '') {\n      if (currentSection.length > 0) currentSection.push('');\n      continue;\n    }\n    \n    // List items\n    const listMatch = line.match(/^\\s*[\\-\\*•]\\s+(.+)$/);\n    if (listMatch) { currentSection.push('• ' + listMatch[1]); continue; }\n    \n    // Numbered lists\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)\\-]\\s+(.+)$/);\n    if (numberedMatch) { currentSection.push(numberedMatch[1] + '. ' + numberedMatch[2]); continue; }\n    \n    currentSection.push(line);\n  }\n  \n  if (inCodeBlock) flushCode();\n  flushSection();\n  \n  return blocks;\n}\n\nlet blocks = parseToBlocks(text);\nlet wasTruncated = false;\n\n// Check if we hit limits\nif (blocks.length >= MAX_BLOCKS || text.length > MAX_TOTAL_CHARS) {\n  wasTruncated = true;\n  blocks.push(contextBlock(['_Content condensed for Slack. Full response available in workflow execution._']));\n}\n\nif (blocks.length === 0) {\n  blocks = [textSection(text.substring(0, MAX_TEXT_LENGTH) || 'I processed your request.')];\n}\n\n// Validate blocks\nlet isValid = true;\nfor (let i = 0; i < blocks.length; i++) {\n  const block = blocks[i];\n  if (!block.type) { isValid = false; break; }\n  if (block.type === 'section' && (!block.text || !block.text.text)) { isValid = false; break; }\n  if (block.type === 'header' && (!block.text || !block.text.text)) { isValid = false; break; }\n}\n\n// Build fallback plain text (Slack API text field limit is high, but keep it reasonable)\nconst fallbackText = text.substring(0, 4000) + (text.length > 4000 ? '...' : '');\n\nreturn [{\n  json: {\n    ...originalInput,\n    blocks: isValid ? blocks : [textSection(fallbackText.substring(0, MAX_TEXT_LENGTH))],\n    fallback_text: fallbackText,\n    is_valid: isValid,\n    block_count: blocks.length,\n    was_truncated: wasTruncated,\n    original_length: text.length\n  }\n}];"
         }
@@ -478,10 +359,7 @@
         "name": "Route by Type",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [
-          690,
-          300
-        ],
+        "position": [690, 300],
         "parameters": {
           "mode": "rules",
           "rules": {
@@ -499,10 +377,7 @@
                     {
                       "leftValue": "={{ $json.response_type }}",
                       "rightValue": "dm",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -521,10 +396,7 @@
                     {
                       "leftValue": "={{ $json.response_type }}",
                       "rightValue": "channel",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -543,10 +415,7 @@
                     {
                       "leftValue": "={{ $json.response_type }}",
                       "rightValue": "thread",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
+                      "operator": { "type": "string", "operation": "equals" }
                     }
                   ],
                   "combinator": "and"
@@ -554,9 +423,7 @@
               }
             ]
           },
-          "options": {
-            "fallbackOutput": "extra"
-          }
+          "options": { "fallbackOutput": "extra" }
         }
       },
       {
@@ -564,10 +431,7 @@
         "name": "Format for Slack",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          360,
-          300
-        ],
+        "position": [360, 300],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -576,9 +440,7 @@
           },
           "workflowInputs": {
             "mappingMode": "defineBelow",
-            "value": {
-              "text": "={{ $json.response_text }}"
-            }
+            "value": { "text": "={{ $json.response_text }}" }
           },
           "options": {}
         }
@@ -588,10 +450,7 @@
         "name": "Send DM",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          940,
-          60
-        ],
+        "position": [940, 60],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -617,10 +476,7 @@
         "name": "Send to Channel",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          940,
-          220
-        ],
+        "position": [940, 220],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -646,10 +502,7 @@
         "name": "Reply in Thread",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          940,
-          380
-        ],
+        "position": [940, 380],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -676,10 +529,7 @@
         "name": "Fallback to DM",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          940,
-          540
-        ],
+        "position": [940, 540],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -703,68 +553,22 @@
     ],
     "connections": {
       "Build Block Kit Message": {
-        "main": [
-          [
-            {
-              "node": "Route by Type",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Route by Type", "type": "main", "index": 0 }]]
       },
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Format for Slack",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format for Slack", "type": "main", "index": 0 }]]
       },
       "Format for Slack": {
         "main": [
-          [
-            {
-              "node": "Build Block Kit Message",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Build Block Kit Message", "type": "main", "index": 0 }]
         ]
       },
       "Route by Type": {
         "main": [
-          [
-            {
-              "node": "Send DM",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Send to Channel",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Reply in Thread",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Fallback to DM",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Send DM", "type": "main", "index": 0 }],
+          [{ "node": "Send to Channel", "type": "main", "index": 0 }],
+          [{ "node": "Reply in Thread", "type": "main", "index": 0 }],
+          [{ "node": "Fallback to DM", "type": "main", "index": 0 }]
         ]
       }
     },
