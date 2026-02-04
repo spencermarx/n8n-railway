@@ -1,0 +1,1096 @@
+{
+  "updatedAt": "2026-02-04T14:11:27.922Z",
+  "createdAt": "2026-02-04T13:57:45.078Z",
+  "id": "LSlDQ7mxMjxUddfa",
+  "name": "🎨 Tool | Analyze Email Tone",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id"
+            },
+            {
+              "name": "mode"
+            },
+            {
+              "name": "count",
+              "type": "number"
+            },
+            {
+              "name": "message_ids"
+            }
+          ]
+        }
+      },
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/gmail.readonly"
+          }
+        },
+        "options": {}
+      },
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "auth-check",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-auth",
+      "name": "Check Auth",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "name": "error",
+              "value": "={{ $json.error || 'Google authentication failed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "auth-failed",
+      "name": "Auth Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Workflow Input').first().json;\nconst auth = $input.first().json;\n\nconst mode = input.mode || 'recent';\nconst count = Math.min(input.count || 15, 25);\nconst messageIds = input.message_ids ? input.message_ids.split(',').map(id => id.trim()) : [];\n\nreturn [{\n  json: {\n    mode: mode,\n    count: count,\n    message_ids: messageIds,\n    access_token: auth.access_token,\n    user_email: auth.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+      },
+      "id": "prepare-fetch",
+      "name": "Prepare Fetch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "in:sent"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $json.count }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "list-sent-emails",
+      "name": "List Sent Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Fetch').first().json;\nconst listResult = $input.first().json;\n\nconst messages = listResult.messages || [];\nconst messageIds = messages.map(m => m.id);\n\nreturn [{\n  json: {\n    message_ids: messageIds,\n    count: messageIds.length,\n    access_token: prepared.access_token,\n    user_email: prepared.user_email,\n    slack_user_id: prepared.slack_user_id\n  }\n}];"
+      },
+      "id": "extract-message-ids",
+      "name": "Extract Message IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst messageIds = input.message_ids;\nconst accessToken = input.access_token;\n\nconst emails = [];\n\nfor (const messageId of messageIds) {\n  try {\n    const response = await fetch(\n      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,\n      {\n        headers: { 'Authorization': `Bearer ${accessToken}` }\n      }\n    );\n    \n    if (response.ok) {\n      const message = await response.json();\n      \n      const headers = message.payload?.headers || [];\n      const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n      \n      let body = '';\n      if (message.payload?.body?.data) {\n        body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n      } else if (message.payload?.parts) {\n        const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n        if (textPart?.body?.data) {\n          body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n        }\n      }\n      \n      const cleanBody = body\n        .split(/\\n--\\s*\\n/)[0]\n        .split(/\\nOn .* wrote:\\n/)[0]\n        .split(/\\n>\\s/)[0]\n        .trim();\n      \n      if (cleanBody.length > 50) {\n        emails.push({\n          to: getHeader('To'),\n          subject: getHeader('Subject'),\n          date: getHeader('Date'),\n          body: cleanBody.substring(0, 2000)\n        });\n      }\n    }\n  } catch (e) {\n    // Skip failed fetches\n  }\n}\n\nreturn [{\n  json: {\n    emails: emails,\n    count: emails.length,\n    user_email: input.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+      },
+      "id": "fetch-email-contents",
+      "name": "Fetch Email Contents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst emails = input.emails;\n\nif (emails.length < 3) {\n  return [{\n    json: {\n      success: false,\n      error: `Only found ${emails.length} substantial sent emails. Need at least 3 emails to analyze writing style.`,\n      emails_found: emails.length\n    }\n  }];\n}\n\nlet emailsText = '';\nfor (let i = 0; i < emails.length; i++) {\n  const email = emails[i];\n  emailsText += `\\n---\\nEMAIL ${i + 1}\\nTo: ${email.to}\\nSubject: ${email.subject}\\nDate: ${email.date}\\n\\n${email.body}\\n---\\n`;\n}\n\nconst dates = emails.map(e => new Date(e.date)).filter(d => !isNaN(d));\nconst minDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();\nconst maxDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();\nconst dateRange = `${minDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;\n\nreturn [{\n  json: {\n    ready: true,\n    emails_text: emailsText,\n    emails_count: emails.length,\n    date_range: dateRange,\n    user_email: input.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+      },
+      "id": "prepare-analysis",
+      "name": "Prepare AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready-check",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-ready",
+      "name": "Ready for Analysis?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "name": "error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "name": "emails_found",
+              "value": "={{ $json.emails_found }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "not-enough-emails",
+      "name": "Not Enough Emails",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2192,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert writing coach analyzing a user's email writing style to create a comprehensive style guide.\n\n## Your Task\nAnalyze the provided emails and create a DETAILED, ACTIONABLE style guide that another AI can use to write emails that are indistinguishable from emails the user would write themselves.\n\n## Requirements for Your Analysis\n\n1. **Be Specific and Quantified**\n   - Don't say \"tends to be concise\" - say \"averages X sentences per email\"\n   - Don't say \"often uses bullet points\" - say \"uses bullet points in X of Y emails\"\n\n2. **Include Multiple Annotated Examples**\n   - Provide at least 5 example emails from the analyzed set\n   - For each example, add a brief annotation explaining why it exemplifies the user's style\n\n3. **Document Anti-Patterns**\n   - Explicitly list phrases and patterns the user NEVER uses\n\n4. **Note Contextual Variations**\n   - How does their style shift for different contexts?\n\n5. **Capture Signature Phrases**\n   - What recurring phrases appear across multiple emails?\n\n## Required Output Structure\n\n# Email Writing Style Guide\n\n## Voice & Tone Profile\n**Overall Tone:** [description]\n**Formality Level:** [1-10 with description]\n**Warmth Level:** [1-10]\n**Directness:** [description]\n\n## Structural Patterns\n\n### Opening Lines\n[patterns with percentages]\n\n### Body Structure\n[paragraph length, formatting]\n\n### Closing Patterns\n[closings with percentages]\n\n## Language Patterns\n[word choices, contractions, sentence characteristics]\n\n## Signature Phrases\n[recurring expressions]\n\n## Few-Shot Examples\n\n### Example 1: [Category]\n```\n[actual email]\n```\n**Why this works:** [annotation]\n\n[4 more examples]\n\n## Anti-Patterns to Avoid\n[explicit list]\n\n---\n**Analysis metadata:** {{ $json.emails_count }} emails analyzed from {{ $json.date_range }}\n\n## Emails to Analyze\n{{ $json.emails_text }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 4000,
+          "temperature": 0.3
+        }
+      },
+      "id": "ai-analysis",
+      "name": "AI Tone Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2016,
+        -48
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "CJqdVmJ3kVvMHRk5",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare AI Analysis').first().json;\nconst aiResult = $input.first().json;\n\nconst tonePrompt = aiResult.text || aiResult.message?.content || '';\n\nconst issues = [];\n\nif (tonePrompt.length < 1500) {\n  issues.push('Tone prompt too brief - should be comprehensive');\n}\n\nconst requiredSections = ['Voice & Tone', 'Structural Patterns', 'Opening', 'Closing', 'Example'];\nfor (const section of requiredSections) {\n  if (!tonePrompt.includes(section)) {\n    issues.push(`Missing section: ${section}`);\n  }\n}\n\nconst exampleCount = (tonePrompt.match(/### Example \\d/g) || []).length;\nif (exampleCount < 3) {\n  issues.push(`Only ${exampleCount} examples found - need at least 3`);\n}\n\nconst formalityMatch = tonePrompt.match(/Formality Level:\\*?\\*?\\s*([\\d]+)/i);\nconst formality = formalityMatch ? formalityMatch[1] + '/10' : 'Not determined';\n\nconst toneMatch = tonePrompt.match(/Overall Tone:\\*?\\*?\\s*([^\\n]+)/i);\nconst overallTone = toneMatch ? toneMatch[1].trim() : 'Not determined';\n\nconst phrasesSection = tonePrompt.match(/Signature Phrases[\\s\\S]*?(?=##|$)/i);\nconst phrases = phrasesSection ? \n  (phrasesSection[0].match(/[\\u2022\\-\\*]\\s*['\"]([^'\"]+)['\"]/g) || []).slice(0, 5).map(p => p.replace(/[\\u2022\\-\\*\\s'\"]*/g, '')) \n  : [];\n\nreturn [{\n  json: {\n    success: issues.length === 0,\n    tone_prompt: tonePrompt,\n    emails_analyzed: prepared.emails_count,\n    date_range: prepared.date_range,\n    summary: {\n      formality_level: formality,\n      overall_tone: overallTone,\n      signature_phrases: phrases,\n      example_count: exampleCount\n    },\n    validation_issues: issues.length > 0 ? issues : null,\n    slack_user_id: prepared.slack_user_id\n  }\n}];"
+      },
+      "id": "validate-output",
+      "name": "Validate & Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE alfred.users\nSET preferences = jsonb_set(\n  jsonb_set(\n    jsonb_set(\n      jsonb_set(\n        preferences,\n        '{email_settings,tone_prompt}',\n        $1::jsonb\n      ),\n      '{email_settings,tone_last_updated}',\n      to_jsonb(NOW()::text)\n    ),\n    '{email_settings,tone_source}',\n    '\"analyzed\"'::jsonb\n  ),\n  '{email_settings,tone_emails_analyzed}',\n  $2::jsonb\n),\nupdated_at = NOW()\nWHERE slack_user_id = $3\nRETURNING slack_user_id, preferences->'email_settings' as email_settings;",
+        "options": {
+          "queryReplacement": "={{ [JSON.stringify($json.tone_prompt), $json.emails_analyzed, $json.slack_user_id] }}"
+        }
+      },
+      "id": "save-to-preferences",
+      "name": "Save to User Preferences",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2624,
+        112
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `• **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `• **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `• **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `• \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        112
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Google Auth": {
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth": {
+      "main": [
+        [
+          {
+            "node": "Prepare Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Fetch": {
+      "main": [
+        [
+          {
+            "node": "List Sent Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Sent Emails": {
+      "main": [
+        [
+          {
+            "node": "Extract Message IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Message IDs": {
+      "main": [
+        [
+          {
+            "node": "Fetch Email Contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Email Contents": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Ready for Analysis?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready for Analysis?": {
+      "main": [
+        [
+          {
+            "node": "AI Tone Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Enough Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Tone Analysis": {
+      "main": [
+        [
+          {
+            "node": "Validate & Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Format Output": {
+      "main": [
+        [
+          {
+            "node": "Save to User Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to User Preferences": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "27eb1cb0-b099-4967-a483-729b03469af0",
+  "activeVersionId": "27eb1cb0-b099-4967-a483-729b03469af0",
+  "versionCounter": 12,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-04T13:57:45.078Z",
+      "createdAt": "2026-02-04T13:57:45.078Z",
+      "role": "workflow:owner",
+      "workflowId": "LSlDQ7mxMjxUddfa",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-04T14:11:46.629Z",
+    "createdAt": "2026-02-04T14:11:27.926Z",
+    "versionId": "27eb1cb0-b099-4967-a483-729b03469af0",
+    "workflowId": "LSlDQ7mxMjxUddfa",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id"
+              },
+              {
+                "name": "mode"
+              },
+              {
+                "name": "count",
+                "type": "number"
+              },
+              {
+                "name": "message_ids"
+              }
+            ]
+          }
+        },
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          208,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "S8GWoOTCaSqyc5bj"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "scopes": "https://www.googleapis.com/auth/gmail.readonly"
+            }
+          },
+          "options": {}
+        },
+        "id": "get-auth",
+        "name": "Get Google Auth",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          432,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "auth-check",
+                "leftValue": "={{ $json.success }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "check-auth",
+        "name": "Check Auth",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          640,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "name": "error",
+                "value": "={{ $json.error || 'Google authentication failed' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "auth-failed",
+        "name": "Auth Failed",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          864,
+          464
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').first().json;\nconst auth = $input.first().json;\n\nconst mode = input.mode || 'recent';\nconst count = Math.min(input.count || 15, 25);\nconst messageIds = input.message_ids ? input.message_ids.split(',').map(id => id.trim()) : [];\n\nreturn [{\n  json: {\n    mode: mode,\n    count: count,\n    message_ids: messageIds,\n    access_token: auth.access_token,\n    user_email: auth.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+        },
+        "id": "prepare-fetch",
+        "name": "Prepare Fetch",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          864,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "in:sent"
+              },
+              {
+                "name": "maxResults",
+                "value": "={{ $json.count }}"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "list-sent-emails",
+        "name": "List Sent Emails",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1088,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepared = $('Prepare Fetch').first().json;\nconst listResult = $input.first().json;\n\nconst messages = listResult.messages || [];\nconst messageIds = messages.map(m => m.id);\n\nreturn [{\n  json: {\n    message_ids: messageIds,\n    count: messageIds.length,\n    access_token: prepared.access_token,\n    user_email: prepared.user_email,\n    slack_user_id: prepared.slack_user_id\n  }\n}];"
+        },
+        "id": "extract-message-ids",
+        "name": "Extract Message IDs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1312,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst messageIds = input.message_ids;\nconst accessToken = input.access_token;\n\nconst emails = [];\n\nfor (const messageId of messageIds) {\n  try {\n    const response = await fetch(\n      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,\n      {\n        headers: { 'Authorization': `Bearer ${accessToken}` }\n      }\n    );\n    \n    if (response.ok) {\n      const message = await response.json();\n      \n      const headers = message.payload?.headers || [];\n      const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n      \n      let body = '';\n      if (message.payload?.body?.data) {\n        body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n      } else if (message.payload?.parts) {\n        const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n        if (textPart?.body?.data) {\n          body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n        }\n      }\n      \n      const cleanBody = body\n        .split(/\\n--\\s*\\n/)[0]\n        .split(/\\nOn .* wrote:\\n/)[0]\n        .split(/\\n>\\s/)[0]\n        .trim();\n      \n      if (cleanBody.length > 50) {\n        emails.push({\n          to: getHeader('To'),\n          subject: getHeader('Subject'),\n          date: getHeader('Date'),\n          body: cleanBody.substring(0, 2000)\n        });\n      }\n    }\n  } catch (e) {\n    // Skip failed fetches\n  }\n}\n\nreturn [{\n  json: {\n    emails: emails,\n    count: emails.length,\n    user_email: input.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+        },
+        "id": "fetch-email-contents",
+        "name": "Fetch Email Contents",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst emails = input.emails;\n\nif (emails.length < 3) {\n  return [{\n    json: {\n      success: false,\n      error: `Only found ${emails.length} substantial sent emails. Need at least 3 emails to analyze writing style.`,\n      emails_found: emails.length\n    }\n  }];\n}\n\nlet emailsText = '';\nfor (let i = 0; i < emails.length; i++) {\n  const email = emails[i];\n  emailsText += `\\n---\\nEMAIL ${i + 1}\\nTo: ${email.to}\\nSubject: ${email.subject}\\nDate: ${email.date}\\n\\n${email.body}\\n---\\n`;\n}\n\nconst dates = emails.map(e => new Date(e.date)).filter(d => !isNaN(d));\nconst minDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();\nconst maxDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();\nconst dateRange = `${minDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${maxDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;\n\nreturn [{\n  json: {\n    ready: true,\n    emails_text: emailsText,\n    emails_count: emails.length,\n    date_range: dateRange,\n    user_email: input.user_email,\n    slack_user_id: input.slack_user_id\n  }\n}];"
+        },
+        "id": "prepare-analysis",
+        "name": "Prepare AI Analysis",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1744,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "ready-check",
+                "leftValue": "={{ $json.ready }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "check-ready",
+        "name": "Ready for Analysis?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1968,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "name": "error",
+                "value": "={{ $json.error }}",
+                "type": "string"
+              },
+              {
+                "name": "emails_found",
+                "value": "={{ $json.emails_found }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "not-enough-emails",
+        "name": "Not Enough Emails",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2192,
+          352
+        ]
+      },
+      {
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4o"
+          },
+          "messages": {
+            "values": [
+              {
+                "content": "=You are an expert writing coach analyzing a user's email writing style to create a comprehensive style guide.\n\n## Your Task\nAnalyze the provided emails and create a DETAILED, ACTIONABLE style guide that another AI can use to write emails that are indistinguishable from emails the user would write themselves.\n\n## Requirements for Your Analysis\n\n1. **Be Specific and Quantified**\n   - Don't say \"tends to be concise\" - say \"averages X sentences per email\"\n   - Don't say \"often uses bullet points\" - say \"uses bullet points in X of Y emails\"\n\n2. **Include Multiple Annotated Examples**\n   - Provide at least 5 example emails from the analyzed set\n   - For each example, add a brief annotation explaining why it exemplifies the user's style\n\n3. **Document Anti-Patterns**\n   - Explicitly list phrases and patterns the user NEVER uses\n\n4. **Note Contextual Variations**\n   - How does their style shift for different contexts?\n\n5. **Capture Signature Phrases**\n   - What recurring phrases appear across multiple emails?\n\n## Required Output Structure\n\n# Email Writing Style Guide\n\n## Voice & Tone Profile\n**Overall Tone:** [description]\n**Formality Level:** [1-10 with description]\n**Warmth Level:** [1-10]\n**Directness:** [description]\n\n## Structural Patterns\n\n### Opening Lines\n[patterns with percentages]\n\n### Body Structure\n[paragraph length, formatting]\n\n### Closing Patterns\n[closings with percentages]\n\n## Language Patterns\n[word choices, contractions, sentence characteristics]\n\n## Signature Phrases\n[recurring expressions]\n\n## Few-Shot Examples\n\n### Example 1: [Category]\n```\n[actual email]\n```\n**Why this works:** [annotation]\n\n[4 more examples]\n\n## Anti-Patterns to Avoid\n[explicit list]\n\n---\n**Analysis metadata:** {{ $json.emails_count }} emails analyzed from {{ $json.date_range }}\n\n## Emails to Analyze\n{{ $json.emails_text }}"
+              }
+            ]
+          },
+          "options": {
+            "maxTokens": 4000,
+            "temperature": 0.3
+          }
+        },
+        "id": "ai-analysis",
+        "name": "AI Tone Analysis",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.8,
+        "position": [
+          2016,
+          -48
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "CJqdVmJ3kVvMHRk5",
+            "name": "OpenAI API"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepared = $('Prepare AI Analysis').first().json;\nconst aiResult = $input.first().json;\n\nconst tonePrompt = aiResult.text || aiResult.message?.content || '';\n\nconst issues = [];\n\nif (tonePrompt.length < 1500) {\n  issues.push('Tone prompt too brief - should be comprehensive');\n}\n\nconst requiredSections = ['Voice & Tone', 'Structural Patterns', 'Opening', 'Closing', 'Example'];\nfor (const section of requiredSections) {\n  if (!tonePrompt.includes(section)) {\n    issues.push(`Missing section: ${section}`);\n  }\n}\n\nconst exampleCount = (tonePrompt.match(/### Example \\d/g) || []).length;\nif (exampleCount < 3) {\n  issues.push(`Only ${exampleCount} examples found - need at least 3`);\n}\n\nconst formalityMatch = tonePrompt.match(/Formality Level:\\*?\\*?\\s*([\\d]+)/i);\nconst formality = formalityMatch ? formalityMatch[1] + '/10' : 'Not determined';\n\nconst toneMatch = tonePrompt.match(/Overall Tone:\\*?\\*?\\s*([^\\n]+)/i);\nconst overallTone = toneMatch ? toneMatch[1].trim() : 'Not determined';\n\nconst phrasesSection = tonePrompt.match(/Signature Phrases[\\s\\S]*?(?=##|$)/i);\nconst phrases = phrasesSection ? \n  (phrasesSection[0].match(/[\\u2022\\-\\*]\\s*['\"]([^'\"]+)['\"]/g) || []).slice(0, 5).map(p => p.replace(/[\\u2022\\-\\*\\s'\"]*/g, '')) \n  : [];\n\nreturn [{\n  json: {\n    success: issues.length === 0,\n    tone_prompt: tonePrompt,\n    emails_analyzed: prepared.emails_count,\n    date_range: prepared.date_range,\n    summary: {\n      formality_level: formality,\n      overall_tone: overallTone,\n      signature_phrases: phrases,\n      example_count: exampleCount\n    },\n    validation_issues: issues.length > 0 ? issues : null,\n    slack_user_id: prepared.slack_user_id\n  }\n}];"
+        },
+        "id": "validate-output",
+        "name": "Validate & Format Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2400,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE alfred.users\nSET preferences = jsonb_set(\n  jsonb_set(\n    jsonb_set(\n      jsonb_set(\n        preferences,\n        '{email_settings,tone_prompt}',\n        $1::jsonb\n      ),\n      '{email_settings,tone_last_updated}',\n      to_jsonb(NOW()::text)\n    ),\n    '{email_settings,tone_source}',\n    '\"analyzed\"'::jsonb\n  ),\n  '{email_settings,tone_emails_analyzed}',\n  $2::jsonb\n),\nupdated_at = NOW()\nWHERE slack_user_id = $3\nRETURNING slack_user_id, preferences->'email_settings' as email_settings;",
+          "options": {
+            "queryReplacement": "={{ [JSON.stringify($json.tone_prompt), $json.emails_analyzed, $json.slack_user_id] }}"
+          }
+        },
+        "id": "save-to-preferences",
+        "name": "Save to User Preferences",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          2624,
+          112
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `• **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `• **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `• **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `• \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
+        },
+        "id": "format-response",
+        "name": "Format Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2848,
+          112
+        ]
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Google Auth": {
+        "main": [
+          [
+            {
+              "node": "Check Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Auth": {
+        "main": [
+          [
+            {
+              "node": "Prepare Fetch",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Fetch": {
+        "main": [
+          [
+            {
+              "node": "List Sent Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Sent Emails": {
+        "main": [
+          [
+            {
+              "node": "Extract Message IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Message IDs": {
+        "main": [
+          [
+            {
+              "node": "Fetch Email Contents",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Email Contents": {
+        "main": [
+          [
+            {
+              "node": "Prepare AI Analysis",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare AI Analysis": {
+        "main": [
+          [
+            {
+              "node": "Ready for Analysis?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ready for Analysis?": {
+        "main": [
+          [
+            {
+              "node": "AI Tone Analysis",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Not Enough Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Tone Analysis": {
+        "main": [
+          [
+            {
+              "node": "Validate & Format Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validate & Format Output": {
+        "main": [
+          [
+            {
+              "node": "Save to User Preferences",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save to User Preferences": {
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": "Version 27eb1cb0",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-04T14:11:46.622Z",
+        "id": 217,
+        "workflowId": "LSlDQ7mxMjxUddfa",
+        "versionId": "27eb1cb0-b099-4967-a483-729b03469af0",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

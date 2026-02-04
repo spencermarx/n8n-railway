@@ -1,0 +1,4 @@
+.env
+*.env
+google-key.json
+.DS_Store

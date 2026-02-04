@@ -1,0 +1,1962 @@
+{
+  "updatedAt": "2026-02-04T15:26:27.903Z",
+  "createdAt": "2026-02-03T12:36:28.340Z",
+  "id": "4o06kwV3LGoZjGY9",
+  "name": "📧 Tool | Gmail",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "query",
+              "type": "string"
+            },
+            {
+              "name": "message_id",
+              "type": "string"
+            },
+            {
+              "name": "to",
+              "type": "string"
+            },
+            {
+              "name": "subject",
+              "type": "string"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            },
+            {
+              "name": "cc",
+              "type": "string"
+            },
+            {
+              "name": "bcc",
+              "type": "string"
+            },
+            {
+              "name": "max_results",
+              "type": "string"
+            },
+            {
+              "name": "channel_id",
+              "type": "string"
+            },
+            {
+              "name": "thread_ts",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        470,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-context",
+      "name": "Merge Input Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        690,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $('Workflow Input').item.json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "user_email",
+              "name": "user_email",
+              "value": "={{ $json.user_email }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "query",
+              "name": "query",
+              "value": "={{ $('Workflow Input').item.json.query }}",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $('Workflow Input').item.json.message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "to",
+              "name": "to",
+              "value": "={{ $('Workflow Input').item.json.to }}",
+              "type": "string"
+            },
+            {
+              "id": "subject",
+              "name": "subject",
+              "value": "={{ $('Workflow Input').item.json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "body",
+              "name": "body",
+              "value": "={{ $('Workflow Input').item.json.body }}",
+              "type": "string"
+            },
+            {
+              "id": "cc",
+              "name": "cc",
+              "value": "={{ $('Workflow Input').item.json.cc }}",
+              "type": "string"
+            },
+            {
+              "id": "bcc",
+              "name": "bcc",
+              "value": "={{ $('Workflow Input').item.json.bcc }}",
+              "type": "string"
+            },
+            {
+              "id": "max_results",
+              "name": "max_results",
+              "value": "={{ $('Workflow Input').item.json.max_results }}",
+              "type": "string"
+            },
+            {
+              "id": "channel_id",
+              "name": "channel_id",
+              "value": "={{ $('Workflow Input').item.json.channel_id }}",
+              "type": "string"
+            },
+            {
+              "id": "thread_ts",
+              "name": "thread_ts",
+              "value": "={{ $('Workflow Input').item.json.thread_ts }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        910,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "condition-auth"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1130,
+        520
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "route-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1130,
+        300
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "list_messages",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "list_messages"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "get_message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "send_email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "send_email"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "list-messages",
+      "name": "List Messages API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1350,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.query || 'in:inbox' }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $json.max_results || '10' }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-list-messages",
+      "name": "Format List Messages",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1570,
+        100
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "list_messages",
+              "type": "string"
+            },
+            {
+              "id": "messages",
+              "name": "messages",
+              "value": "={{ $json.messages || [] }}",
+              "type": "array"
+            },
+            {
+              "id": "count",
+              "name": "count",
+              "value": "={{ ($json.messages || []).length }}",
+              "type": "number"
+            },
+            {
+              "id": "next_page_token",
+              "name": "next_page_token",
+              "value": "={{ $json.nextPageToken || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-message",
+      "name": "Get Message API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1350,
+        260
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.message_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "format",
+              "value": "full"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-get-message",
+      "name": "Format Get Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1570,
+        260
+      ],
+      "parameters": {
+        "jsCode": "const message = $input.first().json;\n\nconst headers = message.payload?.headers || [];\nconst getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n\nlet body = '';\nif (message.payload?.body?.data) {\n  body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n} else if (message.payload?.parts) {\n  const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n  if (textPart?.body?.data) {\n    body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_message',\n    message_id: message.id,\n    thread_id: message.threadId,\n    from: getHeader('From'),\n    to: getHeader('To'),\n    subject: getHeader('Subject'),\n    date: getHeader('Date'),\n    snippet: message.snippet,\n    body: body,\n    labels: message.labelIds || []\n  }\n}];"
+      }
+    },
+    {
+      "id": "build-email",
+      "name": "Build Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1570,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst routeData = $('Route by Action').first().json;\n\nconst to = routeData.to;\nconst subject = input.subject || routeData.subject;\nconst bodyPlain = input.body_plain || routeData.body;\nconst bodyHtml = input.body_html;\nconst cc = routeData.cc || '';\nconst bcc = routeData.bcc || '';\nconst accessToken = routeData.access_token;\n\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = 'To: ' + to + '\\n';\nif (cc) mimeMessage += 'Cc: ' + cc + '\\n';\nif (bcc) mimeMessage += 'Bcc: ' + bcc + '\\n';\nmimeMessage += 'Subject: ' + subject + '\\n';\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += 'Content-Type: multipart/alternative; boundary=\"' + boundary + '\"\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += bodyPlain + '\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\nmimeMessage += bodyHtml + '\\n\\n';\nmimeMessage += '--' + boundary + '--';\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    raw: encoded,\n    access_token: accessToken\n  }\n}];"
+      }
+    },
+    {
+      "id": "send-email",
+      "name": "Send Email API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1790,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "raw",
+              "value": "={{ $json.raw }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-send-email",
+      "name": "Format Send Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2010,
+        420
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "send_email",
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "name": "message_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "thread_id",
+              "name": "thread_id",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1350,
+        580
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: list_messages, get_message, send_email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-email",
+      "name": "Format Email",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1350,
+        420
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Jtx7KwKsLcD73Lz6"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "subject": "={{ $json.subject }}",
+            "body": "={{ $json.body }}",
+            "format": "={{ $json.to.toLowerCase().includes($json.user_email.toLowerCase()) ? 'html' : 'plain' }}",
+            "recipient_name": ""
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "lookup-user-for-approval",
+      "name": "Lookup User for Approval",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1570,
+        580
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, slack_user_id, preferences->'email_settings'->>'approval_expiry_minutes' as expiry_minutes FROM alfred.users WHERE slack_user_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [$('Workflow Input').item.json.slack_user_id] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "prepare-approval-payload",
+      "name": "Prepare Approval Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1790,
+        580
+      ],
+      "parameters": {
+        "jsCode": "const routeData = $('Route by Action').first().json;\nconst formatResult = $('Format Email').first().json;\nconst userResult = $input.first().json;\n\nreturn [{\n  json: {\n    action_type: 'email_send',\n    user_id: userResult.id,\n    slack_user_id: userResult.slack_user_id,\n    slack_channel_id: routeData.channel_id || '',\n    slack_thread_ts: routeData.thread_ts || '',\n    payload: {\n      to: routeData.to,\n      cc: routeData.cc || '',\n      bcc: routeData.bcc || '',\n      subject: formatResult.subject || routeData.subject,\n      body_plain: formatResult.body_plain || routeData.body,\n      body_html: formatResult.body_html || '',\n      user_email: routeData.user_email\n    },\n    expiry_minutes: parseInt(userResult.expiry_minutes) || 60\n  }\n}];"
+      }
+    },
+    {
+      "id": "call-approval-guard",
+      "name": "Call Approval Guard",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2010,
+        580
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1S0dhI1K4X0528Dy"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action_type": "={{ $json.action_type }}",
+            "user_id": "={{ $json.user_id }}",
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "slack_channel_id": "={{ $json.slack_channel_id }}",
+            "slack_thread_ts": "={{ $json.slack_thread_ts }}",
+            "payload": "={{ $json.payload }}",
+            "expiry_minutes": "={{ $json.expiry_minutes }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-approval-response",
+      "name": "Format Approval Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2230,
+        580
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "send_email",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "value": "pending_approval",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            },
+            {
+              "id": "pending_action_id",
+              "name": "pending_action_id",
+              "value": "={{ $json.pending_action_id }}",
+              "type": "string"
+            },
+            {
+              "id": "expires_at",
+              "name": "expires_at",
+              "value": "={{ $json.expires_at }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Google Auth": {
+      "main": [
+        [
+          {
+            "node": "Merge Input Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Input Context": {
+      "main": [
+        [
+          {
+            "node": "Check Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth Success": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "List Messages API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Message API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "send_email": [
+        [
+          {
+            "node": "Format Email",
+            "type": "send_email",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Messages API": {
+      "main": [
+        [
+          {
+            "node": "Format List Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Message API": {
+      "main": [
+        [
+          {
+            "node": "Format Get Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email API": {
+      "main": [
+        [
+          {
+            "node": "Format Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Lookup User for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup User for Approval": {
+      "main": [
+        [
+          {
+            "node": "Prepare Approval Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Approval Payload": {
+      "main": [
+        [
+          {
+            "node": "Call Approval Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Approval Guard": {
+      "main": [
+        [
+          {
+            "node": "Format Approval Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "266f607a-2108-4563-992e-f7efd77753f4",
+  "activeVersionId": "266f607a-2108-4563-992e-f7efd77753f4",
+  "versionCounter": 55,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-03T12:36:28.340Z",
+      "createdAt": "2026-02-03T12:36:28.340Z",
+      "role": "workflow:owner",
+      "workflowId": "4o06kwV3LGoZjGY9",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-04T15:26:27.910Z",
+    "createdAt": "2026-02-04T15:26:27.910Z",
+    "versionId": "266f607a-2108-4563-992e-f7efd77753f4",
+    "workflowId": "4o06kwV3LGoZjGY9",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "query",
+                "type": "string"
+              },
+              {
+                "name": "message_id",
+                "type": "string"
+              },
+              {
+                "name": "to",
+                "type": "string"
+              },
+              {
+                "name": "subject",
+                "type": "string"
+              },
+              {
+                "name": "body",
+                "type": "string"
+              },
+              {
+                "name": "cc",
+                "type": "string"
+              },
+              {
+                "name": "bcc",
+                "type": "string"
+              },
+              {
+                "name": "max_results",
+                "type": "string"
+              },
+              {
+                "name": "channel_id",
+                "type": "string"
+              },
+              {
+                "name": "thread_ts",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-auth",
+        "name": "Get Google Auth",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          470,
+          300
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "S8GWoOTCaSqyc5bj"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "scopes": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "merge-context",
+        "name": "Merge Input Context",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          690,
+          300
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "action",
+                "name": "action",
+                "value": "={{ $('Workflow Input').item.json.action }}",
+                "type": "string"
+              },
+              {
+                "id": "success",
+                "name": "auth_success",
+                "value": "={{ $json.success }}",
+                "type": "boolean"
+              },
+              {
+                "id": "access_token",
+                "name": "access_token",
+                "value": "={{ $json.access_token }}",
+                "type": "string"
+              },
+              {
+                "id": "user_email",
+                "name": "user_email",
+                "value": "={{ $json.user_email }}",
+                "type": "string"
+              },
+              {
+                "id": "error",
+                "name": "auth_error",
+                "value": "={{ $json.error }}",
+                "type": "string"
+              },
+              {
+                "id": "query",
+                "name": "query",
+                "value": "={{ $('Workflow Input').item.json.query }}",
+                "type": "string"
+              },
+              {
+                "id": "message_id",
+                "name": "message_id",
+                "value": "={{ $('Workflow Input').item.json.message_id }}",
+                "type": "string"
+              },
+              {
+                "id": "to",
+                "name": "to",
+                "value": "={{ $('Workflow Input').item.json.to }}",
+                "type": "string"
+              },
+              {
+                "id": "subject",
+                "name": "subject",
+                "value": "={{ $('Workflow Input').item.json.subject }}",
+                "type": "string"
+              },
+              {
+                "id": "body",
+                "name": "body",
+                "value": "={{ $('Workflow Input').item.json.body }}",
+                "type": "string"
+              },
+              {
+                "id": "cc",
+                "name": "cc",
+                "value": "={{ $('Workflow Input').item.json.cc }}",
+                "type": "string"
+              },
+              {
+                "id": "bcc",
+                "name": "bcc",
+                "value": "={{ $('Workflow Input').item.json.bcc }}",
+                "type": "string"
+              },
+              {
+                "id": "max_results",
+                "name": "max_results",
+                "value": "={{ $('Workflow Input').item.json.max_results }}",
+                "type": "string"
+              },
+              {
+                "id": "channel_id",
+                "name": "channel_id",
+                "value": "={{ $('Workflow Input').item.json.channel_id }}",
+                "type": "string"
+              },
+              {
+                "id": "thread_ts",
+                "name": "thread_ts",
+                "value": "={{ $('Workflow Input').item.json.thread_ts }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "check-auth",
+        "name": "Check Auth Success",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          910,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "leftValue": "={{ $json.auth_success }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                },
+                "id": "condition-auth"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "auth-failed",
+        "name": "Auth Failed Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1130,
+          520
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          1130,
+          300
+        ],
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "list_messages",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "list_messages"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "get_message",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "get_message"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "send_email",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "send_email"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "list-messages",
+        "name": "List Messages API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1350,
+          100
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "={{ $json.query || 'in:inbox' }}"
+              },
+              {
+                "name": "maxResults",
+                "value": "={{ $json.max_results || '10' }}"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-list-messages",
+        "name": "Format List Messages",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1570,
+          100
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "list_messages",
+                "type": "string"
+              },
+              {
+                "id": "messages",
+                "name": "messages",
+                "value": "={{ $json.messages || [] }}",
+                "type": "array"
+              },
+              {
+                "id": "count",
+                "name": "count",
+                "value": "={{ ($json.messages || []).length }}",
+                "type": "number"
+              },
+              {
+                "id": "next_page_token",
+                "name": "next_page_token",
+                "value": "={{ $json.nextPageToken || null }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "get-message",
+        "name": "Get Message API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1350,
+          260
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.message_id }}",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "format",
+                "value": "full"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-get-message",
+        "name": "Format Get Message",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1570,
+          260
+        ],
+        "parameters": {
+          "jsCode": "const message = $input.first().json;\n\nconst headers = message.payload?.headers || [];\nconst getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n\nlet body = '';\nif (message.payload?.body?.data) {\n  body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n} else if (message.payload?.parts) {\n  const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n  if (textPart?.body?.data) {\n    body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_message',\n    message_id: message.id,\n    thread_id: message.threadId,\n    from: getHeader('From'),\n    to: getHeader('To'),\n    subject: getHeader('Subject'),\n    date: getHeader('Date'),\n    snippet: message.snippet,\n    body: body,\n    labels: message.labelIds || []\n  }\n}];"
+        }
+      },
+      {
+        "id": "build-email",
+        "name": "Build Email",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1570,
+          420
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst routeData = $('Route by Action').first().json;\n\nconst to = routeData.to;\nconst subject = input.subject || routeData.subject;\nconst bodyPlain = input.body_plain || routeData.body;\nconst bodyHtml = input.body_html;\nconst cc = routeData.cc || '';\nconst bcc = routeData.bcc || '';\nconst accessToken = routeData.access_token;\n\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = 'To: ' + to + '\\n';\nif (cc) mimeMessage += 'Cc: ' + cc + '\\n';\nif (bcc) mimeMessage += 'Bcc: ' + bcc + '\\n';\nmimeMessage += 'Subject: ' + subject + '\\n';\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += 'Content-Type: multipart/alternative; boundary=\"' + boundary + '\"\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += bodyPlain + '\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\nmimeMessage += bodyHtml + '\\n\\n';\nmimeMessage += '--' + boundary + '--';\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    raw: encoded,\n    access_token: accessToken\n  }\n}];"
+        }
+      },
+      {
+        "id": "send-email",
+        "name": "Send Email API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1790,
+          420
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "raw",
+                "value": "={{ $json.raw }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-send-email",
+        "name": "Format Send Email",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2010,
+          420
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "send_email",
+                "type": "string"
+              },
+              {
+                "id": "message_id",
+                "name": "message_id",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "thread_id",
+                "name": "thread_id",
+                "value": "={{ $json.threadId }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1350,
+          580
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $json.action }}'. Valid actions: list_messages, get_message, send_email",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-email",
+        "name": "Format Email",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1350,
+          420
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "Jtx7KwKsLcD73Lz6"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "subject": "={{ $json.subject }}",
+              "body": "={{ $json.body }}",
+              "format": "={{ $json.to.toLowerCase().includes($json.user_email.toLowerCase()) ? 'html' : 'plain' }}",
+              "recipient_name": ""
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "lookup-user-for-approval",
+        "name": "Lookup User for Approval",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1570,
+          580
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, slack_user_id, preferences->'email_settings'->>'approval_expiry_minutes' as expiry_minutes FROM alfred.users WHERE slack_user_id = $1;",
+          "options": {
+            "queryReplacement": "={{ [$('Workflow Input').item.json.slack_user_id] }}"
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "prepare-approval-payload",
+        "name": "Prepare Approval Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1790,
+          580
+        ],
+        "parameters": {
+          "jsCode": "const routeData = $('Route by Action').first().json;\nconst formatResult = $('Format Email').first().json;\nconst userResult = $input.first().json;\n\nreturn [{\n  json: {\n    action_type: 'email_send',\n    user_id: userResult.id,\n    slack_user_id: userResult.slack_user_id,\n    slack_channel_id: routeData.channel_id || '',\n    slack_thread_ts: routeData.thread_ts || '',\n    payload: {\n      to: routeData.to,\n      cc: routeData.cc || '',\n      bcc: routeData.bcc || '',\n      subject: formatResult.subject || routeData.subject,\n      body_plain: formatResult.body_plain || routeData.body,\n      body_html: formatResult.body_html || '',\n      user_email: routeData.user_email\n    },\n    expiry_minutes: parseInt(userResult.expiry_minutes) || 60\n  }\n}];"
+        }
+      },
+      {
+        "id": "call-approval-guard",
+        "name": "Call Approval Guard",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2010,
+          580
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1S0dhI1K4X0528Dy"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action_type": "={{ $json.action_type }}",
+              "user_id": "={{ $json.user_id }}",
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "slack_channel_id": "={{ $json.slack_channel_id }}",
+              "slack_thread_ts": "={{ $json.slack_thread_ts }}",
+              "payload": "={{ $json.payload }}",
+              "expiry_minutes": "={{ $json.expiry_minutes }}"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-approval-response",
+        "name": "Format Approval Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2230,
+          580
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "send_email",
+                "type": "string"
+              },
+              {
+                "id": "status",
+                "name": "status",
+                "value": "pending_approval",
+                "type": "string"
+              },
+              {
+                "id": "message",
+                "name": "message",
+                "value": "={{ $json.message }}",
+                "type": "string"
+              },
+              {
+                "id": "pending_action_id",
+                "name": "pending_action_id",
+                "value": "={{ $json.pending_action_id }}",
+                "type": "string"
+              },
+              {
+                "id": "expires_at",
+                "name": "expires_at",
+                "value": "={{ $json.expires_at }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Google Auth": {
+        "main": [
+          [
+            {
+              "node": "Merge Input Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Input Context": {
+        "main": [
+          [
+            {
+              "node": "Check Auth Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Auth Success": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "List Messages API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Message API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Format Email",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ],
+        "send_email": [
+          [
+            {
+              "node": "Format Email",
+              "type": "send_email",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Messages API": {
+        "main": [
+          [
+            {
+              "node": "Format List Messages",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Message API": {
+        "main": [
+          [
+            {
+              "node": "Format Get Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Email API": {
+        "main": [
+          [
+            {
+              "node": "Format Send Email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Email": {
+        "main": [
+          [
+            {
+              "node": "Build Email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Email": {
+        "main": [
+          [
+            {
+              "node": "Lookup User for Approval",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Lookup User for Approval": {
+        "main": [
+          [
+            {
+              "node": "Prepare Approval Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Approval Payload": {
+        "main": [
+          [
+            {
+              "node": "Call Approval Guard",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Call Approval Guard": {
+        "main": [
+          [
+            {
+              "node": "Format Approval Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-04T15:26:28.092Z",
+        "id": 244,
+        "workflowId": "4o06kwV3LGoZjGY9",
+        "versionId": "266f607a-2108-4563-992e-f7efd77753f4",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

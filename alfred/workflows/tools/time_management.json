@@ -1,0 +1,596 @@
+{
+  "updatedAt": "2026-02-04T11:50:23.708Z",
+  "createdAt": "2026-02-04T11:02:37.704Z",
+  "id": "fhb6nIQYs2L1YPVm",
+  "name": "🕐 Tool | Time Management",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mHy10eByiuuyr8U1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "get-user-tz",
+      "name": "Get User Timezone",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Trigger').first().json;\nconst userLookup = $input.first().json;\n\n// Get user timezone\nlet timezone = 'America/Chicago'; // default\nif (userLookup.found && userLookup.user?.preferences?.timezone) {\n  timezone = userLookup.user.preferences.timezone;\n} else if (userLookup.preferences?.timezone) {\n  timezone = userLookup.preferences.timezone;\n}\n\n// Parse params - handle string, object, null, or empty\nlet params = {};\nif (input.params) {\n  if (typeof input.params === 'string') {\n    try {\n      params = input.params.trim() ? JSON.parse(input.params) : {};\n    } catch (e) {\n      params = {};\n    }\n  } else if (typeof input.params === 'object') {\n    params = input.params;\n  }\n}\n\nreturn [{\n  json: {\n    action: input.action,\n    params: params,\n    slack_user_id: input.slack_user_id,\n    timezone: timezone\n  }\n}];"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_context",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_window",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "evaluate_events",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "route-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { timezone } = $input.first().json;\n\nconst now = new Date();\n\n// Helper to format time in user's timezone\nfunction formatInTimezone(date, tz) {\n  return {\n    iso: date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T'),\n    formatted: date.toLocaleString('en-US', {\n      timeZone: tz,\n      weekday: 'long',\n      year: 'numeric',\n      month: 'long',\n      day: 'numeric',\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    }),\n    time_only: date.toLocaleString('en-US', {\n      timeZone: tz,\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    }),\n    date_only: date.toLocaleString('en-US', {\n      timeZone: tz,\n      weekday: 'long',\n      month: 'long',\n      day: 'numeric',\n      year: 'numeric'\n    })\n  };\n}\n\n// Get timezone offset for ISO format\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\nconst offset = getTimezoneOffset(now, timezone);\nconst nowFormatted = formatInTimezone(now, timezone);\n\n// Calculate today's boundaries in user's timezone\nconst todayStart = new Date(now.toLocaleString('en-US', { timeZone: timezone }));\ntodayStart.setHours(0, 0, 0, 0);\nconst todayEnd = new Date(todayStart);\ntodayEnd.setHours(23, 59, 59, 999);\n\nconst tomorrowStart = new Date(todayStart);\ntomorrowStart.setDate(tomorrowStart.getDate() + 1);\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_context',\n    timezone: timezone,\n    timezone_offset: offset,\n    now: {\n      iso: `${nowFormatted.iso}${offset}`,\n      formatted: nowFormatted.formatted,\n      time_only: nowFormatted.time_only,\n      date_only: nowFormatted.date_only\n    },\n    today: {\n      start_iso: `${formatInTimezone(todayStart, timezone).iso}${offset}`,\n      end_iso: `${formatInTimezone(todayEnd, timezone).iso}${offset}`\n    },\n    tomorrow: {\n      start_iso: `${formatInTimezone(tomorrowStart, timezone).iso}${offset}`\n    }\n  }\n}];"
+      },
+      "id": "action-get-context",
+      "name": "Action: Get Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { timezone, params } = $input.first().json;\n\nconst now = new Date();\n\n// Get parameters with defaults\nconst offsetStartMin = params.offset_start_minutes ?? 0;\nconst offsetEndMin = params.offset_end_minutes ?? 60;\n\n// Helper to get timezone offset\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\n// Helper to format in timezone\nfunction toISOInTimezone(date, tz) {\n  const formatted = date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');\n  return `${formatted}${getTimezoneOffset(date, tz)}`;\n}\n\nfunction toReadable(date, tz) {\n  return date.toLocaleString('en-US', {\n    timeZone: tz,\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Calculate window\nconst windowStart = new Date(now.getTime() + offsetStartMin * 60000);\nconst windowEnd = new Date(now.getTime() + offsetEndMin * 60000);\n\nconst offset = getTimezoneOffset(now, timezone);\n\n// Generate description\nlet description = '';\nif (offsetStartMin === 0) {\n  description = `now to ${offsetEndMin} minutes from now`;\n} else {\n  description = `${offsetStartMin} to ${offsetEndMin} minutes from now`;\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_window',\n    timezone: timezone,\n    timezone_offset: offset,\n    current_time: {\n      iso: toISOInTimezone(now, timezone),\n      formatted: toReadable(now, timezone)\n    },\n    window: {\n      start_iso: toISOInTimezone(windowStart, timezone),\n      end_iso: toISOInTimezone(windowEnd, timezone),\n      start_formatted: toReadable(windowStart, timezone),\n      end_formatted: toReadable(windowEnd, timezone),\n      description: description\n    },\n    params_used: {\n      offset_start_minutes: offsetStartMin,\n      offset_end_minutes: offsetEndMin\n    }\n  }\n}];"
+      },
+      "id": "action-get-window",
+      "name": "Action: Get Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { timezone, params } = $input.first().json;\n\nconst events = params.events || [];\nconst condition = params.condition || 'status'; // status, starts_in_window, ongoing\nconst windowStart = params.window_start_iso ? new Date(params.window_start_iso) : null;\nconst windowEnd = params.window_end_iso ? new Date(params.window_end_iso) : null;\n\nconst now = new Date();\n\n// Helper functions\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\nfunction toISOInTimezone(date, tz) {\n  const formatted = date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');\n  return `${formatted}${getTimezoneOffset(date, tz)}`;\n}\n\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  \n  if (hours > 0 && minutes > 0) {\n    return `${hours}h ${minutes}m`;\n  } else if (hours > 0) {\n    return `${hours}h`;\n  } else {\n    return `${minutes}m`;\n  }\n}\n\nfunction toReadableTime(date, tz) {\n  return date.toLocaleString('en-US', {\n    timeZone: tz,\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Evaluate each event\nconst evaluatedEvents = events.map(event => {\n  // Parse event times\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) {\n    return {\n      event_id: event.id,\n      summary: event.summary,\n      status: 'unknown',\n      error: 'No start time found'\n    };\n  }\n  \n  // Determine status\n  let status = 'unknown';\n  let timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntilStart = startTime - now;\n    timeInfo = {\n      starts_in: formatDuration(msUntilStart),\n      starts_in_minutes: Math.round(msUntilStart / 60000),\n      start_time_formatted: toReadableTime(startTime, timezone)\n    };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    const msElapsed = now - startTime;\n    const msRemaining = endTime - now;\n    timeInfo = {\n      time_elapsed: formatDuration(msElapsed),\n      time_elapsed_minutes: Math.round(msElapsed / 60000),\n      time_remaining: formatDuration(msRemaining),\n      time_remaining_minutes: Math.round(msRemaining / 60000),\n      started_at_formatted: toReadableTime(startTime, timezone),\n      ends_at_formatted: toReadableTime(endTime, timezone)\n    };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = {\n      ended_ago: formatDuration(msAgo),\n      ended_ago_minutes: Math.round(msAgo / 60000)\n    };\n  }\n  \n  // Check if starts in window\n  let startsInWindow = false;\n  if (windowStart && windowEnd && startTime) {\n    startsInWindow = startTime >= windowStart && startTime <= windowEnd;\n  }\n  \n  return {\n    event_id: event.id,\n    summary: event.summary,\n    description: event.description,\n    status: status,\n    starts_in_window: startsInWindow,\n    start_iso: startTime ? toISOInTimezone(startTime, timezone) : null,\n    end_iso: endTime ? toISOInTimezone(endTime, timezone) : null,\n    ...timeInfo\n  };\n});\n\n// Group by status\nconst upcoming = evaluatedEvents.filter(e => e.status === 'upcoming');\nconst ongoing = evaluatedEvents.filter(e => e.status === 'ongoing');\nconst past = evaluatedEvents.filter(e => e.status === 'past');\nconst startsInWindow = evaluatedEvents.filter(e => e.starts_in_window);\n\nreturn [{\n  json: {\n    success: true,\n    action: 'evaluate_events',\n    timezone: timezone,\n    current_time: {\n      iso: toISOInTimezone(now, timezone),\n      formatted: toReadableTime(now, timezone)\n    },\n    window: windowStart && windowEnd ? {\n      start_iso: toISOInTimezone(windowStart, timezone),\n      end_iso: toISOInTimezone(windowEnd, timezone)\n    } : null,\n    summary: {\n      total_events: events.length,\n      upcoming_count: upcoming.length,\n      ongoing_count: ongoing.length,\n      past_count: past.length,\n      starts_in_window_count: startsInWindow.length\n    },\n    events_starting_in_window: startsInWindow,\n    ongoing_events: ongoing,\n    upcoming_events: upcoming,\n    past_events: past,\n    all_evaluated: evaluatedEvents\n  }\n}];"
+      },
+      "id": "action-evaluate-events",
+      "name": "Action: Evaluate Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { action } = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Unknown action: ${action}`,\n    available_actions: ['get_context', 'get_window', 'evaluate_events']\n  }\n}];"
+      },
+      "id": "action-unknown",
+      "name": "Unknown Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        640
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get User Timezone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Timezone": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Action: Get Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Action: Get Window",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Action: Evaluate Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unknown Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
+  "activeVersionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
+  "versionCounter": 9,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-04T11:02:37.704Z",
+      "createdAt": "2026-02-04T11:02:37.704Z",
+      "role": "workflow:owner",
+      "workflowId": "fhb6nIQYs2L1YPVm",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-04T11:50:23.714Z",
+    "createdAt": "2026-02-04T11:50:23.714Z",
+    "versionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
+    "workflowId": "fhb6nIQYs2L1YPVm",
+    "nodes": [
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "id": "trigger",
+        "name": "Trigger",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          256,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "mHy10eByiuuyr8U1"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}"
+            }
+          },
+          "options": {}
+        },
+        "id": "get-user-tz",
+        "name": "Get User Timezone",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $('Trigger').first().json;\nconst userLookup = $input.first().json;\n\n// Get user timezone\nlet timezone = 'America/Chicago'; // default\nif (userLookup.found && userLookup.user?.preferences?.timezone) {\n  timezone = userLookup.user.preferences.timezone;\n} else if (userLookup.preferences?.timezone) {\n  timezone = userLookup.preferences.timezone;\n}\n\n// Parse params - handle string, object, null, or empty\nlet params = {};\nif (input.params) {\n  if (typeof input.params === 'string') {\n    try {\n      params = input.params.trim() ? JSON.parse(input.params) : {};\n    } catch (e) {\n      params = {};\n    }\n  } else if (typeof input.params === 'object') {\n    params = input.params;\n  }\n}\n\nreturn [{\n  json: {\n    action: input.action,\n    params: params,\n    slack_user_id: input.slack_user_id,\n    timezone: timezone\n  }\n}];"
+        },
+        "id": "prepare-context",
+        "name": "Prepare Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          704,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "get_context",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "get_window",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "evaluate_events",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        },
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          928,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const { timezone } = $input.first().json;\n\nconst now = new Date();\n\n// Helper to format time in user's timezone\nfunction formatInTimezone(date, tz) {\n  return {\n    iso: date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T'),\n    formatted: date.toLocaleString('en-US', {\n      timeZone: tz,\n      weekday: 'long',\n      year: 'numeric',\n      month: 'long',\n      day: 'numeric',\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    }),\n    time_only: date.toLocaleString('en-US', {\n      timeZone: tz,\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    }),\n    date_only: date.toLocaleString('en-US', {\n      timeZone: tz,\n      weekday: 'long',\n      month: 'long',\n      day: 'numeric',\n      year: 'numeric'\n    })\n  };\n}\n\n// Get timezone offset for ISO format\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\nconst offset = getTimezoneOffset(now, timezone);\nconst nowFormatted = formatInTimezone(now, timezone);\n\n// Calculate today's boundaries in user's timezone\nconst todayStart = new Date(now.toLocaleString('en-US', { timeZone: timezone }));\ntodayStart.setHours(0, 0, 0, 0);\nconst todayEnd = new Date(todayStart);\ntodayEnd.setHours(23, 59, 59, 999);\n\nconst tomorrowStart = new Date(todayStart);\ntomorrowStart.setDate(tomorrowStart.getDate() + 1);\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_context',\n    timezone: timezone,\n    timezone_offset: offset,\n    now: {\n      iso: `${nowFormatted.iso}${offset}`,\n      formatted: nowFormatted.formatted,\n      time_only: nowFormatted.time_only,\n      date_only: nowFormatted.date_only\n    },\n    today: {\n      start_iso: `${formatInTimezone(todayStart, timezone).iso}${offset}`,\n      end_iso: `${formatInTimezone(todayEnd, timezone).iso}${offset}`\n    },\n    tomorrow: {\n      start_iso: `${formatInTimezone(tomorrowStart, timezone).iso}${offset}`\n    }\n  }\n}];"
+        },
+        "id": "action-get-context",
+        "name": "Action: Get Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          160
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const { timezone, params } = $input.first().json;\n\nconst now = new Date();\n\n// Get parameters with defaults\nconst offsetStartMin = params.offset_start_minutes ?? 0;\nconst offsetEndMin = params.offset_end_minutes ?? 60;\n\n// Helper to get timezone offset\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\n// Helper to format in timezone\nfunction toISOInTimezone(date, tz) {\n  const formatted = date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');\n  return `${formatted}${getTimezoneOffset(date, tz)}`;\n}\n\nfunction toReadable(date, tz) {\n  return date.toLocaleString('en-US', {\n    timeZone: tz,\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Calculate window\nconst windowStart = new Date(now.getTime() + offsetStartMin * 60000);\nconst windowEnd = new Date(now.getTime() + offsetEndMin * 60000);\n\nconst offset = getTimezoneOffset(now, timezone);\n\n// Generate description\nlet description = '';\nif (offsetStartMin === 0) {\n  description = `now to ${offsetEndMin} minutes from now`;\n} else {\n  description = `${offsetStartMin} to ${offsetEndMin} minutes from now`;\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_window',\n    timezone: timezone,\n    timezone_offset: offset,\n    current_time: {\n      iso: toISOInTimezone(now, timezone),\n      formatted: toReadable(now, timezone)\n    },\n    window: {\n      start_iso: toISOInTimezone(windowStart, timezone),\n      end_iso: toISOInTimezone(windowEnd, timezone),\n      start_formatted: toReadable(windowStart, timezone),\n      end_formatted: toReadable(windowEnd, timezone),\n      description: description\n    },\n    params_used: {\n      offset_start_minutes: offsetStartMin,\n      offset_end_minutes: offsetEndMin\n    }\n  }\n}];"
+        },
+        "id": "action-get-window",
+        "name": "Action: Get Window",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const { timezone, params } = $input.first().json;\n\nconst events = params.events || [];\nconst condition = params.condition || 'status'; // status, starts_in_window, ongoing\nconst windowStart = params.window_start_iso ? new Date(params.window_start_iso) : null;\nconst windowEnd = params.window_end_iso ? new Date(params.window_end_iso) : null;\n\nconst now = new Date();\n\n// Helper functions\nfunction getTimezoneOffset(date, tz) {\n  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));\n  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));\n  const offsetMinutes = (tzDate - utcDate) / 60000;\n  const sign = offsetMinutes >= 0 ? '+' : '-';\n  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');\n  const mins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');\n  return `${sign}${hours}:${mins}`;\n}\n\nfunction toISOInTimezone(date, tz) {\n  const formatted = date.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');\n  return `${formatted}${getTimezoneOffset(date, tz)}`;\n}\n\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  \n  if (hours > 0 && minutes > 0) {\n    return `${hours}h ${minutes}m`;\n  } else if (hours > 0) {\n    return `${hours}h`;\n  } else {\n    return `${minutes}m`;\n  }\n}\n\nfunction toReadableTime(date, tz) {\n  return date.toLocaleString('en-US', {\n    timeZone: tz,\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Evaluate each event\nconst evaluatedEvents = events.map(event => {\n  // Parse event times\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) {\n    return {\n      event_id: event.id,\n      summary: event.summary,\n      status: 'unknown',\n      error: 'No start time found'\n    };\n  }\n  \n  // Determine status\n  let status = 'unknown';\n  let timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntilStart = startTime - now;\n    timeInfo = {\n      starts_in: formatDuration(msUntilStart),\n      starts_in_minutes: Math.round(msUntilStart / 60000),\n      start_time_formatted: toReadableTime(startTime, timezone)\n    };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    const msElapsed = now - startTime;\n    const msRemaining = endTime - now;\n    timeInfo = {\n      time_elapsed: formatDuration(msElapsed),\n      time_elapsed_minutes: Math.round(msElapsed / 60000),\n      time_remaining: formatDuration(msRemaining),\n      time_remaining_minutes: Math.round(msRemaining / 60000),\n      started_at_formatted: toReadableTime(startTime, timezone),\n      ends_at_formatted: toReadableTime(endTime, timezone)\n    };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = {\n      ended_ago: formatDuration(msAgo),\n      ended_ago_minutes: Math.round(msAgo / 60000)\n    };\n  }\n  \n  // Check if starts in window\n  let startsInWindow = false;\n  if (windowStart && windowEnd && startTime) {\n    startsInWindow = startTime >= windowStart && startTime <= windowEnd;\n  }\n  \n  return {\n    event_id: event.id,\n    summary: event.summary,\n    description: event.description,\n    status: status,\n    starts_in_window: startsInWindow,\n    start_iso: startTime ? toISOInTimezone(startTime, timezone) : null,\n    end_iso: endTime ? toISOInTimezone(endTime, timezone) : null,\n    ...timeInfo\n  };\n});\n\n// Group by status\nconst upcoming = evaluatedEvents.filter(e => e.status === 'upcoming');\nconst ongoing = evaluatedEvents.filter(e => e.status === 'ongoing');\nconst past = evaluatedEvents.filter(e => e.status === 'past');\nconst startsInWindow = evaluatedEvents.filter(e => e.starts_in_window);\n\nreturn [{\n  json: {\n    success: true,\n    action: 'evaluate_events',\n    timezone: timezone,\n    current_time: {\n      iso: toISOInTimezone(now, timezone),\n      formatted: toReadableTime(now, timezone)\n    },\n    window: windowStart && windowEnd ? {\n      start_iso: toISOInTimezone(windowStart, timezone),\n      end_iso: toISOInTimezone(windowEnd, timezone)\n    } : null,\n    summary: {\n      total_events: events.length,\n      upcoming_count: upcoming.length,\n      ongoing_count: ongoing.length,\n      past_count: past.length,\n      starts_in_window_count: startsInWindow.length\n    },\n    events_starting_in_window: startsInWindow,\n    ongoing_events: ongoing,\n    upcoming_events: upcoming,\n    past_events: past,\n    all_evaluated: evaluatedEvents\n  }\n}];"
+        },
+        "id": "action-evaluate-events",
+        "name": "Action: Evaluate Events",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const { action } = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Unknown action: ${action}`,\n    available_actions: ['get_context', 'get_window', 'evaluate_events']\n  }\n}];"
+        },
+        "id": "action-unknown",
+        "name": "Unknown Action",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          640
+        ]
+      }
+    ],
+    "connections": {
+      "Trigger": {
+        "main": [
+          [
+            {
+              "node": "Get User Timezone",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get User Timezone": {
+        "main": [
+          [
+            {
+              "node": "Prepare Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Context": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "Action: Get Context",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Action: Get Window",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Action: Evaluate Events",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Unknown Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-04T11:50:23.840Z",
+        "id": 193,
+        "workflowId": "fhb6nIQYs2L1YPVm",
+        "versionId": "2cca7131-8380-4340-8e9c-55ad7a536ce1",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

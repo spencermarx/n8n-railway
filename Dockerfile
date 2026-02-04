@@ -15,5 +15,8 @@ WORKDIR /data
 EXPOSE $PORT
 
 ENV N8N_USER_ID=root
+ENV NODE_FUNCTION_ALLOW_BUILTIN=crypto
+# Allow Code nodes to access environment variables via $env
+ENV N8N_BLOCK_ENV_ACCESS_IN_NODE=false
 
 CMD export N8N_PORT=$PORT && n8n start

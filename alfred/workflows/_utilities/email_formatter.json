@@ -1,0 +1,450 @@
+{
+  "updatedAt": "2026-02-04T13:05:06.871Z",
+  "createdAt": "2026-02-04T12:38:47.808Z",
+  "id": "Jtx7KwKsLcD73Lz6",
+  "name": "🎨 Utility | Email Formatter",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "subject",
+              "type": "string"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            },
+            {
+              "name": "format",
+              "type": "string"
+            },
+            {
+              "name": "recipient_name",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "route-format",
+      "name": "Route by Format",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        470,
+        300
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "html",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "html"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.format }}",
+                    "rightValue": "plain",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "plain"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "format-html",
+      "name": "Format as Rich HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toRichHTML(text) {\n  if (!text) return '';\n  let html = text;\n  \n  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  \n  html = html.replace(/^### (.+)$/gm, '<h3 style=\"color: #1a1a1a; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0;\">$1</h3>');\n  html = html.replace(/^## (.+)$/gm, '<h2 style=\"color: #1a1a1a; font-size: 18px; font-weight: 600; margin: 24px 0 12px 0;\">$1</h2>');\n  html = html.replace(/^# (.+)$/gm, '<h1 style=\"color: #1a1a1a; font-size: 22px; font-weight: 700; margin: 28px 0 14px 0;\">$1</h1>');\n  \n  html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');\n  html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');\n  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');\n  html = html.replace(/_(.+?)_/g, '<em>$1</em>');\n  \n  const lines = html.split('\\n');\n  let inList = false;\n  const processedLines = [];\n  \n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    const bulletMatch = line.match(/^\\s*[\\-\\*\\u2022]\\s+(.+)$/);\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)]\\s+(.+)$/);\n    \n    if (bulletMatch) {\n      if (!inList) {\n        processedLines.push('<ul style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ul';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${bulletMatch[1]}</li>`);\n    } else if (numberedMatch) {\n      if (!inList) {\n        processedLines.push('<ol style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ol';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${numberedMatch[2]}</li>`);\n    } else {\n      if (inList) {\n        processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n        inList = false;\n      }\n      if (line.trim() === '') {\n        processedLines.push('<br/>');\n      } else if (!line.startsWith('<h')) {\n        processedLines.push(`<p style=\"margin: 10px 0; color: #333; line-height: 1.6;\">${line}</p>`);\n      } else {\n        processedLines.push(line);\n      }\n    }\n  }\n  \n  if (inList) {\n    processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n  }\n  \n  return processedLines.join('\\n');\n}\n\nconst formattedBody = toRichHTML(body);\n\nconst htmlEmail = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n  <table role=\"presentation\" style=\"width: 100%; border-collapse: collapse;\">\n    <tr>\n      <td style=\"padding: 40px 20px;\">\n        <table role=\"presentation\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);\">\n          <tr>\n            <td style=\"padding: 32px 40px;\">\n              ${recipientName ? `<p style=\"margin: 0 0 20px 0; color: #333;\">Hi ${recipientName},</p>` : ''}\n              ${formattedBody}\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'html',\n    subject: subject,\n    body_html: htmlEmail,\n    body_plain: body\n  }\n}];"
+      }
+    },
+    {
+      "id": "format-plain",
+      "name": "Format as Clean Plain Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toCleanPlainText(text) {\n  if (!text) return '';\n  let clean = text;\n  \n  clean = clean.replace(/\\*\\*(.+?)\\*\\*/g, '$1');\n  clean = clean.replace(/\\*(.+?)\\*/g, '$1');\n  clean = clean.replace(/__(.+?)__/g, '$1');\n  clean = clean.replace(/_(.+?)_/g, '$1');\n  \n  clean = clean.replace(/^#{1,3}\\s+(.+)$/gm, '\\n$1\\n' + '-'.repeat(40));\n  \n  clean = clean.replace(/^\\s*[\\-\\*]\\s+/gm, '• ');\n  \n  clean = clean.replace(/\\n{3,}/g, '\\n\\n');\n  \n  return clean.trim();\n}\n\nconst formattedBody = toCleanPlainText(body);\nconst greeting = recipientName ? `Hi ${recipientName},\\n\\n` : '';\nconst plainEmail = greeting + formattedBody;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'plain',\n    subject: subject,\n    body_html: null,\n    body_plain: plainEmail\n  }\n}];"
+      }
+    },
+    {
+      "id": "default-html",
+      "name": "Default to HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        500
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toRichHTML(text) {\n  if (!text) return '';\n  let html = text;\n  \n  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  \n  html = html.replace(/^### (.+)$/gm, '<h3 style=\"color: #1a1a1a; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0;\">$1</h3>');\n  html = html.replace(/^## (.+)$/gm, '<h2 style=\"color: #1a1a1a; font-size: 18px; font-weight: 600; margin: 24px 0 12px 0;\">$1</h2>');\n  html = html.replace(/^# (.+)$/gm, '<h1 style=\"color: #1a1a1a; font-size: 22px; font-weight: 700; margin: 28px 0 14px 0;\">$1</h1>');\n  \n  html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');\n  html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');\n  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');\n  html = html.replace(/_(.+?)_/g, '<em>$1</em>');\n  \n  const lines = html.split('\\n');\n  let inList = false;\n  const processedLines = [];\n  \n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    const bulletMatch = line.match(/^\\s*[\\-\\*\\u2022]\\s+(.+)$/);\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)]\\s+(.+)$/);\n    \n    if (bulletMatch) {\n      if (!inList) {\n        processedLines.push('<ul style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ul';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${bulletMatch[1]}</li>`);\n    } else if (numberedMatch) {\n      if (!inList) {\n        processedLines.push('<ol style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ol';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${numberedMatch[2]}</li>`);\n    } else {\n      if (inList) {\n        processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n        inList = false;\n      }\n      if (line.trim() === '') {\n        processedLines.push('<br/>');\n      } else if (!line.startsWith('<h')) {\n        processedLines.push(`<p style=\"margin: 10px 0; color: #333; line-height: 1.6;\">${line}</p>`);\n      } else {\n        processedLines.push(line);\n      }\n    }\n  }\n  \n  if (inList) {\n    processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n  }\n  \n  return processedLines.join('\\n');\n}\n\nconst formattedBody = toRichHTML(body);\n\nconst htmlEmail = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n  <table role=\"presentation\" style=\"width: 100%; border-collapse: collapse;\">\n    <tr>\n      <td style=\"padding: 40px 20px;\">\n        <table role=\"presentation\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);\">\n          <tr>\n            <td style=\"padding: 32px 40px;\">\n              ${recipientName ? `<p style=\"margin: 0 0 20px 0; color: #333;\">Hi ${recipientName},</p>` : ''}\n              ${formattedBody}\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'html',\n    subject: subject,\n    body_html: htmlEmail,\n    body_plain: body\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Route by Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Format": {
+      "main": [
+        [
+          {
+            "node": "Format as Rich HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format as Clean Plain Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Default to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "6d2b415a-90fe-4e2b-bff6-4c2f0cc1f6bd",
+  "activeVersionId": "6d2b415a-90fe-4e2b-bff6-4c2f0cc1f6bd",
+  "versionCounter": 5,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-04T12:38:47.808Z",
+      "createdAt": "2026-02-04T12:38:47.808Z",
+      "role": "workflow:owner",
+      "workflowId": "Jtx7KwKsLcD73Lz6",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-04T12:38:47.835Z",
+    "createdAt": "2026-02-04T12:38:47.835Z",
+    "versionId": "6d2b415a-90fe-4e2b-bff6-4c2f0cc1f6bd",
+    "workflowId": "Jtx7KwKsLcD73Lz6",
+    "nodes": [
+      {
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "subject",
+                "type": "string"
+              },
+              {
+                "name": "body",
+                "type": "string"
+              },
+              {
+                "name": "format",
+                "type": "string"
+              },
+              {
+                "name": "recipient_name",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "route-format",
+        "name": "Route by Format",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          470,
+          300
+        ],
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.format }}",
+                      "rightValue": "html",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "html"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.format }}",
+                      "rightValue": "plain",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "plain"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "format-html",
+        "name": "Format as Rich HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          690,
+          180
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toRichHTML(text) {\n  if (!text) return '';\n  let html = text;\n  \n  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  \n  html = html.replace(/^### (.+)$/gm, '<h3 style=\"color: #1a1a1a; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0;\">$1</h3>');\n  html = html.replace(/^## (.+)$/gm, '<h2 style=\"color: #1a1a1a; font-size: 18px; font-weight: 600; margin: 24px 0 12px 0;\">$1</h2>');\n  html = html.replace(/^# (.+)$/gm, '<h1 style=\"color: #1a1a1a; font-size: 22px; font-weight: 700; margin: 28px 0 14px 0;\">$1</h1>');\n  \n  html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');\n  html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');\n  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');\n  html = html.replace(/_(.+?)_/g, '<em>$1</em>');\n  \n  const lines = html.split('\\n');\n  let inList = false;\n  const processedLines = [];\n  \n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    const bulletMatch = line.match(/^\\s*[\\-\\*\\u2022]\\s+(.+)$/);\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)]\\s+(.+)$/);\n    \n    if (bulletMatch) {\n      if (!inList) {\n        processedLines.push('<ul style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ul';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${bulletMatch[1]}</li>`);\n    } else if (numberedMatch) {\n      if (!inList) {\n        processedLines.push('<ol style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ol';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${numberedMatch[2]}</li>`);\n    } else {\n      if (inList) {\n        processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n        inList = false;\n      }\n      if (line.trim() === '') {\n        processedLines.push('<br/>');\n      } else if (!line.startsWith('<h')) {\n        processedLines.push(`<p style=\"margin: 10px 0; color: #333; line-height: 1.6;\">${line}</p>`);\n      } else {\n        processedLines.push(line);\n      }\n    }\n  }\n  \n  if (inList) {\n    processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n  }\n  \n  return processedLines.join('\\n');\n}\n\nconst formattedBody = toRichHTML(body);\n\nconst htmlEmail = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n  <table role=\"presentation\" style=\"width: 100%; border-collapse: collapse;\">\n    <tr>\n      <td style=\"padding: 40px 20px;\">\n        <table role=\"presentation\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);\">\n          <tr>\n            <td style=\"padding: 32px 40px;\">\n              ${recipientName ? `<p style=\"margin: 0 0 20px 0; color: #333;\">Hi ${recipientName},</p>` : ''}\n              ${formattedBody}\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'html',\n    subject: subject,\n    body_html: htmlEmail,\n    body_plain: body\n  }\n}];"
+        }
+      },
+      {
+        "id": "format-plain",
+        "name": "Format as Clean Plain Text",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          690,
+          340
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toCleanPlainText(text) {\n  if (!text) return '';\n  let clean = text;\n  \n  clean = clean.replace(/\\*\\*(.+?)\\*\\*/g, '$1');\n  clean = clean.replace(/\\*(.+?)\\*/g, '$1');\n  clean = clean.replace(/__(.+?)__/g, '$1');\n  clean = clean.replace(/_(.+?)_/g, '$1');\n  \n  clean = clean.replace(/^#{1,3}\\s+(.+)$/gm, '\\n$1\\n' + '-'.repeat(40));\n  \n  clean = clean.replace(/^\\s*[\\-\\*]\\s+/gm, '• ');\n  \n  clean = clean.replace(/\\n{3,}/g, '\\n\\n');\n  \n  return clean.trim();\n}\n\nconst formattedBody = toCleanPlainText(body);\nconst greeting = recipientName ? `Hi ${recipientName},\\n\\n` : '';\nconst plainEmail = greeting + formattedBody;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'plain',\n    subject: subject,\n    body_html: null,\n    body_plain: plainEmail\n  }\n}];"
+        }
+      },
+      {
+        "id": "default-html",
+        "name": "Default to HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          690,
+          500
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst subject = input.subject || '';\nconst body = input.body || '';\nconst recipientName = input.recipient_name || '';\n\nfunction toRichHTML(text) {\n  if (!text) return '';\n  let html = text;\n  \n  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  \n  html = html.replace(/^### (.+)$/gm, '<h3 style=\"color: #1a1a1a; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0;\">$1</h3>');\n  html = html.replace(/^## (.+)$/gm, '<h2 style=\"color: #1a1a1a; font-size: 18px; font-weight: 600; margin: 24px 0 12px 0;\">$1</h2>');\n  html = html.replace(/^# (.+)$/gm, '<h1 style=\"color: #1a1a1a; font-size: 22px; font-weight: 700; margin: 28px 0 14px 0;\">$1</h1>');\n  \n  html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');\n  html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');\n  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');\n  html = html.replace(/_(.+?)_/g, '<em>$1</em>');\n  \n  const lines = html.split('\\n');\n  let inList = false;\n  const processedLines = [];\n  \n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    const bulletMatch = line.match(/^\\s*[\\-\\*\\u2022]\\s+(.+)$/);\n    const numberedMatch = line.match(/^\\s*(\\d+)[.)]\\s+(.+)$/);\n    \n    if (bulletMatch) {\n      if (!inList) {\n        processedLines.push('<ul style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ul';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${bulletMatch[1]}</li>`);\n    } else if (numberedMatch) {\n      if (!inList) {\n        processedLines.push('<ol style=\"margin: 12px 0; padding-left: 24px;\">');\n        inList = 'ol';\n      }\n      processedLines.push(`<li style=\"margin: 6px 0; color: #333;\">${numberedMatch[2]}</li>`);\n    } else {\n      if (inList) {\n        processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n        inList = false;\n      }\n      if (line.trim() === '') {\n        processedLines.push('<br/>');\n      } else if (!line.startsWith('<h')) {\n        processedLines.push(`<p style=\"margin: 10px 0; color: #333; line-height: 1.6;\">${line}</p>`);\n      } else {\n        processedLines.push(line);\n      }\n    }\n  }\n  \n  if (inList) {\n    processedLines.push(inList === 'ul' ? '</ul>' : '</ol>');\n  }\n  \n  return processedLines.join('\\n');\n}\n\nconst formattedBody = toRichHTML(body);\n\nconst htmlEmail = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n  <table role=\"presentation\" style=\"width: 100%; border-collapse: collapse;\">\n    <tr>\n      <td style=\"padding: 40px 20px;\">\n        <table role=\"presentation\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);\">\n          <tr>\n            <td style=\"padding: 32px 40px;\">\n              ${recipientName ? `<p style=\"margin: 0 0 20px 0; color: #333;\">Hi ${recipientName},</p>` : ''}\n              ${formattedBody}\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    success: true,\n    format: 'html',\n    subject: subject,\n    body_html: htmlEmail,\n    body_plain: body\n  }\n}];"
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Route by Format",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Format": {
+        "main": [
+          [
+            {
+              "node": "Format as Rich HTML",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Format as Clean Plain Text",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Default to HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-04T12:40:26.054Z",
+        "id": 202,
+        "workflowId": "Jtx7KwKsLcD73Lz6",
+        "versionId": "6d2b415a-90fe-4e2b-bff6-4c2f0cc1f6bd",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

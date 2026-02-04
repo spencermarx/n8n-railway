@@ -1,0 +1,1720 @@
+{
+  "updatedAt": "2026-02-03T22:42:41.879Z",
+  "createdAt": "2026-02-03T12:37:39.325Z",
+  "id": "tWgJgDHdIHBhCOr0",
+  "name": "📊 Tool | Google Sheets",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "spreadsheet_id",
+              "type": "string"
+            },
+            {
+              "name": "range",
+              "type": "string"
+            },
+            {
+              "name": "values",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "sheet_name",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        470,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/spreadsheets"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "condition-auth"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1020,
+        580
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "route-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1020,
+        300
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "read_range",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "read_range"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "write_range",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "write_range"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "append_rows",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "append_rows"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "create_spreadsheet",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "create_spreadsheet"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "read-range",
+      "name": "Read Range API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        60
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-read-range",
+      "name": "Format Read Range",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1350,
+        60
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "read_range",
+              "type": "string"
+            },
+            {
+              "id": "range",
+              "name": "range",
+              "value": "={{ $json.range }}",
+              "type": "string"
+            },
+            {
+              "id": "values",
+              "name": "values",
+              "value": "={{ $json.values || [] }}",
+              "type": "array"
+            },
+            {
+              "id": "row_count",
+              "name": "row_count",
+              "value": "={{ ($json.values || []).length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "write-range",
+      "name": "Write Range API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        200
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "values",
+              "value": "={{ JSON.parse($json.values) }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-write-range",
+      "name": "Format Write Range",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1350,
+        200
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "write_range",
+              "type": "string"
+            },
+            {
+              "id": "updated_range",
+              "name": "updated_range",
+              "value": "={{ $json.updatedRange }}",
+              "type": "string"
+            },
+            {
+              "id": "updated_rows",
+              "name": "updated_rows",
+              "value": "={{ $json.updatedRows }}",
+              "type": "number"
+            },
+            {
+              "id": "updated_columns",
+              "name": "updated_columns",
+              "value": "={{ $json.updatedColumns }}",
+              "type": "number"
+            },
+            {
+              "id": "updated_cells",
+              "name": "updated_cells",
+              "value": "={{ $json.updatedCells }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "append-rows",
+      "name": "Append Rows API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        340
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}:append",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "values",
+              "value": "={{ JSON.parse($json.values) }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-append-rows",
+      "name": "Format Append Rows",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1350,
+        340
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "append_rows",
+              "type": "string"
+            },
+            {
+              "id": "updated_range",
+              "name": "updated_range",
+              "value": "={{ $json.updates?.updatedRange }}",
+              "type": "string"
+            },
+            {
+              "id": "appended_rows",
+              "name": "appended_rows",
+              "value": "={{ $json.updates?.updatedRows }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "create-spreadsheet",
+      "name": "Create Spreadsheet API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "={{ { title: $json.title || 'Untitled Spreadsheet' } }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-create-spreadsheet",
+      "name": "Format Create Spreadsheet",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1350,
+        480
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_spreadsheet",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.properties?.title }}",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_url",
+              "name": "spreadsheet_url",
+              "value": "={{ $json.spreadsheetUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1240,
+        640
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: read_range, write_range, append_rows, create_spreadsheet",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-context",
+      "name": "Merge Input Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $('Workflow Input').item.json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "user_email",
+              "name": "user_email",
+              "value": "={{ $json.user_email }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $('Workflow Input').item.json.spreadsheet_id }}",
+              "type": "string"
+            },
+            {
+              "id": "range",
+              "name": "range",
+              "value": "={{ $('Workflow Input').item.json.range }}",
+              "type": "string"
+            },
+            {
+              "id": "values",
+              "name": "values",
+              "value": "={{ $('Workflow Input').item.json.values }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Workflow Input').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_name",
+              "name": "sheet_name",
+              "value": "={{ $('Workflow Input').item.json.sheet_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth Success": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Read Range API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Range API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Rows API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Spreadsheet API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Range API": {
+      "main": [
+        [
+          {
+            "node": "Format Read Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Range API": {
+      "main": [
+        [
+          {
+            "node": "Format Write Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Rows API": {
+      "main": [
+        [
+          {
+            "node": "Format Append Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Spreadsheet API": {
+      "main": [
+        [
+          {
+            "node": "Format Create Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Google Auth": {
+      "main": [
+        [
+          {
+            "node": "Merge Input Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Input Context": {
+      "main": [
+        [
+          {
+            "node": "Check Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "01d117a9-1b07-4909-a7a6-f7ec90667235",
+  "activeVersionId": "01d117a9-1b07-4909-a7a6-f7ec90667235",
+  "versionCounter": 21,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-03T12:37:39.325Z",
+      "createdAt": "2026-02-03T12:37:39.325Z",
+      "role": "workflow:owner",
+      "workflowId": "tWgJgDHdIHBhCOr0",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-03T22:42:41.879Z",
+    "createdAt": "2026-02-03T22:42:41.879Z",
+    "versionId": "01d117a9-1b07-4909-a7a6-f7ec90667235",
+    "workflowId": "tWgJgDHdIHBhCOr0",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "spreadsheet_id",
+                "type": "string"
+              },
+              {
+                "name": "range",
+                "type": "string"
+              },
+              {
+                "name": "values",
+                "type": "string"
+              },
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "name": "sheet_name",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-auth",
+        "name": "Get Google Auth",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          470,
+          300
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "S8GWoOTCaSqyc5bj"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "scopes": "https://www.googleapis.com/auth/spreadsheets"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "check-auth",
+        "name": "Check Auth Success",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          800,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "leftValue": "={{ $json.auth_success }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                },
+                "id": "condition-auth"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "auth-failed",
+        "name": "Auth Failed Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1020,
+          580
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          1020,
+          300
+        ],
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "read_range",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "read_range"
+              },
+              {
+                "conditions": {
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "write_range",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "write_range"
+              },
+              {
+                "conditions": {
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "append_rows",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "append_rows"
+              },
+              {
+                "conditions": {
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "create_spreadsheet",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "create_spreadsheet"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "read-range",
+        "name": "Read Range API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1240,
+          60
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-read-range",
+        "name": "Format Read Range",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1350,
+          60
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "read_range",
+                "type": "string"
+              },
+              {
+                "id": "range",
+                "name": "range",
+                "value": "={{ $json.range }}",
+                "type": "string"
+              },
+              {
+                "id": "values",
+                "name": "values",
+                "value": "={{ $json.values || [] }}",
+                "type": "array"
+              },
+              {
+                "id": "row_count",
+                "name": "row_count",
+                "value": "={{ ($json.values || []).length }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "write-range",
+        "name": "Write Range API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1240,
+          200
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "USER_ENTERED"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "values",
+                "value": "={{ JSON.parse($json.values) }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-write-range",
+        "name": "Format Write Range",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1350,
+          200
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "write_range",
+                "type": "string"
+              },
+              {
+                "id": "updated_range",
+                "name": "updated_range",
+                "value": "={{ $json.updatedRange }}",
+                "type": "string"
+              },
+              {
+                "id": "updated_rows",
+                "name": "updated_rows",
+                "value": "={{ $json.updatedRows }}",
+                "type": "number"
+              },
+              {
+                "id": "updated_columns",
+                "name": "updated_columns",
+                "value": "={{ $json.updatedColumns }}",
+                "type": "number"
+              },
+              {
+                "id": "updated_cells",
+                "name": "updated_cells",
+                "value": "={{ $json.updatedCells }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "append-rows",
+        "name": "Append Rows API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1240,
+          340
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}:append",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "USER_ENTERED"
+              },
+              {
+                "name": "insertDataOption",
+                "value": "INSERT_ROWS"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "values",
+                "value": "={{ JSON.parse($json.values) }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-append-rows",
+        "name": "Format Append Rows",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1350,
+          340
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "append_rows",
+                "type": "string"
+              },
+              {
+                "id": "updated_range",
+                "name": "updated_range",
+                "value": "={{ $json.updates?.updatedRange }}",
+                "type": "string"
+              },
+              {
+                "id": "appended_rows",
+                "name": "appended_rows",
+                "value": "={{ $json.updates?.updatedRows }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "create-spreadsheet",
+        "name": "Create Spreadsheet API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1240,
+          480
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "properties",
+                "value": "={{ { title: $json.title || 'Untitled Spreadsheet' } }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-create-spreadsheet",
+        "name": "Format Create Spreadsheet",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1350,
+          480
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "create_spreadsheet",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $json.properties?.title }}",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_url",
+                "name": "spreadsheet_url",
+                "value": "={{ $json.spreadsheetUrl }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1240,
+          640
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $json.action }}'. Valid actions: read_range, write_range, append_rows, create_spreadsheet",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "merge-context",
+        "name": "Merge Input Context",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          580,
+          300
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "action",
+                "name": "action",
+                "value": "={{ $('Workflow Input').item.json.action }}",
+                "type": "string"
+              },
+              {
+                "id": "success",
+                "name": "auth_success",
+                "value": "={{ $json.success }}",
+                "type": "boolean"
+              },
+              {
+                "id": "access_token",
+                "name": "access_token",
+                "value": "={{ $json.access_token }}",
+                "type": "string"
+              },
+              {
+                "id": "user_email",
+                "name": "user_email",
+                "value": "={{ $json.user_email }}",
+                "type": "string"
+              },
+              {
+                "id": "error",
+                "name": "auth_error",
+                "value": "={{ $json.error }}",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $('Workflow Input').item.json.spreadsheet_id }}",
+                "type": "string"
+              },
+              {
+                "id": "range",
+                "name": "range",
+                "value": "={{ $('Workflow Input').item.json.range }}",
+                "type": "string"
+              },
+              {
+                "id": "values",
+                "name": "values",
+                "value": "={{ $('Workflow Input').item.json.values }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $('Workflow Input').item.json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "sheet_name",
+                "name": "sheet_name",
+                "value": "={{ $('Workflow Input').item.json.sheet_name }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Auth Success": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "Read Range API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Write Range API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Append Rows API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Create Spreadsheet API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Range API": {
+        "main": [
+          [
+            {
+              "node": "Format Read Range",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Range API": {
+        "main": [
+          [
+            {
+              "node": "Format Write Range",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Append Rows API": {
+        "main": [
+          [
+            {
+              "node": "Format Append Rows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Spreadsheet API": {
+        "main": [
+          [
+            {
+              "node": "Format Create Spreadsheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Google Auth": {
+        "main": [
+          [
+            {
+              "node": "Merge Input Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Input Context": {
+        "main": [
+          [
+            {
+              "node": "Check Auth Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-03T22:42:41.992Z",
+        "id": 133,
+        "workflowId": "tWgJgDHdIHBhCOr0",
+        "versionId": "01d117a9-1b07-4909-a7a6-f7ec90667235",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

@@ -1,0 +1,1986 @@
+{
+  "updatedAt": "2026-02-03T22:52:09.264Z",
+  "createdAt": "2026-02-03T18:21:25.523Z",
+  "id": "DIr3sLVyRlkgm4lu",
+  "name": "👤 Tool | User Management",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "role",
+              "type": "string"
+            },
+            {
+              "name": "timezone_override",
+              "type": "string"
+            },
+            {
+              "name": "requesting_user_id",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "check-admin",
+      "name": "Check Requester is Admin",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        470,
+        300
+      ],
+      "parameters": {
+        "operation": "select",
+        "schema": "alfred",
+        "table": "users",
+        "returnAll": false,
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "slack_user_id",
+              "value": "={{ $json.requesting_user_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "verify-admin",
+      "name": "Verify Admin Permission",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        690,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.role }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "admin-check"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "not-admin-error",
+      "name": "Not Admin Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        910,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "Only administrators can manage users. Your current role does not have this permission.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "route-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        910,
+        180
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "update-check",
+                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                    "rightValue": "update_user",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "update_user"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "create-check",
+                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                    "rightValue": "create_user",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "create_user"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "list-check",
+                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                    "rightValue": "list_users",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "list_users"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "fetch-slack-user",
+      "name": "Fetch Slack User Info",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1130,
+        60
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "info",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Workflow Input').item.json.slack_user_id }}"
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "id": "check-user-exists",
+      "name": "Check User Already Exists",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1350,
+        60
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT CASE WHEN EXISTS (SELECT 1 FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}') THEN true ELSE false END as user_exists, u.* FROM (SELECT 1) dummy LEFT JOIN alfred.users u ON u.slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}'",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "handle-empty-check",
+      "name": "Handle Empty Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1570,
+        60
+      ],
+      "parameters": {
+        "jsCode": "const queryResult = $json;\nconst slackUser = $('Fetch Slack User Info').item.json;\nconst userExists = queryResult.user_exists === true;\n\nreturn [{\n  json: {\n    userExists: userExists,\n    existingUser: userExists ? {\n      id: queryResult.id,\n      slack_user_id: queryResult.slack_user_id,\n      slack_username: queryResult.slack_username,\n      email: queryResult.email,\n      role: queryResult.role\n    } : null,\n    slackUser: slackUser\n  }\n}];"
+      }
+    },
+    {
+      "id": "user-exists-check",
+      "name": "User Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1790,
+        60
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.userExists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "exists-check"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "user-already-exists",
+      "name": "User Already Exists",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2010,
+        -60
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=User {{ $json.slackUser.real_name }} ({{ $('Workflow Input').item.json.slack_user_id }}) already exists in the system.",
+              "type": "string"
+            },
+            {
+              "id": "existing_user",
+              "name": "existing_user",
+              "value": "={{ { slack_username: $json.existingUser.slack_username, email: $json.existingUser.email, role: $json.existingUser.role } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-user-data",
+      "name": "Prepare User Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2010,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Workflow Input').item.json;\nconst slackUser = $json.slackUser;\nconst slackUsername = slackUser.name || slackUser.real_name?.toLowerCase().replace(/\\s+/g, '') || 'unknown';\nconst email = slackUser.profile?.email || '';\nconst slackTimezone = slackUser.tz || 'UTC';\nconst timezone = input.timezone_override || slackTimezone;\n\nlet role = 'member';\nif (input.role === 'admin') role = 'admin';\nelse if (input.role === 'guest') role = 'guest';\n\nlet googleAuthMethod = 'none';\nlet googleCalendarCredId = null;\nlet gmailCredId = null;\nlet googleDocsCredId = null;\n\nif (email.endsWith('@aclarify.com')) {\n  googleAuthMethod = 'service_account';\n  googleCalendarCredId = 'yBNZEWLXitD9cSiU';\n  gmailCredId = 'v2wjW0tm9a1TxnZP';\n  googleDocsCredId = 'yBNZEWLXitD9cSiU';\n}\n\nconst calendarIds = email ? [email] : [];\nconst preferences = {\n  timezone: timezone,\n  daily_briefing: true,\n  briefing_time: '08:15',\n  personality: 'alfred',\n  verbosity: 'concise',\n  proactive_notifications: true\n};\n\nreturn [{\n  json: {\n    slack_user_id: input.slack_user_id,\n    slack_username: slackUsername,\n    display_name: slackUser.real_name || slackUser.profile?.real_name || slackUsername,\n    email: email,\n    role: role,\n    google_auth_method: googleAuthMethod,\n    google_calendar_credential_id: googleCalendarCredId,\n    gmail_credential_id: gmailCredId,\n    google_docs_credential_id: googleDocsCredId,\n    calendar_ids: calendarIds,\n    preferences: preferences,\n    slack_timezone: slackTimezone,\n    timezone_used: timezone,\n    timezone_was_overridden: !!input.timezone_override\n  }\n}];"
+      }
+    },
+    {
+      "id": "insert-user",
+      "name": "Insert User",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2230,
+        180
+      ],
+      "parameters": {
+        "operation": "insert",
+        "schema": "alfred",
+        "table": "users",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "slack_username": "={{ $json.slack_username }}",
+            "email": "={{ $json.email }}",
+            "role": "={{ $json.role }}",
+            "google_auth_method": "={{ $json.google_auth_method }}",
+            "google_calendar_credential_id": "={{ $json.google_calendar_credential_id }}",
+            "gmail_credential_id": "={{ $json.gmail_credential_id }}",
+            "google_docs_credential_id": "={{ $json.google_docs_credential_id }}",
+            "calendar_ids": "={{ JSON.stringify($json.calendar_ids) }}",
+            "preferences": "={{ JSON.stringify($json.preferences) }}",
+            "is_active": true
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "format-create-result",
+      "name": "Format Create Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2450,
+        180
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_user",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $('Prepare User Data').item.json.slack_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "slack_username",
+              "name": "slack_username",
+              "value": "={{ $('Prepare User Data').item.json.slack_username }}",
+              "type": "string"
+            },
+            {
+              "id": "display_name",
+              "name": "display_name",
+              "value": "={{ $('Prepare User Data').item.json.display_name }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "value": "={{ $('Prepare User Data').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "role",
+              "name": "role",
+              "value": "={{ $('Prepare User Data').item.json.role }}",
+              "type": "string"
+            },
+            {
+              "id": "timezone",
+              "name": "timezone",
+              "value": "={{ $('Prepare User Data').item.json.timezone_used }}",
+              "type": "string"
+            },
+            {
+              "id": "google_auth_status",
+              "name": "google_auth_status",
+              "value": "={{ $('Prepare User Data').item.json.google_auth_method === 'service_account' ? 'Configured (Aclarify service account)' : 'Pending setup (user needs to connect Google account)' }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=Successfully created user {{ $('Prepare User Data').item.json.display_name }} ({{ $('Prepare User Data').item.json.email }}) as {{ $('Prepare User Data').item.json.role }}. Timezone: {{ $('Prepare User Data').item.json.timezone_used }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "list-all-users",
+      "name": "List All Users",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1130,
+        300
+      ],
+      "parameters": {
+        "operation": "select",
+        "schema": "alfred",
+        "table": "users",
+        "returnAll": true,
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "format-list-result",
+      "name": "Format List Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const users = $input.all().map(item => item.json);\nconst formattedUsers = users.map(u => ({\n  id: u.id,\n  slack_user_id: u.slack_user_id,\n  slack_username: u.slack_username,\n  email: u.email,\n  role: u.role,\n  timezone: u.preferences?.timezone || 'Unknown',\n  google_auth: u.google_auth_method || 'none',\n  is_active: u.is_active\n}));\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list_users',\n    total_users: users.length,\n    users: formattedUsers\n  }\n}];"
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1130,
+        420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: create_user, update_user, list_users",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-slack-update",
+      "name": "Fetch Slack for Update",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1130,
+        580
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "info",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Workflow Input').item.json.slack_user_id }}"
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "id": "prepare-update",
+      "name": "Prepare Update Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        580
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Workflow Input').item.json;\nconst slackUser = $json;\nconst requestingUserId = input.requesting_user_id;\nconst targetUserId = input.slack_user_id;\n\nconst slackUsername = slackUser.name || slackUser.real_name?.toLowerCase().replace(/\\s+/g, '') || 'unknown';\nconst email = slackUser.profile?.email || '';\nconst slackTimezone = slackUser.tz || 'UTC';\nconst timezone = input.timezone_override || slackTimezone;\n\nlet requestedRole = input.role || null;\nlet rbacError = null;\n\nif (requestedRole) {\n  const validRoles = ['admin', 'member', 'guest'];\n  if (!validRoles.includes(requestedRole)) {\n    rbacError = `Invalid role '${requestedRole}'. Valid roles: ${validRoles.join(', ')}`;\n  }\n  \n  if (requestingUserId === targetUserId) {\n    rbacError = 'RBAC violation: Administrators cannot change their own role. This prevents accidental lockout. Another admin must make this change.';\n    requestedRole = null;\n  }\n}\n\nlet googleAuthMethod = 'none';\nlet googleCalendarCredId = null;\nlet gmailCredId = null;\nlet googleDocsCredId = null;\n\nif (email.endsWith('@aclarify.com')) {\n  googleAuthMethod = 'service_account';\n  googleCalendarCredId = 'yBNZEWLXitD9cSiU';\n  gmailCredId = 'v2wjW0tm9a1TxnZP';\n  googleDocsCredId = 'yBNZEWLXitD9cSiU';\n}\n\nconst calendarIds = email ? [email] : [];\n\nreturn [{\n  json: {\n    rbac_error: rbacError,\n    has_rbac_error: !!rbacError,\n    slack_user_id: targetUserId,\n    slack_username: slackUsername,\n    display_name: slackUser.real_name || slackUser.profile?.real_name || slackUsername,\n    email: email,\n    role: requestedRole,\n    google_auth_method: googleAuthMethod,\n    google_calendar_credential_id: googleCalendarCredId,\n    gmail_credential_id: gmailCredId,\n    google_docs_credential_id: googleDocsCredId,\n    calendar_ids: calendarIds,\n    timezone: timezone,\n    requesting_user_id: requestingUserId,\n    role_change_attempted: !!input.role,\n    role_change_blocked: !!rbacError\n  }\n}];"
+      }
+    },
+    {
+      "id": "check-rbac-error",
+      "name": "Check RBAC Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1570,
+        580
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has_rbac_error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "rbac-check"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rbac-error-response",
+      "name": "RBAC Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1790,
+        460
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.rbac_error }}",
+              "type": "string"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "update_user",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $json.slack_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "role_change_blocked",
+              "name": "role_change_blocked",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "update-user-db",
+      "name": "Update User DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1790,
+        700
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE alfred.users SET slack_username = '{{ $json.slack_username }}', email = '{{ $json.email }}', google_auth_method = '{{ $json.google_auth_method }}', google_calendar_credential_id = {{ $json.google_calendar_credential_id ? \"'\" + $json.google_calendar_credential_id + \"'\" : 'NULL' }}, gmail_credential_id = {{ $json.gmail_credential_id ? \"'\" + $json.gmail_credential_id + \"'\" : 'NULL' }}, google_docs_credential_id = {{ $json.google_docs_credential_id ? \"'\" + $json.google_docs_credential_id + \"'\" : 'NULL' }}, calendar_ids = '{{ JSON.stringify($json.calendar_ids) }}'::jsonb, preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\"{{ $json.timezone }}\"'), updated_at = NOW() WHERE slack_user_id = '{{ $json.slack_user_id }}' RETURNING *",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "format-update-result",
+      "name": "Format Update Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2010,
+        700
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "update_user",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $json.slack_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "google_auth_status",
+              "name": "google_auth_status",
+              "value": "={{ $json.google_auth_method === 'service_account' ? 'Configured (Aclarify service account)' : 'Pending setup' }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=Successfully updated user {{ $json.slack_username }}. Email: {{ $json.email }}, Auth: {{ $json.google_auth_method }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Check Requester is Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Requester is Admin": {
+      "main": [
+        [
+          {
+            "node": "Verify Admin Permission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Admin Permission": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Admin Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Fetch Slack for Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Slack User Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List All Users",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Slack User Info": {
+      "main": [
+        [
+          {
+            "node": "Check User Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check User Already Exists": {
+      "main": [
+        [
+          {
+            "node": "Handle Empty Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Empty Check": {
+      "main": [
+        [
+          {
+            "node": "User Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Exists?": {
+      "main": [
+        [
+          {
+            "node": "User Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare User Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare User Data": {
+      "main": [
+        [
+          {
+            "node": "Insert User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert User": {
+      "main": [
+        [
+          {
+            "node": "Format Create Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List All Users": {
+      "main": [
+        [
+          {
+            "node": "Format List Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Slack for Update": {
+      "main": [
+        [
+          {
+            "node": "Prepare Update Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Update Data": {
+      "main": [
+        [
+          {
+            "node": "Check RBAC Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check RBAC Error": {
+      "main": [
+        [
+          {
+            "node": "RBAC Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update User DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update User DB": {
+      "main": [
+        [
+          {
+            "node": "Format Update Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "57cd3e5f-4c6e-42e5-9932-2169dbdc1f92",
+  "activeVersionId": "57cd3e5f-4c6e-42e5-9932-2169dbdc1f92",
+  "versionCounter": 45,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-03T18:21:25.523Z",
+      "createdAt": "2026-02-03T18:21:25.523Z",
+      "role": "workflow:owner",
+      "workflowId": "DIr3sLVyRlkgm4lu",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-03T22:52:09.264Z",
+    "createdAt": "2026-02-03T22:52:09.264Z",
+    "versionId": "57cd3e5f-4c6e-42e5-9932-2169dbdc1f92",
+    "workflowId": "DIr3sLVyRlkgm4lu",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "role",
+                "type": "string"
+              },
+              {
+                "name": "timezone_override",
+                "type": "string"
+              },
+              {
+                "name": "requesting_user_id",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "check-admin",
+        "name": "Check Requester is Admin",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          470,
+          300
+        ],
+        "parameters": {
+          "operation": "select",
+          "schema": "alfred",
+          "table": "users",
+          "returnAll": false,
+          "limit": 1,
+          "where": {
+            "values": [
+              {
+                "column": "slack_user_id",
+                "value": "={{ $json.requesting_user_id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "verify-admin",
+        "name": "Verify Admin Permission",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          690,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "leftValue": "={{ $json.role }}",
+                "rightValue": "admin",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                },
+                "id": "admin-check"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "not-admin-error",
+        "name": "Not Admin Error",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          910,
+          420
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "Only administrators can manage users. Your current role does not have this permission.",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          910,
+          180
+        ],
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "update-check",
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "update_user",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "update_user"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "create-check",
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "create_user",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "create_user"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "list-check",
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "list_users",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "list_users"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "fetch-slack-user",
+        "name": "Fetch Slack User Info",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1130,
+          60
+        ],
+        "parameters": {
+          "resource": "user",
+          "operation": "info",
+          "user": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Workflow Input').item.json.slack_user_id }}"
+          }
+        },
+        "credentials": {
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
+        }
+      },
+      {
+        "id": "check-user-exists",
+        "name": "Check User Already Exists",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1350,
+          60
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT CASE WHEN EXISTS (SELECT 1 FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}') THEN true ELSE false END as user_exists, u.* FROM (SELECT 1) dummy LEFT JOIN alfred.users u ON u.slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}'",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "handle-empty-check",
+        "name": "Handle Empty Check",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1570,
+          60
+        ],
+        "parameters": {
+          "jsCode": "const queryResult = $json;\nconst slackUser = $('Fetch Slack User Info').item.json;\nconst userExists = queryResult.user_exists === true;\n\nreturn [{\n  json: {\n    userExists: userExists,\n    existingUser: userExists ? {\n      id: queryResult.id,\n      slack_user_id: queryResult.slack_user_id,\n      slack_username: queryResult.slack_username,\n      email: queryResult.email,\n      role: queryResult.role\n    } : null,\n    slackUser: slackUser\n  }\n}];"
+        }
+      },
+      {
+        "id": "user-exists-check",
+        "name": "User Exists?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1790,
+          60
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "leftValue": "={{ $json.userExists }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                },
+                "id": "exists-check"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "user-already-exists",
+        "name": "User Already Exists",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2010,
+          -60
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=User {{ $json.slackUser.real_name }} ({{ $('Workflow Input').item.json.slack_user_id }}) already exists in the system.",
+                "type": "string"
+              },
+              {
+                "id": "existing_user",
+                "name": "existing_user",
+                "value": "={{ { slack_username: $json.existingUser.slack_username, email: $json.existingUser.email, role: $json.existingUser.role } }}",
+                "type": "object"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "prepare-user-data",
+        "name": "Prepare User Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2010,
+          180
+        ],
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').item.json;\nconst slackUser = $json.slackUser;\nconst slackUsername = slackUser.name || slackUser.real_name?.toLowerCase().replace(/\\s+/g, '') || 'unknown';\nconst email = slackUser.profile?.email || '';\nconst slackTimezone = slackUser.tz || 'UTC';\nconst timezone = input.timezone_override || slackTimezone;\n\nlet role = 'member';\nif (input.role === 'admin') role = 'admin';\nelse if (input.role === 'guest') role = 'guest';\n\nlet googleAuthMethod = 'none';\nlet googleCalendarCredId = null;\nlet gmailCredId = null;\nlet googleDocsCredId = null;\n\nif (email.endsWith('@aclarify.com')) {\n  googleAuthMethod = 'service_account';\n  googleCalendarCredId = 'yBNZEWLXitD9cSiU';\n  gmailCredId = 'v2wjW0tm9a1TxnZP';\n  googleDocsCredId = 'yBNZEWLXitD9cSiU';\n}\n\nconst calendarIds = email ? [email] : [];\nconst preferences = {\n  timezone: timezone,\n  daily_briefing: true,\n  briefing_time: '08:15',\n  personality: 'alfred',\n  verbosity: 'concise',\n  proactive_notifications: true\n};\n\nreturn [{\n  json: {\n    slack_user_id: input.slack_user_id,\n    slack_username: slackUsername,\n    display_name: slackUser.real_name || slackUser.profile?.real_name || slackUsername,\n    email: email,\n    role: role,\n    google_auth_method: googleAuthMethod,\n    google_calendar_credential_id: googleCalendarCredId,\n    gmail_credential_id: gmailCredId,\n    google_docs_credential_id: googleDocsCredId,\n    calendar_ids: calendarIds,\n    preferences: preferences,\n    slack_timezone: slackTimezone,\n    timezone_used: timezone,\n    timezone_was_overridden: !!input.timezone_override\n  }\n}];"
+        }
+      },
+      {
+        "id": "insert-user",
+        "name": "Insert User",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          2230,
+          180
+        ],
+        "parameters": {
+          "operation": "insert",
+          "schema": "alfred",
+          "table": "users",
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "slack_username": "={{ $json.slack_username }}",
+              "email": "={{ $json.email }}",
+              "role": "={{ $json.role }}",
+              "google_auth_method": "={{ $json.google_auth_method }}",
+              "google_calendar_credential_id": "={{ $json.google_calendar_credential_id }}",
+              "gmail_credential_id": "={{ $json.gmail_credential_id }}",
+              "google_docs_credential_id": "={{ $json.google_docs_credential_id }}",
+              "calendar_ids": "={{ JSON.stringify($json.calendar_ids) }}",
+              "preferences": "={{ JSON.stringify($json.preferences) }}",
+              "is_active": true
+            }
+          },
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-create-result",
+        "name": "Format Create Result",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2450,
+          180
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "create_user",
+                "type": "string"
+              },
+              {
+                "id": "slack_user_id",
+                "name": "slack_user_id",
+                "value": "={{ $('Prepare User Data').item.json.slack_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "slack_username",
+                "name": "slack_username",
+                "value": "={{ $('Prepare User Data').item.json.slack_username }}",
+                "type": "string"
+              },
+              {
+                "id": "display_name",
+                "name": "display_name",
+                "value": "={{ $('Prepare User Data').item.json.display_name }}",
+                "type": "string"
+              },
+              {
+                "id": "email",
+                "name": "email",
+                "value": "={{ $('Prepare User Data').item.json.email }}",
+                "type": "string"
+              },
+              {
+                "id": "role",
+                "name": "role",
+                "value": "={{ $('Prepare User Data').item.json.role }}",
+                "type": "string"
+              },
+              {
+                "id": "timezone",
+                "name": "timezone",
+                "value": "={{ $('Prepare User Data').item.json.timezone_used }}",
+                "type": "string"
+              },
+              {
+                "id": "google_auth_status",
+                "name": "google_auth_status",
+                "value": "={{ $('Prepare User Data').item.json.google_auth_method === 'service_account' ? 'Configured (Aclarify service account)' : 'Pending setup (user needs to connect Google account)' }}",
+                "type": "string"
+              },
+              {
+                "id": "message",
+                "name": "message",
+                "value": "=Successfully created user {{ $('Prepare User Data').item.json.display_name }} ({{ $('Prepare User Data').item.json.email }}) as {{ $('Prepare User Data').item.json.role }}. Timezone: {{ $('Prepare User Data').item.json.timezone_used }}.",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "list-all-users",
+        "name": "List All Users",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1130,
+          300
+        ],
+        "parameters": {
+          "operation": "select",
+          "schema": "alfred",
+          "table": "users",
+          "returnAll": true,
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-list-result",
+        "name": "Format List Result",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1350,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const users = $input.all().map(item => item.json);\nconst formattedUsers = users.map(u => ({\n  id: u.id,\n  slack_user_id: u.slack_user_id,\n  slack_username: u.slack_username,\n  email: u.email,\n  role: u.role,\n  timezone: u.preferences?.timezone || 'Unknown',\n  google_auth: u.google_auth_method || 'none',\n  is_active: u.is_active\n}));\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list_users',\n    total_users: users.length,\n    users: formattedUsers\n  }\n}];"
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1130,
+          420
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: create_user, update_user, list_users",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "fetch-slack-update",
+        "name": "Fetch Slack for Update",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1130,
+          580
+        ],
+        "parameters": {
+          "resource": "user",
+          "operation": "info",
+          "user": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Workflow Input').item.json.slack_user_id }}"
+          }
+        },
+        "credentials": {
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
+        }
+      },
+      {
+        "id": "prepare-update",
+        "name": "Prepare Update Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1350,
+          580
+        ],
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').item.json;\nconst slackUser = $json;\nconst requestingUserId = input.requesting_user_id;\nconst targetUserId = input.slack_user_id;\n\nconst slackUsername = slackUser.name || slackUser.real_name?.toLowerCase().replace(/\\s+/g, '') || 'unknown';\nconst email = slackUser.profile?.email || '';\nconst slackTimezone = slackUser.tz || 'UTC';\nconst timezone = input.timezone_override || slackTimezone;\n\nlet requestedRole = input.role || null;\nlet rbacError = null;\n\nif (requestedRole) {\n  const validRoles = ['admin', 'member', 'guest'];\n  if (!validRoles.includes(requestedRole)) {\n    rbacError = `Invalid role '${requestedRole}'. Valid roles: ${validRoles.join(', ')}`;\n  }\n  \n  if (requestingUserId === targetUserId) {\n    rbacError = 'RBAC violation: Administrators cannot change their own role. This prevents accidental lockout. Another admin must make this change.';\n    requestedRole = null;\n  }\n}\n\nlet googleAuthMethod = 'none';\nlet googleCalendarCredId = null;\nlet gmailCredId = null;\nlet googleDocsCredId = null;\n\nif (email.endsWith('@aclarify.com')) {\n  googleAuthMethod = 'service_account';\n  googleCalendarCredId = 'yBNZEWLXitD9cSiU';\n  gmailCredId = 'v2wjW0tm9a1TxnZP';\n  googleDocsCredId = 'yBNZEWLXitD9cSiU';\n}\n\nconst calendarIds = email ? [email] : [];\n\nreturn [{\n  json: {\n    rbac_error: rbacError,\n    has_rbac_error: !!rbacError,\n    slack_user_id: targetUserId,\n    slack_username: slackUsername,\n    display_name: slackUser.real_name || slackUser.profile?.real_name || slackUsername,\n    email: email,\n    role: requestedRole,\n    google_auth_method: googleAuthMethod,\n    google_calendar_credential_id: googleCalendarCredId,\n    gmail_credential_id: gmailCredId,\n    google_docs_credential_id: googleDocsCredId,\n    calendar_ids: calendarIds,\n    timezone: timezone,\n    requesting_user_id: requestingUserId,\n    role_change_attempted: !!input.role,\n    role_change_blocked: !!rbacError\n  }\n}];"
+        }
+      },
+      {
+        "id": "check-rbac-error",
+        "name": "Check RBAC Error",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1570,
+          580
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "leftValue": "={{ $json.has_rbac_error }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                },
+                "id": "rbac-check"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "rbac-error-response",
+        "name": "RBAC Error Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1790,
+          460
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.rbac_error }}",
+                "type": "string"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "update_user",
+                "type": "string"
+              },
+              {
+                "id": "slack_user_id",
+                "name": "slack_user_id",
+                "value": "={{ $json.slack_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "role_change_blocked",
+                "name": "role_change_blocked",
+                "value": true,
+                "type": "boolean"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "update-user-db",
+        "name": "Update User DB",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1790,
+          700
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE alfred.users SET slack_username = '{{ $json.slack_username }}', email = '{{ $json.email }}', google_auth_method = '{{ $json.google_auth_method }}', google_calendar_credential_id = {{ $json.google_calendar_credential_id ? \"'\" + $json.google_calendar_credential_id + \"'\" : 'NULL' }}, gmail_credential_id = {{ $json.gmail_credential_id ? \"'\" + $json.gmail_credential_id + \"'\" : 'NULL' }}, google_docs_credential_id = {{ $json.google_docs_credential_id ? \"'\" + $json.google_docs_credential_id + \"'\" : 'NULL' }}, calendar_ids = '{{ JSON.stringify($json.calendar_ids) }}'::jsonb, preferences = jsonb_set(COALESCE(preferences, '{}'::jsonb), '{timezone}', '\"{{ $json.timezone }}\"'), updated_at = NOW() WHERE slack_user_id = '{{ $json.slack_user_id }}' RETURNING *",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-update-result",
+        "name": "Format Update Result",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2010,
+          700
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "update_user",
+                "type": "string"
+              },
+              {
+                "id": "slack_user_id",
+                "name": "slack_user_id",
+                "value": "={{ $json.slack_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "email",
+                "name": "email",
+                "value": "={{ $json.email }}",
+                "type": "string"
+              },
+              {
+                "id": "google_auth_status",
+                "name": "google_auth_status",
+                "value": "={{ $json.google_auth_method === 'service_account' ? 'Configured (Aclarify service account)' : 'Pending setup' }}",
+                "type": "string"
+              },
+              {
+                "id": "message",
+                "name": "message",
+                "value": "=Successfully updated user {{ $json.slack_username }}. Email: {{ $json.email }}, Auth: {{ $json.google_auth_method }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Check Requester is Admin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Requester is Admin": {
+        "main": [
+          [
+            {
+              "node": "Verify Admin Permission",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verify Admin Permission": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Not Admin Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "Fetch Slack for Update",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Fetch Slack User Info",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "List All Users",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Slack User Info": {
+        "main": [
+          [
+            {
+              "node": "Check User Already Exists",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check User Already Exists": {
+        "main": [
+          [
+            {
+              "node": "Handle Empty Check",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Handle Empty Check": {
+        "main": [
+          [
+            {
+              "node": "User Exists?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "User Exists?": {
+        "main": [
+          [
+            {
+              "node": "User Already Exists",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prepare User Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare User Data": {
+        "main": [
+          [
+            {
+              "node": "Insert User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Insert User": {
+        "main": [
+          [
+            {
+              "node": "Format Create Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List All Users": {
+        "main": [
+          [
+            {
+              "node": "Format List Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Slack for Update": {
+        "main": [
+          [
+            {
+              "node": "Prepare Update Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Update Data": {
+        "main": [
+          [
+            {
+              "node": "Check RBAC Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check RBAC Error": {
+        "main": [
+          [
+            {
+              "node": "RBAC Error Response",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Update User DB",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update User DB": {
+        "main": [
+          [
+            {
+              "node": "Format Update Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-03T22:52:09.417Z",
+        "id": 141,
+        "workflowId": "DIr3sLVyRlkgm4lu",
+        "versionId": "57cd3e5f-4c6e-42e5-9932-2169dbdc1f92",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}
