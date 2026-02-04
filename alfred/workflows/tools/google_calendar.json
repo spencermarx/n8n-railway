@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-04T15:14:03.440Z",
+  "updatedAt": "2026-02-04T21:00:29.989Z",
   "createdAt": "2026-02-03T12:35:52.488Z",
   "id": "9rzYXSNhqSF6tVNC",
   "name": "🗓️ Tool | Google Calendar",
@@ -8,70 +8,40 @@
   "isArchived": false,
   "nodes": [
     {
-      "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "slack_user_id"
-            },
-            {
-              "name": "action"
-            },
-            {
-              "name": "calendar_id"
-            },
-            {
-              "name": "event_id"
-            },
-            {
-              "name": "time_min"
-            },
-            {
-              "name": "time_max"
-            },
-            {
-              "name": "summary"
-            },
-            {
-              "name": "description"
-            },
-            {
-              "name": "start_time"
-            },
-            {
-              "name": "end_time"
-            },
-            {
-              "name": "attendees"
-            },
-            {
-              "name": "max_results"
-            },
-            {
-              "name": "rsvp_status"
-            },
-            {
-              "name": "send_updates"
-            },
-            {
-              "name": "filter_starts_in_range"
-            },
-            {
-              "name": "user_timezone"
-            }
-          ]
-        }
-      },
       "id": "trigger",
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        256,
-        648
-      ]
+      "position": [256, 500],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "slack_user_id" },
+            { "name": "action" },
+            { "name": "calendar_id" },
+            { "name": "event_id" },
+            { "name": "time_min" },
+            { "name": "time_max" },
+            { "name": "summary" },
+            { "name": "description" },
+            { "name": "start_time" },
+            { "name": "end_time" },
+            { "name": "attendees" },
+            { "name": "max_results" },
+            { "name": "rsvp_status" },
+            { "name": "send_updates" },
+            { "name": "filter_starts_in_range" },
+            { "name": "user_timezone" }
+          ]
+        }
+      }
     },
     {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [480, 500],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -86,17 +56,14 @@
           }
         },
         "options": {}
-      },
-      "id": "get-auth",
-      "name": "Get Google Auth",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [
-        480,
-        648
-      ]
+      }
     },
     {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [704, 500],
       "parameters": {
         "conditions": {
           "options": {
@@ -110,26 +77,20 @@
             {
               "leftValue": "={{ $json.success }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              },
-              "id": "condition-1770125262382-z60l0rmek"
+              "operator": { "type": "boolean", "operation": "equals" },
+              "id": "cond-auth"
             }
           ]
         },
         "options": {}
-      },
-      "id": "check-auth",
-      "name": "Check Auth Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        704,
-        648
-      ]
+      }
     },
     {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [928, 700],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -148,152 +109,144 @@
           ]
         },
         "options": {}
-      },
-      "id": "auth-failed",
-      "name": "Auth Failed Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        928,
-        768
-      ]
+      }
     },
     {
+      "id": "is-list-events",
+      "name": "Is List Events?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [928, 500],
       "parameters": {
-        "mode": "rules",
-        "rules": {
-          "values": [
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
             {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                    "rightValue": "list_events",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "list_events"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                    "rightValue": "create_event",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "create_event"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                    "rightValue": "update_event",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "update_event"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                    "rightValue": "delete_event",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "delete_event"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                    "rightValue": "rsvp_event",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "rsvp_event"
+              "id": "cond-action",
+              "leftValue": "={{ $('Workflow Input').item.json.action }}",
+              "rightValue": "list_events",
+              "operator": { "type": "string", "operation": "equals" }
             }
           ]
-        },
-        "options": {
-          "fallbackOutput": "extra"
         }
-      },
-      "id": "route-action",
-      "name": "Route by Action",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        928,
-        480
-      ]
+      }
     },
     {
+      "id": "is-create-event",
+      "name": "Is Create Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1152, 580],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $('Workflow Input').item.json.action }}",
+              "rightValue": "create_event",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-update-event",
+      "name": "Is Update Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1376, 660],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $('Workflow Input').item.json.action }}",
+              "rightValue": "update_event",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-delete-event",
+      "name": "Is Delete Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1600, 740],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $('Workflow Input').item.json.action }}",
+              "rightValue": "delete_event",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-rsvp-event",
+      "name": "Is RSVP Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1824, 820],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $('Workflow Input').item.json.action }}",
+              "rightValue": "rsvp_event",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "list-events",
+      "name": "List Events API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1152, 340],
       "parameters": {
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events",
         "sendQuery": true,
@@ -311,14 +264,8 @@
               "name": "maxResults",
               "value": "={{ $('Workflow Input').item.json.max_results || '10' }}"
             },
-            {
-              "name": "singleEvents",
-              "value": "true"
-            },
-            {
-              "name": "orderBy",
-              "value": "startTime"
-            }
+            { "name": "singleEvents", "value": "true" },
+            { "name": "orderBy", "value": "startTime" }
           ]
         },
         "sendHeaders": true,
@@ -331,30 +278,24 @@
           ]
         },
         "options": {}
-      },
-      "id": "list-events",
-      "name": "List Events API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1152,
-        144
-      ]
+      }
     },
     {
-      "parameters": {
-        "jsCode": "const input = $('Workflow Input').item.json;\nconst items = $json.items || [];\n\n// Parse time boundaries from input\nconst timeMin = input.time_min ? new Date(input.time_min) : null;\nconst timeMax = input.time_max ? new Date(input.time_max) : null;\nconst filterByStartTime = input.filter_starts_in_range === true || input.filter_starts_in_range === 'true';\n\nconst now = new Date();\n\n// Helper to format duration\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;\n  if (hours > 0) return `${hours}h`;\n  return `${minutes}m`;\n}\n\n// Helper to format time\nfunction formatTime(date) {\n  return date.toLocaleString('en-US', {\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Process each event with deterministic time evaluation\nconst processedEvents = items.map(event => {\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) {\n    return { ...event, _status: 'unknown', _error: 'No start time' };\n  }\n  \n  // Determine if event starts within the specified range\n  let startsInRange = false;\n  if (timeMin && timeMax) {\n    startsInRange = startTime >= timeMin && startTime < timeMax;\n  }\n  \n  // Determine event status relative to NOW\n  let status, timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntil = startTime - now;\n    timeInfo = {\n      _starts_in: formatDuration(msUntil),\n      _starts_in_minutes: Math.round(msUntil / 60000),\n      _start_time_formatted: formatTime(startTime)\n    };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    const msElapsed = now - startTime;\n    const msRemaining = endTime - now;\n    timeInfo = {\n      _time_elapsed: formatDuration(msElapsed),\n      _time_remaining: formatDuration(msRemaining),\n      _started_at: formatTime(startTime),\n      _ends_at: formatTime(endTime)\n    };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = {\n      _ended_ago: formatDuration(msAgo),\n      _ended_ago_minutes: Math.round(msAgo / 60000)\n    };\n  }\n  \n  return {\n    ...event,\n    _status: status,\n    _starts_in_range: startsInRange,\n    ...timeInfo\n  };\n});\n\n// Apply filtering if requested\nlet filteredEvents = processedEvents;\nif (filterByStartTime) {\n  filteredEvents = processedEvents.filter(e => e._starts_in_range === true);\n}\n\n// Categorize events\nconst upcoming = filteredEvents.filter(e => e._status === 'upcoming');\nconst ongoing = filteredEvents.filter(e => e._status === 'ongoing');\nconst past = filteredEvents.filter(e => e._status === 'past');\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list_events',\n    filter_applied: filterByStartTime,\n    query_window: timeMin && timeMax ? {\n      time_min: timeMin.toISOString(),\n      time_max: timeMax.toISOString()\n    } : null,\n    current_time: now.toISOString(),\n    current_time_formatted: formatTime(now),\n    summary: {\n      total_returned: filteredEvents.length,\n      total_before_filter: processedEvents.length,\n      upcoming: upcoming.length,\n      ongoing: ongoing.length,\n      past: past.length\n    },\n    events: filteredEvents,\n    events_by_status: {\n      upcoming: upcoming,\n      ongoing: ongoing,\n      past: past\n    }\n  }\n}];"
-      },
       "id": "format-list-events",
       "name": "Format List Events",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1376,
-        144
-      ]
+      "position": [1376, 340],
+      "parameters": {
+        "jsCode": "const input = $('Workflow Input').item.json;\nconst items = $json.items || [];\n\nconst timeMin = input.time_min ? new Date(input.time_min) : null;\nconst timeMax = input.time_max ? new Date(input.time_max) : null;\nconst filterByStartTime = input.filter_starts_in_range === true || input.filter_starts_in_range === 'true';\n\nconst now = new Date();\n\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;\n  if (hours > 0) return `${hours}h`;\n  return `${minutes}m`;\n}\n\nfunction formatTime(date) {\n  return date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });\n}\n\nconst processedEvents = items.map(event => {\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) return { ...event, _status: 'unknown', _error: 'No start time' };\n  \n  let startsInRange = false;\n  if (timeMin && timeMax) startsInRange = startTime >= timeMin && startTime < timeMax;\n  \n  let status, timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntil = startTime - now;\n    timeInfo = { _starts_in: formatDuration(msUntil), _starts_in_minutes: Math.round(msUntil / 60000), _start_time_formatted: formatTime(startTime) };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    timeInfo = { _time_elapsed: formatDuration(now - startTime), _time_remaining: formatDuration(endTime - now), _started_at: formatTime(startTime), _ends_at: formatTime(endTime) };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = { _ended_ago: formatDuration(msAgo), _ended_ago_minutes: Math.round(msAgo / 60000) };\n  }\n  \n  return { ...event, _status: status, _starts_in_range: startsInRange, ...timeInfo };\n});\n\nlet filteredEvents = filterByStartTime ? processedEvents.filter(e => e._starts_in_range === true) : processedEvents;\n\nconst upcoming = filteredEvents.filter(e => e._status === 'upcoming');\nconst ongoing = filteredEvents.filter(e => e._status === 'ongoing');\nconst past = filteredEvents.filter(e => e._status === 'past');\n\nreturn [{ json: {\n  success: true, action: 'list_events', filter_applied: filterByStartTime,\n  query_window: timeMin && timeMax ? { time_min: timeMin.toISOString(), time_max: timeMax.toISOString() } : null,\n  current_time: now.toISOString(), current_time_formatted: formatTime(now),\n  summary: { total_returned: filteredEvents.length, total_before_filter: processedEvents.length, upcoming: upcoming.length, ongoing: ongoing.length, past: past.length },\n  events: filteredEvents, events_by_status: { upcoming, ongoing, past }\n}}];"
+      }
     },
     {
+      "id": "create-event",
+      "name": "Create Event API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1376, 500],
       "parameters": {
         "method": "POST",
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events",
@@ -365,10 +306,7 @@
               "name": "Authorization",
               "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
             },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -393,17 +331,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "create-event",
-      "name": "Create Event API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1152,
-        336
-      ]
+      }
     },
     {
+      "id": "format-create-event",
+      "name": "Format Create Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1600, 500],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -452,46 +387,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "format-create-event",
-      "name": "Format Create Event",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1376,
-        336
-      ]
+      }
     },
     {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
-            {
-              "id": "error",
-              "name": "error",
-              "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: list_events, create_event, update_event, delete_event, rsvp_event",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "invalid-action",
-      "name": "Invalid Action",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1152,
-        912
-      ]
-    },
-    {
+      "id": "update-event",
+      "name": "Update Event API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 580],
       "parameters": {
         "method": "PATCH",
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -502,10 +405,7 @@
               "name": "Authorization",
               "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
             },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -530,17 +430,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "update-event",
-      "name": "Update Event API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1152,
-        528
-      ]
+      }
     },
     {
+      "id": "format-update-event",
+      "name": "Format Update Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1824, 580],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -595,17 +492,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "format-update-event",
-      "name": "Format Update Event",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1376,
-        528
-      ]
+      }
     },
     {
+      "id": "delete-event",
+      "name": "Delete Event API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1824, 660],
       "parameters": {
         "method": "DELETE",
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -619,17 +513,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "delete-event",
-      "name": "Delete Event API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1152,
-        720
-      ]
+      }
     },
     {
+      "id": "format-delete-event",
+      "name": "Format Delete Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2048, 660],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -660,25 +551,14 @@
           ]
         },
         "options": {}
-      },
-      "id": "format-delete-event",
-      "name": "Format Delete Event",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1376,
-        720
-      ]
+      }
     },
     {
       "id": "get-event-for-rsvp",
       "name": "Get Event for RSVP",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1152,
-        1100
-      ],
+      "position": [2048, 740],
       "parameters": {
         "method": "GET",
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -699,12 +579,9 @@
       "name": "Update RSVP Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1376,
-        1100
-      ],
+      "position": [2272, 740],
       "parameters": {
-        "jsCode": "const event = $input.first().json;\nconst input = $('Workflow Input').item.json;\nconst authData = $('Get Google Auth').item.json;\n\nconst userEmail = authData.user_email;\nconst rsvpStatus = input.rsvp_status || 'declined';\n\nconst validStatuses = ['accepted', 'declined', 'tentative', 'needsAction'];\nif (!validStatuses.includes(rsvpStatus)) {\n  return [{ json: { \n    success: false, \n    error: `Invalid RSVP status '${rsvpStatus}'. Valid values: ${validStatuses.join(', ')}` \n  }}];\n}\n\nlet attendees = event.attendees || [];\nlet found = false;\n\nfor (let i = 0; i < attendees.length; i++) {\n  if (attendees[i].self === true || \n      attendees[i].email?.toLowerCase() === userEmail?.toLowerCase()) {\n    attendees[i].responseStatus = rsvpStatus;\n    found = true;\n    break;\n  }\n}\n\nif (!found) {\n  return [{ json: { \n    success: false, \n    error: `Could not find attendee entry for ${userEmail}. You may not be an attendee on this event.`,\n    event_attendees: attendees.map(a => a.email)\n  }}];\n}\n\nreturn [{ json: {\n  attendees: attendees,\n  event_id: input.event_id,\n  calendar_id: input.calendar_id || 'primary',\n  send_updates: input.send_updates || 'all',\n  user_email: userEmail,\n  new_status: rsvpStatus,\n  event_summary: event.summary\n}}];"
+        "jsCode": "const event = $input.first().json;\nconst input = $('Workflow Input').item.json;\nconst authData = $('Get Google Auth').item.json;\n\nconst userEmail = authData.user_email;\nconst rsvpStatus = input.rsvp_status || 'declined';\n\nconst validStatuses = ['accepted', 'declined', 'tentative', 'needsAction'];\nif (!validStatuses.includes(rsvpStatus)) {\n  return [{ json: { success: false, error: `Invalid RSVP status '${rsvpStatus}'. Valid values: ${validStatuses.join(', ')}` }}];\n}\n\nlet attendees = event.attendees || [];\nlet found = false;\n\nfor (let i = 0; i < attendees.length; i++) {\n  if (attendees[i].self === true || attendees[i].email?.toLowerCase() === userEmail?.toLowerCase()) {\n    attendees[i].responseStatus = rsvpStatus;\n    found = true;\n    break;\n  }\n}\n\nif (!found) {\n  return [{ json: { success: false, error: `Could not find attendee entry for ${userEmail}. You may not be an attendee on this event.`, event_attendees: attendees.map(a => a.email) }}];\n}\n\nreturn [{ json: { attendees, event_id: input.event_id, calendar_id: input.calendar_id || 'primary', send_updates: input.send_updates || 'all', user_email: userEmail, new_status: rsvpStatus, event_summary: event.summary }}];"
       }
     },
     {
@@ -712,20 +589,14 @@
       "name": "PATCH RSVP Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1600,
-        1100
-      ],
+      "position": [2496, 740],
       "parameters": {
         "method": "PATCH",
         "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.calendar_id) }}/events/{{ encodeURIComponent($json.event_id) }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {
-              "name": "sendUpdates",
-              "value": "={{ $json.send_updates }}"
-            }
+            { "name": "sendUpdates", "value": "={{ $json.send_updates }}" }
           ]
         },
         "sendHeaders": true,
@@ -735,10 +606,7 @@
               "name": "Authorization",
               "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
             },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
@@ -752,10 +620,7 @@
       "name": "Format RSVP Result",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        1824,
-        1100
-      ],
+      "position": [2720, 740],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -799,171 +664,97 @@
         },
         "options": {}
       }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2048, 900],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: list_events, create_event, update_event, delete_event, rsvp_event",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Get Google Auth",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
     },
     "Get Google Auth": {
-      "main": [
-        [
-          {
-            "node": "Check Auth Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
     },
     "Check Auth Success": {
       "main": [
-        [
-          {
-            "node": "Route by Action",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Auth Failed Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Is List Events?", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
       ]
     },
-    "Route by Action": {
+    "Is List Events?": {
       "main": [
-        [
-          {
-            "node": "List Events API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create Event API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Update Event API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Delete Event API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Get Event for RSVP",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Invalid Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "List Events API", "type": "main", "index": 0 }],
+        [{ "node": "Is Create Event?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Create Event?": {
+      "main": [
+        [{ "node": "Create Event API", "type": "main", "index": 0 }],
+        [{ "node": "Is Update Event?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Update Event?": {
+      "main": [
+        [{ "node": "Update Event API", "type": "main", "index": 0 }],
+        [{ "node": "Is Delete Event?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Delete Event?": {
+      "main": [
+        [{ "node": "Delete Event API", "type": "main", "index": 0 }],
+        [{ "node": "Is RSVP Event?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is RSVP Event?": {
+      "main": [
+        [{ "node": "Get Event for RSVP", "type": "main", "index": 0 }],
+        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
       ]
     },
     "List Events API": {
-      "main": [
-        [
-          {
-            "node": "Format List Events",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format List Events", "type": "main", "index": 0 }]]
     },
     "Create Event API": {
-      "main": [
-        [
-          {
-            "node": "Format Create Event",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Create Event", "type": "main", "index": 0 }]]
     },
     "Update Event API": {
-      "main": [
-        [
-          {
-            "node": "Format Update Event",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Update Event", "type": "main", "index": 0 }]]
     },
     "Delete Event API": {
-      "main": [
-        [
-          {
-            "node": "Format Delete Event",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Delete Event", "type": "main", "index": 0 }]]
     },
     "Get Event for RSVP": {
-      "main": [
-        [
-          {
-            "node": "Update RSVP Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Update RSVP Status", "type": "main", "index": 0 }]]
     },
     "Update RSVP Status": {
-      "main": [
-        [
-          {
-            "node": "PATCH RSVP Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "PATCH RSVP Status", "type": "main", "index": 0 }]]
     },
     "PATCH RSVP Status": {
-      "main": [
-        [
-          {
-            "node": "Format RSVP Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format RSVP Result", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -974,9 +765,9 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "570cd838-e7be-4bc4-9386-a45d47d2b3b1",
-  "activeVersionId": "570cd838-e7be-4bc4-9386-a45d47d2b3b1",
-  "versionCounter": 49,
+  "versionId": "f181ed2b-8ff8-4a19-8248-47098f68706c",
+  "activeVersionId": "f181ed2b-8ff8-4a19-8248-47098f68706c",
+  "versionCounter": 54,
   "triggerCount": 0,
   "shared": [
     {
@@ -1001,7 +792,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T19:23:01.187Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -1034,76 +825,46 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-02-04T15:14:03.441Z",
-    "createdAt": "2026-02-04T15:14:03.441Z",
-    "versionId": "570cd838-e7be-4bc4-9386-a45d47d2b3b1",
+    "updatedAt": "2026-02-04T21:00:29.993Z",
+    "createdAt": "2026-02-04T21:00:29.993Z",
+    "versionId": "f181ed2b-8ff8-4a19-8248-47098f68706c",
     "workflowId": "9rzYXSNhqSF6tVNC",
     "nodes": [
       {
-        "parameters": {
-          "workflowInputs": {
-            "values": [
-              {
-                "name": "slack_user_id"
-              },
-              {
-                "name": "action"
-              },
-              {
-                "name": "calendar_id"
-              },
-              {
-                "name": "event_id"
-              },
-              {
-                "name": "time_min"
-              },
-              {
-                "name": "time_max"
-              },
-              {
-                "name": "summary"
-              },
-              {
-                "name": "description"
-              },
-              {
-                "name": "start_time"
-              },
-              {
-                "name": "end_time"
-              },
-              {
-                "name": "attendees"
-              },
-              {
-                "name": "max_results"
-              },
-              {
-                "name": "rsvp_status"
-              },
-              {
-                "name": "send_updates"
-              },
-              {
-                "name": "filter_starts_in_range"
-              },
-              {
-                "name": "user_timezone"
-              }
-            ]
-          }
-        },
         "id": "trigger",
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          256,
-          648
-        ]
+        "position": [256, 500],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              { "name": "slack_user_id" },
+              { "name": "action" },
+              { "name": "calendar_id" },
+              { "name": "event_id" },
+              { "name": "time_min" },
+              { "name": "time_max" },
+              { "name": "summary" },
+              { "name": "description" },
+              { "name": "start_time" },
+              { "name": "end_time" },
+              { "name": "attendees" },
+              { "name": "max_results" },
+              { "name": "rsvp_status" },
+              { "name": "send_updates" },
+              { "name": "filter_starts_in_range" },
+              { "name": "user_timezone" }
+            ]
+          }
+        }
       },
       {
+        "id": "get-auth",
+        "name": "Get Google Auth",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [480, 500],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -1118,17 +879,14 @@
             }
           },
           "options": {}
-        },
-        "id": "get-auth",
-        "name": "Get Google Auth",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "typeVersion": 1.2,
-        "position": [
-          480,
-          648
-        ]
+        }
       },
       {
+        "id": "check-auth",
+        "name": "Check Auth Success",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [704, 500],
         "parameters": {
           "conditions": {
             "options": {
@@ -1142,26 +900,20 @@
               {
                 "leftValue": "={{ $json.success }}",
                 "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                },
-                "id": "condition-1770125262382-z60l0rmek"
+                "operator": { "type": "boolean", "operation": "equals" },
+                "id": "cond-auth"
               }
             ]
           },
           "options": {}
-        },
-        "id": "check-auth",
-        "name": "Check Auth Success",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          704,
-          648
-        ]
+        }
       },
       {
+        "id": "auth-failed",
+        "name": "Auth Failed Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [928, 700],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1180,152 +932,144 @@
             ]
           },
           "options": {}
-        },
-        "id": "auth-failed",
-        "name": "Auth Failed Response",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          928,
-          768
-        ]
+        }
       },
       {
+        "id": "is-list-events",
+        "name": "Is List Events?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [928, 500],
         "parameters": {
-          "mode": "rules",
-          "rules": {
-            "values": [
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
               {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                      "rightValue": "list_events",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "list_events"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                      "rightValue": "create_event",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "create_event"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                      "rightValue": "update_event",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "update_event"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                      "rightValue": "delete_event",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "delete_event"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
-                      "rightValue": "rsvp_event",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "rsvp_event"
+                "id": "cond-action",
+                "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                "rightValue": "list_events",
+                "operator": { "type": "string", "operation": "equals" }
               }
             ]
-          },
-          "options": {
-            "fallbackOutput": "extra"
           }
-        },
-        "id": "route-action",
-        "name": "Route by Action",
-        "type": "n8n-nodes-base.switch",
-        "typeVersion": 3.2,
-        "position": [
-          928,
-          480
-        ]
+        }
       },
       {
+        "id": "is-create-event",
+        "name": "Is Create Event?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1152, 580],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                "rightValue": "create_event",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-update-event",
+        "name": "Is Update Event?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1376, 660],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                "rightValue": "update_event",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-delete-event",
+        "name": "Is Delete Event?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1600, 740],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                "rightValue": "delete_event",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-rsvp-event",
+        "name": "Is RSVP Event?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1824, 820],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                "rightValue": "rsvp_event",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "list-events",
+        "name": "List Events API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1152, 340],
         "parameters": {
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events",
           "sendQuery": true,
@@ -1343,14 +1087,8 @@
                 "name": "maxResults",
                 "value": "={{ $('Workflow Input').item.json.max_results || '10' }}"
               },
-              {
-                "name": "singleEvents",
-                "value": "true"
-              },
-              {
-                "name": "orderBy",
-                "value": "startTime"
-              }
+              { "name": "singleEvents", "value": "true" },
+              { "name": "orderBy", "value": "startTime" }
             ]
           },
           "sendHeaders": true,
@@ -1363,30 +1101,24 @@
             ]
           },
           "options": {}
-        },
-        "id": "list-events",
-        "name": "List Events API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1152,
-          144
-        ]
+        }
       },
       {
-        "parameters": {
-          "jsCode": "const input = $('Workflow Input').item.json;\nconst items = $json.items || [];\n\n// Parse time boundaries from input\nconst timeMin = input.time_min ? new Date(input.time_min) : null;\nconst timeMax = input.time_max ? new Date(input.time_max) : null;\nconst filterByStartTime = input.filter_starts_in_range === true || input.filter_starts_in_range === 'true';\n\nconst now = new Date();\n\n// Helper to format duration\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;\n  if (hours > 0) return `${hours}h`;\n  return `${minutes}m`;\n}\n\n// Helper to format time\nfunction formatTime(date) {\n  return date.toLocaleString('en-US', {\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}\n\n// Process each event with deterministic time evaluation\nconst processedEvents = items.map(event => {\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) {\n    return { ...event, _status: 'unknown', _error: 'No start time' };\n  }\n  \n  // Determine if event starts within the specified range\n  let startsInRange = false;\n  if (timeMin && timeMax) {\n    startsInRange = startTime >= timeMin && startTime < timeMax;\n  }\n  \n  // Determine event status relative to NOW\n  let status, timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntil = startTime - now;\n    timeInfo = {\n      _starts_in: formatDuration(msUntil),\n      _starts_in_minutes: Math.round(msUntil / 60000),\n      _start_time_formatted: formatTime(startTime)\n    };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    const msElapsed = now - startTime;\n    const msRemaining = endTime - now;\n    timeInfo = {\n      _time_elapsed: formatDuration(msElapsed),\n      _time_remaining: formatDuration(msRemaining),\n      _started_at: formatTime(startTime),\n      _ends_at: formatTime(endTime)\n    };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = {\n      _ended_ago: formatDuration(msAgo),\n      _ended_ago_minutes: Math.round(msAgo / 60000)\n    };\n  }\n  \n  return {\n    ...event,\n    _status: status,\n    _starts_in_range: startsInRange,\n    ...timeInfo\n  };\n});\n\n// Apply filtering if requested\nlet filteredEvents = processedEvents;\nif (filterByStartTime) {\n  filteredEvents = processedEvents.filter(e => e._starts_in_range === true);\n}\n\n// Categorize events\nconst upcoming = filteredEvents.filter(e => e._status === 'upcoming');\nconst ongoing = filteredEvents.filter(e => e._status === 'ongoing');\nconst past = filteredEvents.filter(e => e._status === 'past');\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list_events',\n    filter_applied: filterByStartTime,\n    query_window: timeMin && timeMax ? {\n      time_min: timeMin.toISOString(),\n      time_max: timeMax.toISOString()\n    } : null,\n    current_time: now.toISOString(),\n    current_time_formatted: formatTime(now),\n    summary: {\n      total_returned: filteredEvents.length,\n      total_before_filter: processedEvents.length,\n      upcoming: upcoming.length,\n      ongoing: ongoing.length,\n      past: past.length\n    },\n    events: filteredEvents,\n    events_by_status: {\n      upcoming: upcoming,\n      ongoing: ongoing,\n      past: past\n    }\n  }\n}];"
-        },
         "id": "format-list-events",
         "name": "Format List Events",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1376,
-          144
-        ]
+        "position": [1376, 340],
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').item.json;\nconst items = $json.items || [];\n\nconst timeMin = input.time_min ? new Date(input.time_min) : null;\nconst timeMax = input.time_max ? new Date(input.time_max) : null;\nconst filterByStartTime = input.filter_starts_in_range === true || input.filter_starts_in_range === 'true';\n\nconst now = new Date();\n\nfunction formatDuration(ms) {\n  const absMs = Math.abs(ms);\n  const hours = Math.floor(absMs / 3600000);\n  const minutes = Math.floor((absMs % 3600000) / 60000);\n  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;\n  if (hours > 0) return `${hours}h`;\n  return `${minutes}m`;\n}\n\nfunction formatTime(date) {\n  return date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });\n}\n\nconst processedEvents = items.map(event => {\n  const startTime = event.start?.dateTime ? new Date(event.start.dateTime) : null;\n  const endTime = event.end?.dateTime ? new Date(event.end.dateTime) : null;\n  \n  if (!startTime) return { ...event, _status: 'unknown', _error: 'No start time' };\n  \n  let startsInRange = false;\n  if (timeMin && timeMax) startsInRange = startTime >= timeMin && startTime < timeMax;\n  \n  let status, timeInfo = {};\n  \n  if (startTime > now) {\n    status = 'upcoming';\n    const msUntil = startTime - now;\n    timeInfo = { _starts_in: formatDuration(msUntil), _starts_in_minutes: Math.round(msUntil / 60000), _start_time_formatted: formatTime(startTime) };\n  } else if (endTime && endTime > now) {\n    status = 'ongoing';\n    timeInfo = { _time_elapsed: formatDuration(now - startTime), _time_remaining: formatDuration(endTime - now), _started_at: formatTime(startTime), _ends_at: formatTime(endTime) };\n  } else {\n    status = 'past';\n    const msAgo = now - (endTime || startTime);\n    timeInfo = { _ended_ago: formatDuration(msAgo), _ended_ago_minutes: Math.round(msAgo / 60000) };\n  }\n  \n  return { ...event, _status: status, _starts_in_range: startsInRange, ...timeInfo };\n});\n\nlet filteredEvents = filterByStartTime ? processedEvents.filter(e => e._starts_in_range === true) : processedEvents;\n\nconst upcoming = filteredEvents.filter(e => e._status === 'upcoming');\nconst ongoing = filteredEvents.filter(e => e._status === 'ongoing');\nconst past = filteredEvents.filter(e => e._status === 'past');\n\nreturn [{ json: {\n  success: true, action: 'list_events', filter_applied: filterByStartTime,\n  query_window: timeMin && timeMax ? { time_min: timeMin.toISOString(), time_max: timeMax.toISOString() } : null,\n  current_time: now.toISOString(), current_time_formatted: formatTime(now),\n  summary: { total_returned: filteredEvents.length, total_before_filter: processedEvents.length, upcoming: upcoming.length, ongoing: ongoing.length, past: past.length },\n  events: filteredEvents, events_by_status: { upcoming, ongoing, past }\n}}];"
+        }
       },
       {
+        "id": "create-event",
+        "name": "Create Event API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1376, 500],
         "parameters": {
           "method": "POST",
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events",
@@ -1397,10 +1129,7 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
               },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1425,17 +1154,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "create-event",
-        "name": "Create Event API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1152,
-          336
-        ]
+        }
       },
       {
+        "id": "format-create-event",
+        "name": "Format Create Event",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [1600, 500],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1484,46 +1210,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "format-create-event",
-        "name": "Format Create Event",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1376,
-          336
-        ]
+        }
       },
       {
-        "parameters": {
-          "assignments": {
-            "assignments": [
-              {
-                "id": "success",
-                "name": "success",
-                "value": false,
-                "type": "boolean"
-              },
-              {
-                "id": "error",
-                "name": "error",
-                "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: list_events, create_event, update_event, delete_event, rsvp_event",
-                "type": "string"
-              }
-            ]
-          },
-          "options": {}
-        },
-        "id": "invalid-action",
-        "name": "Invalid Action",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1152,
-          912
-        ]
-      },
-      {
+        "id": "update-event",
+        "name": "Update Event API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1600, 580],
         "parameters": {
           "method": "PATCH",
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -1534,10 +1228,7 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
               },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1562,17 +1253,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "update-event",
-        "name": "Update Event API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1152,
-          528
-        ]
+        }
       },
       {
+        "id": "format-update-event",
+        "name": "Format Update Event",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [1824, 580],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1627,17 +1315,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "format-update-event",
-        "name": "Format Update Event",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1376,
-          528
-        ]
+        }
       },
       {
+        "id": "delete-event",
+        "name": "Delete Event API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1824, 660],
         "parameters": {
           "method": "DELETE",
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -1651,17 +1336,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "delete-event",
-        "name": "Delete Event API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1152,
-          720
-        ]
+        }
       },
       {
+        "id": "format-delete-event",
+        "name": "Format Delete Event",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [2048, 660],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1692,25 +1374,14 @@
             ]
           },
           "options": {}
-        },
-        "id": "format-delete-event",
-        "name": "Format Delete Event",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1376,
-          720
-        ]
+        }
       },
       {
         "id": "get-event-for-rsvp",
         "name": "Get Event for RSVP",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1152,
-          1100
-        ],
+        "position": [2048, 740],
         "parameters": {
           "method": "GET",
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($('Workflow Input').item.json.calendar_id || 'primary') }}/events/{{ encodeURIComponent($('Workflow Input').item.json.event_id) }}",
@@ -1731,12 +1402,9 @@
         "name": "Update RSVP Status",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [
-          1376,
-          1100
-        ],
+        "position": [2272, 740],
         "parameters": {
-          "jsCode": "const event = $input.first().json;\nconst input = $('Workflow Input').item.json;\nconst authData = $('Get Google Auth').item.json;\n\nconst userEmail = authData.user_email;\nconst rsvpStatus = input.rsvp_status || 'declined';\n\nconst validStatuses = ['accepted', 'declined', 'tentative', 'needsAction'];\nif (!validStatuses.includes(rsvpStatus)) {\n  return [{ json: { \n    success: false, \n    error: `Invalid RSVP status '${rsvpStatus}'. Valid values: ${validStatuses.join(', ')}` \n  }}];\n}\n\nlet attendees = event.attendees || [];\nlet found = false;\n\nfor (let i = 0; i < attendees.length; i++) {\n  if (attendees[i].self === true || \n      attendees[i].email?.toLowerCase() === userEmail?.toLowerCase()) {\n    attendees[i].responseStatus = rsvpStatus;\n    found = true;\n    break;\n  }\n}\n\nif (!found) {\n  return [{ json: { \n    success: false, \n    error: `Could not find attendee entry for ${userEmail}. You may not be an attendee on this event.`,\n    event_attendees: attendees.map(a => a.email)\n  }}];\n}\n\nreturn [{ json: {\n  attendees: attendees,\n  event_id: input.event_id,\n  calendar_id: input.calendar_id || 'primary',\n  send_updates: input.send_updates || 'all',\n  user_email: userEmail,\n  new_status: rsvpStatus,\n  event_summary: event.summary\n}}];"
+          "jsCode": "const event = $input.first().json;\nconst input = $('Workflow Input').item.json;\nconst authData = $('Get Google Auth').item.json;\n\nconst userEmail = authData.user_email;\nconst rsvpStatus = input.rsvp_status || 'declined';\n\nconst validStatuses = ['accepted', 'declined', 'tentative', 'needsAction'];\nif (!validStatuses.includes(rsvpStatus)) {\n  return [{ json: { success: false, error: `Invalid RSVP status '${rsvpStatus}'. Valid values: ${validStatuses.join(', ')}` }}];\n}\n\nlet attendees = event.attendees || [];\nlet found = false;\n\nfor (let i = 0; i < attendees.length; i++) {\n  if (attendees[i].self === true || attendees[i].email?.toLowerCase() === userEmail?.toLowerCase()) {\n    attendees[i].responseStatus = rsvpStatus;\n    found = true;\n    break;\n  }\n}\n\nif (!found) {\n  return [{ json: { success: false, error: `Could not find attendee entry for ${userEmail}. You may not be an attendee on this event.`, event_attendees: attendees.map(a => a.email) }}];\n}\n\nreturn [{ json: { attendees, event_id: input.event_id, calendar_id: input.calendar_id || 'primary', send_updates: input.send_updates || 'all', user_email: userEmail, new_status: rsvpStatus, event_summary: event.summary }}];"
         }
       },
       {
@@ -1744,20 +1412,14 @@
         "name": "PATCH RSVP Status",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [
-          1600,
-          1100
-        ],
+        "position": [2496, 740],
         "parameters": {
           "method": "PATCH",
           "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($json.calendar_id) }}/events/{{ encodeURIComponent($json.event_id) }}",
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
-              {
-                "name": "sendUpdates",
-                "value": "={{ $json.send_updates }}"
-              }
+              { "name": "sendUpdates", "value": "={{ $json.send_updates }}" }
             ]
           },
           "sendHeaders": true,
@@ -1767,10 +1429,7 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $('Get Google Auth').item.json.access_token }}"
               },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
+              { "name": "Content-Type", "value": "application/json" }
             ]
           },
           "sendBody": true,
@@ -1784,10 +1443,7 @@
         "name": "Format RSVP Result",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          1824,
-          1100
-        ],
+        "position": [2720, 740],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -1831,171 +1487,103 @@
           },
           "options": {}
         }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [2048, 900],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $('Workflow Input').item.json.action }}'. Valid actions: list_events, create_event, update_event, delete_event, rsvp_event",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
       }
     ],
     "connections": {
       "Workflow Input": {
-        "main": [
-          [
-            {
-              "node": "Get Google Auth",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
       },
       "Get Google Auth": {
-        "main": [
-          [
-            {
-              "node": "Check Auth Success",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
       },
       "Check Auth Success": {
         "main": [
-          [
-            {
-              "node": "Route by Action",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Auth Failed Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Is List Events?", "type": "main", "index": 0 }],
+          [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
         ]
       },
-      "Route by Action": {
+      "Is List Events?": {
         "main": [
-          [
-            {
-              "node": "List Events API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Create Event API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Update Event API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Delete Event API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Get Event for RSVP",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Invalid Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "List Events API", "type": "main", "index": 0 }],
+          [{ "node": "Is Create Event?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Create Event?": {
+        "main": [
+          [{ "node": "Create Event API", "type": "main", "index": 0 }],
+          [{ "node": "Is Update Event?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Update Event?": {
+        "main": [
+          [{ "node": "Update Event API", "type": "main", "index": 0 }],
+          [{ "node": "Is Delete Event?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Delete Event?": {
+        "main": [
+          [{ "node": "Delete Event API", "type": "main", "index": 0 }],
+          [{ "node": "Is RSVP Event?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is RSVP Event?": {
+        "main": [
+          [{ "node": "Get Event for RSVP", "type": "main", "index": 0 }],
+          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
         ]
       },
       "List Events API": {
-        "main": [
-          [
-            {
-              "node": "Format List Events",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format List Events", "type": "main", "index": 0 }]]
       },
       "Create Event API": {
         "main": [
-          [
-            {
-              "node": "Format Create Event",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Create Event", "type": "main", "index": 0 }]
         ]
       },
       "Update Event API": {
         "main": [
-          [
-            {
-              "node": "Format Update Event",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Update Event", "type": "main", "index": 0 }]
         ]
       },
       "Delete Event API": {
         "main": [
-          [
-            {
-              "node": "Format Delete Event",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Delete Event", "type": "main", "index": 0 }]
         ]
       },
       "Get Event for RSVP": {
-        "main": [
-          [
-            {
-              "node": "Update RSVP Status",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Update RSVP Status", "type": "main", "index": 0 }]]
       },
       "Update RSVP Status": {
-        "main": [
-          [
-            {
-              "node": "PATCH RSVP Status",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "PATCH RSVP Status", "type": "main", "index": 0 }]]
       },
       "PATCH RSVP Status": {
-        "main": [
-          [
-            {
-              "node": "Format RSVP Result",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format RSVP Result", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",
@@ -2004,10 +1592,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-04T15:14:03.593Z",
-        "id": 241,
+        "createdAt": "2026-02-04T21:00:30.214Z",
+        "id": 255,
         "workflowId": "9rzYXSNhqSF6tVNC",
-        "versionId": "570cd838-e7be-4bc4-9386-a45d47d2b3b1",
+        "versionId": "f181ed2b-8ff8-4a19-8248-47098f68706c",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }

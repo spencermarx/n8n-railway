@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-03T22:43:12.209Z",
+  "updatedAt": "2026-02-04T20:57:20.289Z",
   "createdAt": "2026-02-03T12:37:03.098Z",
   "id": "ZUMZ7oNUzDRDnFft",
   "name": "📄 Tool | Google Docs",
@@ -12,37 +12,16 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        250,
-        300
-      ],
+      "position": [250, 300],
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "slack_user_id",
-              "type": "string"
-            },
-            {
-              "name": "action",
-              "type": "string"
-            },
-            {
-              "name": "document_id",
-              "type": "string"
-            },
-            {
-              "name": "title",
-              "type": "string"
-            },
-            {
-              "name": "content",
-              "type": "string"
-            },
-            {
-              "name": "folder_id",
-              "type": "string"
-            }
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "action", "type": "string" },
+            { "name": "document_id", "type": "string" },
+            { "name": "title", "type": "string" },
+            { "name": "content", "type": "string" },
+            { "name": "folder_id", "type": "string" }
           ]
         }
       }
@@ -52,10 +31,7 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        470,
-        300
-      ],
+      "position": [470, 300],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -73,470 +49,11 @@
       }
     },
     {
-      "id": "check-auth",
-      "name": "Check Auth Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        800,
-        300
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "version": 2,
-            "leftValue": "",
-            "caseSensitive": true,
-            "typeValidation": "strict"
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.auth_success }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              },
-              "id": "condition-auth"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "auth-failed",
-      "name": "Auth Failed Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1020,
-        520
-      ],
-      "parameters": {
-        "mode": "manual",
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
-            {
-              "id": "error",
-              "name": "error",
-              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "route-action",
-      "name": "Route by Action",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        1020,
-        300
-      ],
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "get_document",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "get_document"
-            },
-            {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "create_document",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "create_document"
-            },
-            {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "append_text",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "append_text"
-            }
-          ]
-        },
-        "options": {
-          "fallbackOutput": "extra"
-        }
-      }
-    },
-    {
-      "id": "get-document",
-      "name": "Get Document API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1240,
-        100
-      ],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.access_token }}"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "format-get-document",
-      "name": "Format Get Document",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1350,
-        100
-      ],
-      "parameters": {
-        "jsCode": "const doc = $input.first().json;\n\n// Extract plain text from document body\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
-      }
-    },
-    {
-      "id": "create-document",
-      "name": "Create Document API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1240,
-        260
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "https://docs.googleapis.com/v1/documents",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.access_token }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "title",
-              "value": "={{ $json.title || 'Untitled Document' }}"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "add-initial-content",
-      "name": "Add Initial Content",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        1350,
-        260
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "version": 2,
-            "leftValue": "",
-            "caseSensitive": true,
-            "typeValidation": "strict"
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $('Merge Input Context').item.json.content }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "notEquals"
-              },
-              "id": "condition-content"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "append-initial-content",
-      "name": "Append Initial Content",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1570,
-        200
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "requests",
-              "value": "={{ [{ insertText: { location: { index: 1 }, text: $('Merge Input Context').item.json.content } }] }}"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "format-create-document",
-      "name": "Format Create Document",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1790,
-        260
-      ],
-      "parameters": {
-        "mode": "manual",
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": true,
-              "type": "boolean"
-            },
-            {
-              "id": "action",
-              "name": "action",
-              "value": "create_document",
-              "type": "string"
-            },
-            {
-              "id": "document_id",
-              "name": "document_id",
-              "value": "={{ $('Create Document API').item.json.documentId }}",
-              "type": "string"
-            },
-            {
-              "id": "title",
-              "name": "title",
-              "value": "={{ $('Create Document API').item.json.title }}",
-              "type": "string"
-            },
-            {
-              "id": "document_url",
-              "name": "document_url",
-              "value": "=https://docs.google.com/document/d/{{ $('Create Document API').item.json.documentId }}/edit",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "get-doc-for-append",
-      "name": "Get Doc End Index",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1240,
-        420
-      ],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.access_token }}"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "append-text",
-      "name": "Append Text API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1350,
-        420
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "requests",
-              "value": "={{ [{ insertText: { endOfSegmentLocation: {}, text: '\\n' + $('Merge Input Context').item.json.content } }] }}"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "format-append-text",
-      "name": "Format Append Text",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1570,
-        420
-      ],
-      "parameters": {
-        "mode": "manual",
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": true,
-              "type": "boolean"
-            },
-            {
-              "id": "action",
-              "name": "action",
-              "value": "append_text",
-              "type": "string"
-            },
-            {
-              "id": "document_id",
-              "name": "document_id",
-              "value": "={{ $('Merge Input Context').item.json.document_id }}",
-              "type": "string"
-            },
-            {
-              "id": "appended_text",
-              "name": "appended_text",
-              "value": "={{ $('Merge Input Context').item.json.content }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "invalid-action",
-      "name": "Invalid Action",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1240,
-        580
-      ],
-      "parameters": {
-        "mode": "manual",
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
-            {
-              "id": "error",
-              "name": "error",
-              "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
       "id": "merge-context",
       "name": "Merge Input Context",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        580,
-        300
-      ],
+      "position": [690, 300],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -599,164 +116,480 @@
         },
         "options": {}
       }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [910, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1130, 520],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "is-get-document",
+      "name": "Is Get Document?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1130, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "get_document",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-create-document",
+      "name": "Is Create Document?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1350, 380],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create_document",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-append-text",
+      "name": "Is Append Text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1570, 460],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "append_text",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-document",
+      "name": "Get Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 140],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-get-document",
+      "name": "Format Get Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1570, 140],
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\n\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
+      }
+    },
+    {
+      "id": "create-document",
+      "name": "Create Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1570, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://docs.googleapis.com/v1/documents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title || 'Untitled Document' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "add-initial-content",
+      "name": "Add Initial Content?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1790, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-content",
+              "leftValue": "={{ $('Merge Input Context').item.json.content }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "append-initial-content",
+      "name": "Append Initial Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "requests",
+              "value": "={{ [{ insertText: { location: { index: 1 }, text: $('Merge Input Context').item.json.content } }] }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-create-document",
+      "name": "Format Create Document",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2230, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_document",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $('Create Document API').item.json.documentId }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Create Document API').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "document_url",
+              "name": "document_url",
+              "value": "=https://docs.google.com/document/d/{{ $('Create Document API').item.json.documentId }}/edit",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-doc-for-append",
+      "name": "Get Doc End Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1790, 460],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "append-text",
+      "name": "Append Text API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 460],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "requests",
+              "value": "={{ [{ insertText: { endOfSegmentLocation: {}, text: '\\n' + $('Merge Input Context').item.json.content } }] }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-append-text",
+      "name": "Format Append Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2230, 460],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "append_text",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $('Merge Input Context').item.json.document_id }}",
+              "type": "string"
+            },
+            {
+              "id": "appended_text",
+              "name": "appended_text",
+              "value": "={{ $('Merge Input Context').item.json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1790, 600],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [
-        [
-          {
-            "node": "Get Google Auth",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+    },
+    "Get Google Auth": {
+      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+    },
+    "Merge Input Context": {
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
     },
     "Check Auth Success": {
       "main": [
-        [
-          {
-            "node": "Route by Action",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Auth Failed Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Is Get Document?", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
       ]
     },
-    "Route by Action": {
+    "Is Get Document?": {
       "main": [
-        [
-          {
-            "node": "Get Document API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create Document API",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Get Doc End Index",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Invalid Action",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Get Document API", "type": "main", "index": 0 }],
+        [{ "node": "Is Create Document?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Create Document?": {
+      "main": [
+        [{ "node": "Create Document API", "type": "main", "index": 0 }],
+        [{ "node": "Is Append Text?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Append Text?": {
+      "main": [
+        [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
+        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
       ]
     },
     "Get Document API": {
-      "main": [
-        [
-          {
-            "node": "Format Get Document",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Get Document", "type": "main", "index": 0 }]]
     },
     "Create Document API": {
-      "main": [
-        [
-          {
-            "node": "Add Initial Content",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Add Initial Content?", "type": "main", "index": 0 }]]
     },
-    "Add Initial Content": {
+    "Add Initial Content?": {
       "main": [
-        [
-          {
-            "node": "Append Initial Content",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Format Create Document",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Append Initial Content", "type": "main", "index": 0 }],
+        [{ "node": "Format Create Document", "type": "main", "index": 0 }]
       ]
     },
     "Append Initial Content": {
       "main": [
-        [
-          {
-            "node": "Format Create Document",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Format Create Document", "type": "main", "index": 0 }]
       ]
     },
     "Get Doc End Index": {
-      "main": [
-        [
-          {
-            "node": "Append Text API",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Append Text API", "type": "main", "index": 0 }]]
     },
     "Append Text API": {
-      "main": [
-        [
-          {
-            "node": "Format Append Text",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Google Auth": {
-      "main": [
-        [
-          {
-            "node": "Merge Input Context",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Input Context": {
-      "main": [
-        [
-          {
-            "node": "Check Auth Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -767,9 +600,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "096d9253-1884-4f73-a116-0614577a3b32",
-  "activeVersionId": "096d9253-1884-4f73-a116-0614577a3b32",
-  "versionCounter": 24,
+  "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
+  "activeVersionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
+  "versionCounter": 29,
   "triggerCount": 0,
   "shared": [
     {
@@ -794,7 +627,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T07:39:59.721Z",
+              "updatedAt": "2026-02-04T19:23:01.187Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -827,9 +660,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-02-03T22:43:12.213Z",
-    "createdAt": "2026-02-03T22:43:12.213Z",
-    "versionId": "096d9253-1884-4f73-a116-0614577a3b32",
+    "updatedAt": "2026-02-04T20:57:20.294Z",
+    "createdAt": "2026-02-04T20:57:20.294Z",
+    "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
     "workflowId": "ZUMZ7oNUzDRDnFft",
     "nodes": [
       {
@@ -837,37 +670,16 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [
-          250,
-          300
-        ],
+        "position": [250, 300],
         "parameters": {
           "workflowInputs": {
             "values": [
-              {
-                "name": "slack_user_id",
-                "type": "string"
-              },
-              {
-                "name": "action",
-                "type": "string"
-              },
-              {
-                "name": "document_id",
-                "type": "string"
-              },
-              {
-                "name": "title",
-                "type": "string"
-              },
-              {
-                "name": "content",
-                "type": "string"
-              },
-              {
-                "name": "folder_id",
-                "type": "string"
-              }
+              { "name": "slack_user_id", "type": "string" },
+              { "name": "action", "type": "string" },
+              { "name": "document_id", "type": "string" },
+              { "name": "title", "type": "string" },
+              { "name": "content", "type": "string" },
+              { "name": "folder_id", "type": "string" }
             ]
           }
         }
@@ -877,10 +689,7 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [
-          470,
-          300
-        ],
+        "position": [470, 300],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -898,470 +707,11 @@
         }
       },
       {
-        "id": "check-auth",
-        "name": "Check Auth Success",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          800,
-          300
-        ],
-        "parameters": {
-          "conditions": {
-            "options": {
-              "version": 2,
-              "leftValue": "",
-              "caseSensitive": true,
-              "typeValidation": "strict"
-            },
-            "combinator": "and",
-            "conditions": [
-              {
-                "leftValue": "={{ $json.auth_success }}",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                },
-                "id": "condition-auth"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "id": "auth-failed",
-        "name": "Auth Failed Response",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1020,
-          520
-        ],
-        "parameters": {
-          "mode": "manual",
-          "assignments": {
-            "assignments": [
-              {
-                "id": "success",
-                "name": "success",
-                "value": false,
-                "type": "boolean"
-              },
-              {
-                "id": "error",
-                "name": "error",
-                "value": "={{ $json.auth_error || 'Google authentication failed' }}",
-                "type": "string"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "route-action",
-        "name": "Route by Action",
-        "type": "n8n-nodes-base.switch",
-        "typeVersion": 3.2,
-        "position": [
-          1020,
-          300
-        ],
-        "parameters": {
-          "rules": {
-            "values": [
-              {
-                "conditions": {
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.action }}",
-                      "rightValue": "get_document",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "get_document"
-              },
-              {
-                "conditions": {
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.action }}",
-                      "rightValue": "create_document",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "create_document"
-              },
-              {
-                "conditions": {
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.action }}",
-                      "rightValue": "append_text",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "append_text"
-              }
-            ]
-          },
-          "options": {
-            "fallbackOutput": "extra"
-          }
-        }
-      },
-      {
-        "id": "get-document",
-        "name": "Get Document API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1240,
-          100
-        ],
-        "parameters": {
-          "method": "GET",
-          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $json.access_token }}"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "format-get-document",
-        "name": "Format Get Document",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1350,
-          100
-        ],
-        "parameters": {
-          "jsCode": "const doc = $input.first().json;\n\n// Extract plain text from document body\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
-        }
-      },
-      {
-        "id": "create-document",
-        "name": "Create Document API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1240,
-          260
-        ],
-        "parameters": {
-          "method": "POST",
-          "url": "https://docs.googleapis.com/v1/documents",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $json.access_token }}"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              {
-                "name": "title",
-                "value": "={{ $json.title || 'Untitled Document' }}"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "add-initial-content",
-        "name": "Add Initial Content",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          1350,
-          260
-        ],
-        "parameters": {
-          "conditions": {
-            "options": {
-              "version": 2,
-              "leftValue": "",
-              "caseSensitive": true,
-              "typeValidation": "strict"
-            },
-            "combinator": "and",
-            "conditions": [
-              {
-                "leftValue": "={{ $('Merge Input Context').item.json.content }}",
-                "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "notEquals"
-                },
-                "id": "condition-content"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "id": "append-initial-content",
-        "name": "Append Initial Content",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1570,
-          200
-        ],
-        "parameters": {
-          "method": "POST",
-          "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              {
-                "name": "requests",
-                "value": "={{ [{ insertText: { location: { index: 1 }, text: $('Merge Input Context').item.json.content } }] }}"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "format-create-document",
-        "name": "Format Create Document",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1790,
-          260
-        ],
-        "parameters": {
-          "mode": "manual",
-          "assignments": {
-            "assignments": [
-              {
-                "id": "success",
-                "name": "success",
-                "value": true,
-                "type": "boolean"
-              },
-              {
-                "id": "action",
-                "name": "action",
-                "value": "create_document",
-                "type": "string"
-              },
-              {
-                "id": "document_id",
-                "name": "document_id",
-                "value": "={{ $('Create Document API').item.json.documentId }}",
-                "type": "string"
-              },
-              {
-                "id": "title",
-                "name": "title",
-                "value": "={{ $('Create Document API').item.json.title }}",
-                "type": "string"
-              },
-              {
-                "id": "document_url",
-                "name": "document_url",
-                "value": "=https://docs.google.com/document/d/{{ $('Create Document API').item.json.documentId }}/edit",
-                "type": "string"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "get-doc-for-append",
-        "name": "Get Doc End Index",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1240,
-          420
-        ],
-        "parameters": {
-          "method": "GET",
-          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $json.access_token }}"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "append-text",
-        "name": "Append Text API",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1350,
-          420
-        ],
-        "parameters": {
-          "method": "POST",
-          "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              {
-                "name": "requests",
-                "value": "={{ [{ insertText: { endOfSegmentLocation: {}, text: '\\n' + $('Merge Input Context').item.json.content } }] }}"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "format-append-text",
-        "name": "Format Append Text",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1570,
-          420
-        ],
-        "parameters": {
-          "mode": "manual",
-          "assignments": {
-            "assignments": [
-              {
-                "id": "success",
-                "name": "success",
-                "value": true,
-                "type": "boolean"
-              },
-              {
-                "id": "action",
-                "name": "action",
-                "value": "append_text",
-                "type": "string"
-              },
-              {
-                "id": "document_id",
-                "name": "document_id",
-                "value": "={{ $('Merge Input Context').item.json.document_id }}",
-                "type": "string"
-              },
-              {
-                "id": "appended_text",
-                "name": "appended_text",
-                "value": "={{ $('Merge Input Context').item.json.content }}",
-                "type": "string"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "invalid-action",
-        "name": "Invalid Action",
-        "type": "n8n-nodes-base.set",
-        "typeVersion": 3.4,
-        "position": [
-          1240,
-          580
-        ],
-        "parameters": {
-          "mode": "manual",
-          "assignments": {
-            "assignments": [
-              {
-                "id": "success",
-                "name": "success",
-                "value": false,
-                "type": "boolean"
-              },
-              {
-                "id": "error",
-                "name": "error",
-                "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
-                "type": "string"
-              }
-            ]
-          },
-          "options": {}
-        }
-      },
-      {
         "id": "merge-context",
         "name": "Merge Input Context",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [
-          580,
-          300
-        ],
+        "position": [690, 300],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1424,164 +774,486 @@
           },
           "options": {}
         }
+      },
+      {
+        "id": "check-auth",
+        "name": "Check Auth Success",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [910, 300],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-auth",
+                "leftValue": "={{ $json.auth_success }}",
+                "rightValue": true,
+                "operator": { "type": "boolean", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "auth-failed",
+        "name": "Auth Failed Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [1130, 520],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "is-get-document",
+        "name": "Is Get Document?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1130, 300],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "get_document",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-create-document",
+        "name": "Is Create Document?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1350, 380],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "create_document",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-append-text",
+        "name": "Is Append Text?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1570, 460],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "append_text",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-document",
+        "name": "Get Document API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1350, 140],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-get-document",
+        "name": "Format Get Document",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [1570, 140],
+        "parameters": {
+          "jsCode": "const doc = $input.first().json;\n\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
+        }
+      },
+      {
+        "id": "create-document",
+        "name": "Create Document API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1570, 300],
+        "parameters": {
+          "method": "POST",
+          "url": "https://docs.googleapis.com/v1/documents",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "title",
+                "value": "={{ $json.title || 'Untitled Document' }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "add-initial-content",
+        "name": "Add Initial Content?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1790, 300],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-content",
+                "leftValue": "={{ $('Merge Input Context').item.json.content }}",
+                "rightValue": "",
+                "operator": { "type": "string", "operation": "notEquals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "append-initial-content",
+        "name": "Append Initial Content",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [2010, 240],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+              },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "requests",
+                "value": "={{ [{ insertText: { location: { index: 1 }, text: $('Merge Input Context').item.json.content } }] }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-create-document",
+        "name": "Format Create Document",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [2230, 300],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "create_document",
+                "type": "string"
+              },
+              {
+                "id": "document_id",
+                "name": "document_id",
+                "value": "={{ $('Create Document API').item.json.documentId }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $('Create Document API').item.json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "document_url",
+                "name": "document_url",
+                "value": "=https://docs.google.com/document/d/{{ $('Create Document API').item.json.documentId }}/edit",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "get-doc-for-append",
+        "name": "Get Doc End Index",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1790, 460],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "append-text",
+        "name": "Append Text API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [2010, 460],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+              },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "requests",
+                "value": "={{ [{ insertText: { endOfSegmentLocation: {}, text: '\\n' + $('Merge Input Context').item.json.content } }] }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-append-text",
+        "name": "Format Append Text",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [2230, 460],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "append_text",
+                "type": "string"
+              },
+              {
+                "id": "document_id",
+                "name": "document_id",
+                "value": "={{ $('Merge Input Context').item.json.document_id }}",
+                "type": "string"
+              },
+              {
+                "id": "appended_text",
+                "name": "appended_text",
+                "value": "={{ $('Merge Input Context').item.json.content }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [1790, 600],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
       }
     ],
     "connections": {
       "Workflow Input": {
+        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+      },
+      "Get Google Auth": {
         "main": [
-          [
-            {
-              "node": "Get Google Auth",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Merge Input Context", "type": "main", "index": 0 }]
         ]
+      },
+      "Merge Input Context": {
+        "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
       },
       "Check Auth Success": {
         "main": [
-          [
-            {
-              "node": "Route by Action",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Auth Failed Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Is Get Document?", "type": "main", "index": 0 }],
+          [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
         ]
       },
-      "Route by Action": {
+      "Is Get Document?": {
         "main": [
-          [
-            {
-              "node": "Get Document API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Create Document API",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Get Doc End Index",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Invalid Action",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Get Document API", "type": "main", "index": 0 }],
+          [{ "node": "Is Create Document?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Create Document?": {
+        "main": [
+          [{ "node": "Create Document API", "type": "main", "index": 0 }],
+          [{ "node": "Is Append Text?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Append Text?": {
+        "main": [
+          [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
+          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
         ]
       },
       "Get Document API": {
         "main": [
-          [
-            {
-              "node": "Format Get Document",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Get Document", "type": "main", "index": 0 }]
         ]
       },
       "Create Document API": {
         "main": [
-          [
-            {
-              "node": "Add Initial Content",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Add Initial Content?", "type": "main", "index": 0 }]
         ]
       },
-      "Add Initial Content": {
+      "Add Initial Content?": {
         "main": [
-          [
-            {
-              "node": "Append Initial Content",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Format Create Document",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Append Initial Content", "type": "main", "index": 0 }],
+          [{ "node": "Format Create Document", "type": "main", "index": 0 }]
         ]
       },
       "Append Initial Content": {
         "main": [
-          [
-            {
-              "node": "Format Create Document",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          [{ "node": "Format Create Document", "type": "main", "index": 0 }]
         ]
       },
       "Get Doc End Index": {
-        "main": [
-          [
-            {
-              "node": "Append Text API",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Append Text API", "type": "main", "index": 0 }]]
       },
       "Append Text API": {
-        "main": [
-          [
-            {
-              "node": "Format Append Text",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Get Google Auth": {
-        "main": [
-          [
-            {
-              "node": "Merge Input Context",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Merge Input Context": {
-        "main": [
-          [
-            {
-              "node": "Check Auth Success",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",
@@ -1590,10 +1262,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-03T22:43:12.376Z",
-        "id": 135,
+        "createdAt": "2026-02-04T20:57:20.411Z",
+        "id": 252,
         "workflowId": "ZUMZ7oNUzDRDnFft",
-        "versionId": "096d9253-1884-4f73-a116-0614577a3b32",
+        "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }
