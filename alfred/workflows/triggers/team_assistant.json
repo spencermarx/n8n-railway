@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-04T20:49:05.619Z",
+  "updatedAt": "2026-02-05T09:58:32.699Z",
   "createdAt": "2026-02-03T10:50:19.448Z",
   "id": "KJpZBr3isT66Rzoa",
   "name": "🤖 Alfred | Team Assistant",
@@ -9,18 +9,31 @@
   "nodes": [
     {
       "parameters": {
-        "trigger": ["app_mention", "message"],
+        "trigger": [
+          "app_mention",
+          "message"
+        ],
         "watchWorkspace": true,
-        "options": { "userIds": ["U0AC80Z0HR9"] }
+        "options": {
+          "userIds": [
+            "U0AC80Z0HR9"
+          ]
+        }
       },
       "id": "slack-trigger",
       "name": "Slack Trigger",
       "type": "n8n-nodes-base.slackTrigger",
       "typeVersion": 1,
-      "position": [256, 168],
+      "position": [
+        256,
+        168
+      ],
       "webhookId": "819d30ff-6523-479e-bda7-285540d516c7",
       "credentials": {
-        "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
       }
     },
     {
@@ -31,7 +44,10 @@
       "name": "Normalize Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 168]
+      "position": [
+        480,
+        168
+      ]
     },
     {
       "parameters": {
@@ -42,7 +58,9 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": { "slack_user_id": "={{ $json.slack_user_id }}" }
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}"
+          }
         },
         "options": {}
       },
@@ -50,7 +68,10 @@
       "name": "Lookup User",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [704, 264]
+      "position": [
+        704,
+        264
+      ]
     },
     {
       "parameters": {
@@ -60,7 +81,10 @@
       "name": "Check User Found",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [928, 264]
+      "position": [
+        928,
+        264
+      ]
     },
     {
       "parameters": {
@@ -76,7 +100,10 @@
               "id": "auth-check",
               "leftValue": "={{ $json.authorized }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -87,7 +114,10 @@
       "name": "Route by Auth",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1152, 264]
+      "position": [
+        1152,
+        264
+      ]
     },
     {
       "parameters": {
@@ -107,7 +137,10 @@
       "name": "Unauthorized Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1376, 360]
+      "position": [
+        1376,
+        360
+      ]
     },
     {
       "parameters": {
@@ -132,7 +165,10 @@
       "name": "Send Unauthorized Response",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [1600, 360]
+      "position": [
+        1600,
+        360
+      ]
     },
     {
       "parameters": {
@@ -143,7 +179,9 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": { "user": "={{ $json.user }}" }
+          "value": {
+            "user": "={{ $json.user }}"
+          }
         },
         "options": {}
       },
@@ -151,7 +189,10 @@
       "name": "Get Personality",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [1376, 168]
+      "position": [
+        1376,
+        168
+      ]
     },
     {
       "parameters": {
@@ -161,7 +202,10 @@
       "name": "Build Agent Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1600, 168]
+      "position": [
+        1600,
+        168
+      ]
     },
     {
       "parameters": {
@@ -178,7 +222,10 @@
       "name": "Alfred AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
-      "position": [2968, 168],
+      "position": [
+        2968,
+        168
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -195,7 +242,10 @@
       "name": "Claude Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
-      "position": [1824, 392],
+      "position": [
+        1824,
+        392
+      ],
       "credentials": {
         "anthropicApi": {
           "id": "iKUsIHimnjBUibjJ",
@@ -250,7 +300,10 @@
       "name": "Tool: Update Preferences",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2208, 392]
+      "position": [
+        2208,
+        392
+      ]
     },
     {
       "parameters": {
@@ -263,9 +316,15 @@
       "name": "Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
-      "position": [2080, 392],
+      "position": [
+        2080,
+        392
+      ],
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -276,7 +335,10 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4688, 168]
+      "position": [
+        4688,
+        168
+      ]
     },
     {
       "parameters": {
@@ -301,7 +363,10 @@
       "name": "Send Response",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [5136, 96]
+      "position": [
+        5136,
+        96
+      ]
     },
     {
       "parameters": {
@@ -328,7 +393,10 @@
       "name": "Log Action",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [5360, 168]
+      "position": [
+        5360,
+        168
+      ]
     },
     {
       "parameters": {
@@ -435,7 +503,10 @@
       "name": "Tool: Gmail",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2336, 392]
+      "position": [
+        2336,
+        392
+      ]
     },
     {
       "parameters": {
@@ -508,7 +579,10 @@
       "name": "Tool: Google Docs",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2464, 392]
+      "position": [
+        2464,
+        392
+      ]
     },
     {
       "parameters": {
@@ -589,7 +663,10 @@
       "name": "Tool: Google Sheets",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2592, 392]
+      "position": [
+        2592,
+        392
+      ]
     },
     {
       "parameters": {
@@ -662,7 +739,10 @@
       "name": "Tool: List Calendar Events",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2720, 392]
+      "position": [
+        2720,
+        392
+      ]
     },
     {
       "parameters": {
@@ -751,7 +831,10 @@
       "name": "Tool: Create Calendar Event",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2848, 392]
+      "position": [
+        2848,
+        392
+      ]
     },
     {
       "parameters": {
@@ -840,7 +923,10 @@
       "name": "Tool: Update Calendar Event",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2976, 392]
+      "position": [
+        2976,
+        392
+      ]
     },
     {
       "parameters": {
@@ -897,7 +983,10 @@
       "name": "Tool: Delete Calendar Event",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3104, 392]
+      "position": [
+        3104,
+        392
+      ]
     },
     {
       "parameters": {
@@ -970,7 +1059,10 @@
       "name": "Tool: RSVP Calendar Event",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3232, 392]
+      "position": [
+        3232,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1032,7 +1124,10 @@
       "name": "Tool: Create User",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3360, 392]
+      "position": [
+        3360,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1094,7 +1189,10 @@
       "name": "Tool: List Users",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3488, 392]
+      "position": [
+        3488,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1157,7 +1255,10 @@
       "name": "Tool: Update User",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
-      "position": [3616, 392]
+      "position": [
+        3616,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1211,17 +1312,30 @@
       "name": "Tool: Slack Message",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3744, 392]
+      "position": [
+        3744,
+        392
+      ]
     },
     {
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "slack_user_id" },
-            { "name": "message" },
-            { "name": "channel_id" },
-            { "name": "thread_ts" },
-            { "name": "response_type" }
+            {
+              "name": "slack_user_id"
+            },
+            {
+              "name": "message"
+            },
+            {
+              "name": "channel_id"
+            },
+            {
+              "name": "thread_ts"
+            },
+            {
+              "name": "response_type"
+            }
           ]
         }
       },
@@ -1229,7 +1343,10 @@
       "name": "Sub-workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [256, 360]
+      "position": [
+        256,
+        360
+      ]
     },
     {
       "parameters": {
@@ -1239,7 +1356,10 @@
       "name": "Normalize Sub-workflow Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 360]
+      "position": [
+        480,
+        360
+      ]
     },
     {
       "parameters": {
@@ -1360,7 +1480,10 @@
       "name": "Tool: Scheduled Tasks",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [3872, 392]
+      "position": [
+        3872,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1377,55 +1500,49 @@
       "name": "GPT-5.2 Fallback",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [1952, 392],
+      "position": [
+        1952,
+        392
+      ],
       "credentials": {
-        "openAiApi": { "id": "K0dJSGlrxig3qa2p", "name": "OpenAi account" }
+        "openAiApi": {
+          "id": "K0dJSGlrxig3qa2p",
+          "name": "OpenAi account"
+        }
       }
     },
     {
+      "id": "check-no-send",
+      "name": "Check Should Send",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4912,
+        168
+      ],
       "parameters": {
         "conditions": {
           "options": {
             "version": 2,
             "leftValue": "",
-            "caseSensitive": false,
-            "typeValidation": "loose"
+            "caseSensitive": true,
+            "typeValidation": "strict"
           },
           "conditions": [
             {
-              "id": "no-action-check-1",
-              "leftValue": "={{ $json.response_text.toLowerCase() }}",
-              "rightValue": "no action taken",
-              "operator": { "type": "string", "operation": "notContains" }
-            },
-            {
-              "id": "no-action-check-2",
-              "leftValue": "={{ $json.response_text.toLowerCase() }}",
-              "rightValue": "no action required",
-              "operator": { "type": "string", "operation": "notContains" }
-            },
-            {
-              "id": "no-action-check-3",
-              "leftValue": "={{ $json.response_text }}",
-              "rightValue": "[NO_SEND]",
-              "operator": { "type": "string", "operation": "notStartsWith" }
-            },
-            {
-              "id": "no-action-check-4",
-              "leftValue": "={{ $json.response_text.toLowerCase() }}",
-              "rightValue": "no action needed",
-              "operator": { "type": "string", "operation": "notContains" }
+              "id": "predicate-result",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
         },
         "options": {}
-      },
-      "id": "check-no-send",
-      "name": "Check Should Send",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [4912, 168]
+      }
     },
     {
       "parameters": {
@@ -1471,7 +1588,10 @@
       "name": "Tool: Time Management",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [4000, 392]
+      "position": [
+        4000,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1481,7 +1601,10 @@
       "name": "Handle Agent Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4464, 240]
+      "position": [
+        4464,
+        240
+      ]
     },
     {
       "parameters": {
@@ -1505,7 +1628,10 @@
       "name": "Tool: Analyze Email Tone",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [4128, 392]
+      "position": [
+        4128,
+        392
+      ]
     },
     {
       "parameters": {
@@ -1554,166 +1680,453 @@
       "name": "Tool: Web Search",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [4256, 392]
+      "position": [
+        4256,
+        392
+      ]
+    },
+    {
+      "id": "evaluate-predicate",
+      "name": "Evaluate Predicate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4800,
+        168
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Rw7786cYTYOTQhH9"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "predicate": "The AI response contains actionable information that should be delivered to the user. This includes: meeting reminders, task confirmations, requested information, answers to questions, or any substantive response. Return FALSE if the response indicates no action was taken, no events were found, nothing to report, or the AI explicitly decided not to notify the user.",
+            "context": "={{ $json.response_text }}"
+          }
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
     "Slack Trigger": {
-      "main": [[{ "node": "Normalize Input", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Normalize Input": {
-      "main": [[{ "node": "Lookup User", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Lookup User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Lookup User": {
-      "main": [[{ "node": "Check User Found", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check User Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check User Found": {
-      "main": [[{ "node": "Route by Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Route by Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Route by Auth": {
       "main": [
-        [{ "node": "Get Personality", "type": "main", "index": 0 }],
-        [{ "node": "Unauthorized Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Personality",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Personality": {
-      "main": [[{ "node": "Build Agent Context", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Unauthorized Response": {
       "main": [
-        [{ "node": "Send Unauthorized Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Send Unauthorized Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Build Agent Context": {
-      "main": [[{ "node": "Alfred AI Agent", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Claude Model": {
       "ai_languageModel": [
-        [{ "node": "Alfred AI Agent", "type": "ai_languageModel", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Update Preferences": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Chat Memory": {
       "ai_memory": [
-        [{ "node": "Alfred AI Agent", "type": "ai_memory", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
       ]
     },
     "Alfred AI Agent": {
       "main": [
-        [{ "node": "Format Response", "type": "main", "index": 0 }],
-        [{ "node": "Handle Agent Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Agent Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Format Response": {
-      "main": [[{ "node": "Check Should Send", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Evaluate Predicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Send Response": {
-      "main": [[{ "node": "Log Action", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Gmail": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Google Docs": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Google Sheets": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: List Calendar Events": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Create Calendar Event": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Update Calendar Event": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Delete Calendar Event": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: RSVP Calendar Event": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Create User": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: List Users": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Update User": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Slack Message": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Sub-workflow Trigger": {
       "main": [
-        [{ "node": "Normalize Sub-workflow Input", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Normalize Sub-workflow Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Normalize Sub-workflow Input": {
-      "main": [[{ "node": "Lookup User", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Lookup User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Scheduled Tasks": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "GPT-5.2 Fallback": {
       "ai_languageModel": [
-        [{ "node": "Alfred AI Agent", "type": "ai_languageModel", "index": 1 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
       ]
     },
     "Check Should Send": {
       "main": [
-        [{ "node": "Send Response", "type": "main", "index": 0 }],
-        [{ "node": "Log Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Time Management": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Handle Agent Error": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Analyze Email Tone": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tool: Web Search": {
       "ai_tool": [
-        [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+        [
+          {
+            "node": "Alfred AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Predicate": {
+      "main": [
+        [
+          {
+            "node": "Check Should Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -1723,7 +2136,9 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": { "templateCredsSetupCompleted": true },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
   "pinData": {
     "Slack Trigger": [
       {
@@ -1755,13 +2170,15 @@
           "event_ts": "1770130334.158719",
           "channel_type": "im"
         },
-        "pairedItem": { "item": 0 }
+        "pairedItem": {
+          "item": 0
+        }
       }
     ]
   },
-  "versionId": "10079f14-5a10-4bad-925a-78c6e50af1a6",
-  "activeVersionId": "d4d85b5e-f5a4-4609-97c1-17744e33ce4f",
-  "versionCounter": 309,
+  "versionId": "2d22c61c-cf2d-4d49-a546-0d234abe97a8",
+  "activeVersionId": "2d22c61c-cf2d-4d49-a546-0d234abe97a8",
+  "versionCounter": 315,
   "triggerCount": 1,
   "shared": [
     {
@@ -1786,7 +2203,7 @@
             "userId": "e498ff06-ba9d-4721-8454-492195be8229",
             "projectId": "Jd992SEPuokf8o5Z",
             "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
+              "updatedAt": "2026-02-05T09:51:12.987Z",
               "createdAt": "2026-02-02T12:20:29.217Z",
               "id": "e498ff06-ba9d-4721-8454-492195be8229",
               "email": "spencer@aclarify.com",
@@ -1809,7 +2226,7 @@
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
+              "lastActiveAt": "2026-02-05",
               "isPending": false
             }
           }
@@ -1826,25 +2243,38 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-04T19:42:09.743Z",
-    "createdAt": "2026-02-04T19:42:09.743Z",
-    "versionId": "d4d85b5e-f5a4-4609-97c1-17744e33ce4f",
+    "updatedAt": "2026-02-05T09:58:32.701Z",
+    "createdAt": "2026-02-05T09:58:32.701Z",
+    "versionId": "2d22c61c-cf2d-4d49-a546-0d234abe97a8",
     "workflowId": "KJpZBr3isT66Rzoa",
     "nodes": [
       {
         "parameters": {
-          "trigger": ["app_mention", "message"],
+          "trigger": [
+            "app_mention",
+            "message"
+          ],
           "watchWorkspace": true,
-          "options": { "userIds": ["U0AC80Z0HR9"] }
+          "options": {
+            "userIds": [
+              "U0AC80Z0HR9"
+            ]
+          }
         },
         "id": "slack-trigger",
         "name": "Slack Trigger",
         "type": "n8n-nodes-base.slackTrigger",
         "typeVersion": 1,
-        "position": [256, 168],
+        "position": [
+          256,
+          168
+        ],
         "webhookId": "819d30ff-6523-479e-bda7-285540d516c7",
         "credentials": {
-          "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
         }
       },
       {
@@ -1855,7 +2285,10 @@
         "name": "Normalize Input",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [480, 168]
+        "position": [
+          480,
+          168
+        ]
       },
       {
         "parameters": {
@@ -1866,7 +2299,9 @@
           },
           "workflowInputs": {
             "mappingMode": "defineBelow",
-            "value": { "slack_user_id": "={{ $json.slack_user_id }}" }
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}"
+            }
           },
           "options": {}
         },
@@ -1874,7 +2309,10 @@
         "name": "Lookup User",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [704, 264]
+        "position": [
+          704,
+          264
+        ]
       },
       {
         "parameters": {
@@ -1884,7 +2322,10 @@
         "name": "Check User Found",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [928, 264]
+        "position": [
+          928,
+          264
+        ]
       },
       {
         "parameters": {
@@ -1900,7 +2341,10 @@
                 "id": "auth-check",
                 "leftValue": "={{ $json.authorized }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ],
             "combinator": "and"
@@ -1911,7 +2355,10 @@
         "name": "Route by Auth",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [1152, 264]
+        "position": [
+          1152,
+          264
+        ]
       },
       {
         "parameters": {
@@ -1931,7 +2378,10 @@
         "name": "Unauthorized Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1376, 360]
+        "position": [
+          1376,
+          360
+        ]
       },
       {
         "parameters": {
@@ -1956,7 +2406,10 @@
         "name": "Send Unauthorized Response",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [1600, 360]
+        "position": [
+          1600,
+          360
+        ]
       },
       {
         "parameters": {
@@ -1967,7 +2420,9 @@
           },
           "workflowInputs": {
             "mappingMode": "defineBelow",
-            "value": { "user": "={{ $json.user }}" }
+            "value": {
+              "user": "={{ $json.user }}"
+            }
           },
           "options": {}
         },
@@ -1975,7 +2430,10 @@
         "name": "Get Personality",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [1376, 168]
+        "position": [
+          1376,
+          168
+        ]
       },
       {
         "parameters": {
@@ -1985,7 +2443,10 @@
         "name": "Build Agent Context",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1600, 168]
+        "position": [
+          1600,
+          168
+        ]
       },
       {
         "parameters": {
@@ -2002,7 +2463,10 @@
         "name": "Alfred AI Agent",
         "type": "@n8n/n8n-nodes-langchain.agent",
         "typeVersion": 3.1,
-        "position": [2840, 168],
+        "position": [
+          2968,
+          168
+        ],
         "onError": "continueErrorOutput"
       },
       {
@@ -2019,7 +2483,10 @@
         "name": "Claude Model",
         "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
         "typeVersion": 1.3,
-        "position": [1824, 392],
+        "position": [
+          1824,
+          392
+        ],
         "credentials": {
           "anthropicApi": {
             "id": "iKUsIHimnjBUibjJ",
@@ -2074,7 +2541,10 @@
         "name": "Tool: Update Preferences",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2208, 392]
+        "position": [
+          2208,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2087,9 +2557,15 @@
         "name": "Chat Memory",
         "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
         "typeVersion": 1.3,
-        "position": [2080, 392],
+        "position": [
+          2080,
+          392
+        ],
         "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
         }
       },
       {
@@ -2100,7 +2576,10 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [4432, 168]
+        "position": [
+          4688,
+          168
+        ]
       },
       {
         "parameters": {
@@ -2125,7 +2604,10 @@
         "name": "Send Response",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [4880, 96]
+        "position": [
+          5136,
+          96
+        ]
       },
       {
         "parameters": {
@@ -2152,7 +2634,10 @@
         "name": "Log Action",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [5104, 168]
+        "position": [
+          5360,
+          168
+        ]
       },
       {
         "parameters": {
@@ -2259,7 +2744,10 @@
         "name": "Tool: Gmail",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2336, 392]
+        "position": [
+          2336,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2332,7 +2820,10 @@
         "name": "Tool: Google Docs",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2464, 392]
+        "position": [
+          2464,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2413,7 +2904,10 @@
         "name": "Tool: Google Sheets",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2592, 392]
+        "position": [
+          2592,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2486,7 +2980,10 @@
         "name": "Tool: List Calendar Events",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2720, 392]
+        "position": [
+          2720,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2575,7 +3072,10 @@
         "name": "Tool: Create Calendar Event",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2848, 392]
+        "position": [
+          2848,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2664,7 +3164,10 @@
         "name": "Tool: Update Calendar Event",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [2976, 392]
+        "position": [
+          2976,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2721,7 +3224,10 @@
         "name": "Tool: Delete Calendar Event",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3104, 392]
+        "position": [
+          3104,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2794,7 +3300,10 @@
         "name": "Tool: RSVP Calendar Event",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3232, 392]
+        "position": [
+          3232,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2856,7 +3365,10 @@
         "name": "Tool: Create User",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3360, 392]
+        "position": [
+          3360,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2918,7 +3430,10 @@
         "name": "Tool: List Users",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3488, 392]
+        "position": [
+          3488,
+          392
+        ]
       },
       {
         "parameters": {
@@ -2981,7 +3496,10 @@
         "name": "Tool: Update User",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2,
-        "position": [3616, 392]
+        "position": [
+          3616,
+          392
+        ]
       },
       {
         "parameters": {
@@ -3035,17 +3553,30 @@
         "name": "Tool: Slack Message",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3744, 392]
+        "position": [
+          3744,
+          392
+        ]
       },
       {
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "slack_user_id" },
-              { "name": "message" },
-              { "name": "channel_id" },
-              { "name": "thread_ts" },
-              { "name": "response_type" }
+              {
+                "name": "slack_user_id"
+              },
+              {
+                "name": "message"
+              },
+              {
+                "name": "channel_id"
+              },
+              {
+                "name": "thread_ts"
+              },
+              {
+                "name": "response_type"
+              }
             ]
           }
         },
@@ -3053,7 +3584,10 @@
         "name": "Sub-workflow Trigger",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [256, 360]
+        "position": [
+          256,
+          360
+        ]
       },
       {
         "parameters": {
@@ -3063,7 +3597,10 @@
         "name": "Normalize Sub-workflow Input",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [480, 360]
+        "position": [
+          480,
+          360
+        ]
       },
       {
         "parameters": {
@@ -3184,7 +3721,10 @@
         "name": "Tool: Scheduled Tasks",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [3872, 392]
+        "position": [
+          3872,
+          392
+        ]
       },
       {
         "parameters": {
@@ -3201,55 +3741,49 @@
         "name": "GPT-5.2 Fallback",
         "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
         "typeVersion": 1.3,
-        "position": [1952, 392],
+        "position": [
+          1952,
+          392
+        ],
         "credentials": {
-          "openAiApi": { "id": "K0dJSGlrxig3qa2p", "name": "OpenAi account" }
+          "openAiApi": {
+            "id": "K0dJSGlrxig3qa2p",
+            "name": "OpenAi account"
+          }
         }
       },
       {
+        "id": "check-no-send",
+        "name": "Check Should Send",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          4912,
+          168
+        ],
         "parameters": {
           "conditions": {
             "options": {
               "version": 2,
               "leftValue": "",
-              "caseSensitive": false,
-              "typeValidation": "loose"
+              "caseSensitive": true,
+              "typeValidation": "strict"
             },
             "conditions": [
               {
-                "id": "no-action-check-1",
-                "leftValue": "={{ $json.response_text.toLowerCase() }}",
-                "rightValue": "no action taken",
-                "operator": { "type": "string", "operation": "notContains" }
-              },
-              {
-                "id": "no-action-check-2",
-                "leftValue": "={{ $json.response_text.toLowerCase() }}",
-                "rightValue": "no action required",
-                "operator": { "type": "string", "operation": "notContains" }
-              },
-              {
-                "id": "no-action-check-3",
-                "leftValue": "={{ $json.response_text }}",
-                "rightValue": "[NO_SEND]",
-                "operator": { "type": "string", "operation": "notStartsWith" }
-              },
-              {
-                "id": "no-action-check-4",
-                "leftValue": "={{ $json.response_text.toLowerCase() }}",
-                "rightValue": "no action needed",
-                "operator": { "type": "string", "operation": "notContains" }
+                "id": "predicate-result",
+                "leftValue": "={{ $json.result }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ],
             "combinator": "and"
           },
           "options": {}
-        },
-        "id": "check-no-send",
-        "name": "Check Should Send",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [4656, 168]
+        }
       },
       {
         "parameters": {
@@ -3295,7 +3829,10 @@
         "name": "Tool: Time Management",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [4000, 392]
+        "position": [
+          4000,
+          392
+        ]
       },
       {
         "parameters": {
@@ -3305,14 +3842,12 @@
         "name": "Handle Agent Error",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [4208, 240]
+        "position": [
+          4464,
+          240
+        ]
       },
       {
-        "id": "tool-analyze-tone",
-        "name": "Tool: Analyze Email Tone",
-        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-        "typeVersion": 2.2,
-        "position": [4128, 392],
         "parameters": {
           "description": "Analyze the user's sent emails and create a comprehensive writing style guide. Use when user asks to 'learn my email style' or 'analyze my writing'. Pass mode='recent' for recent emails or mode='specific' with message_ids for specific emails.",
           "workflowId": {
@@ -3329,14 +3864,17 @@
               "message_ids": "={{ $fromAI(\"message_ids\", \"Comma-separated message IDs for mode=specific\", \"string\") }}"
             }
           }
-        }
-      },
-      {
-        "id": "tool-web-search",
-        "name": "Tool: Web Search",
+        },
+        "id": "tool-analyze-tone",
+        "name": "Tool: Analyze Email Tone",
         "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
         "typeVersion": 2.2,
-        "position": [4256, 392],
+        "position": [
+          4128,
+          392
+        ]
+      },
+      {
         "parameters": {
           "description": "Search the web for current information, news, and real-time data. Use this when you need up-to-date information that may not be in your training data. Returns results with cited sources.",
           "workflowId": {
@@ -3378,40 +3916,137 @@
             "attemptToConvertTypes": false,
             "convertFieldsToString": false
           }
+        },
+        "id": "tool-web-search",
+        "name": "Tool: Web Search",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          4256,
+          392
+        ]
+      },
+      {
+        "id": "evaluate-predicate",
+        "name": "Evaluate Predicate",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          4800,
+          168
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "Rw7786cYTYOTQhH9"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "predicate": "The AI response contains actionable information that should be delivered to the user. This includes: meeting reminders, task confirmations, requested information, answers to questions, or any substantive response. Return FALSE if the response indicates no action was taken, no events were found, nothing to report, or the AI explicitly decided not to notify the user.",
+              "context": "={{ $json.response_text }}"
+            }
+          },
+          "options": {}
         }
       }
     ],
     "connections": {
       "Slack Trigger": {
-        "main": [[{ "node": "Normalize Input", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Normalize Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Normalize Input": {
-        "main": [[{ "node": "Lookup User", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Lookup User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Lookup User": {
-        "main": [[{ "node": "Check User Found", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check User Found",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check User Found": {
-        "main": [[{ "node": "Route by Auth", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Route by Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Route by Auth": {
         "main": [
-          [{ "node": "Get Personality", "type": "main", "index": 0 }],
-          [{ "node": "Unauthorized Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Personality",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Unauthorized Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Get Personality": {
         "main": [
-          [{ "node": "Build Agent Context", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Build Agent Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Unauthorized Response": {
         "main": [
-          [{ "node": "Send Unauthorized Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Send Unauthorized Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Build Agent Context": {
-        "main": [[{ "node": "Alfred AI Agent", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Claude Model": {
         "ai_languageModel": [
@@ -3426,84 +4061,196 @@
       },
       "Tool: Update Preferences": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Chat Memory": {
         "ai_memory": [
-          [{ "node": "Alfred AI Agent", "type": "ai_memory", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
         ]
       },
       "Alfred AI Agent": {
         "main": [
-          [{ "node": "Format Response", "type": "main", "index": 0 }],
-          [{ "node": "Handle Agent Error", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Handle Agent Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Format Response": {
-        "main": [[{ "node": "Check Should Send", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Evaluate Predicate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Send Response": {
-        "main": [[{ "node": "Log Action", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Log Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Tool: Gmail": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Google Docs": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Google Sheets": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: List Calendar Events": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Create Calendar Event": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Update Calendar Event": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Delete Calendar Event": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: RSVP Calendar Event": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Create User": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: List Users": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Update User": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Slack Message": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Sub-workflow Trigger": {
@@ -3518,11 +4265,25 @@
         ]
       },
       "Normalize Sub-workflow Input": {
-        "main": [[{ "node": "Lookup User", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Lookup User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Tool: Scheduled Tasks": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "GPT-5.2 Fallback": {
@@ -3538,26 +4299,75 @@
       },
       "Check Should Send": {
         "main": [
-          [{ "node": "Send Response", "type": "main", "index": 0 }],
-          [{ "node": "Log Action", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Send Response",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Log Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Time Management": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Handle Agent Error": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Tool: Analyze Email Tone": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
         ]
       },
       "Tool: Web Search": {
         "ai_tool": [
-          [{ "node": "Alfred AI Agent", "type": "ai_tool", "index": 0 }]
+          [
+            {
+              "node": "Alfred AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Evaluate Predicate": {
+        "main": [
+          [
+            {
+              "node": "Check Should Send",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       }
     },
@@ -3567,10 +4377,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-04T19:42:09.991Z",
-        "id": 250,
+        "createdAt": "2026-02-05T09:58:32.914Z",
+        "id": 260,
         "workflowId": "KJpZBr3isT66Rzoa",
-        "versionId": "d4d85b5e-f5a4-4609-97c1-17744e33ce4f",
+        "versionId": "2d22c61c-cf2d-4d49-a546-0d234abe97a8",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }
