@@ -1,0 +1,585 @@
+{
+  "name": "Utility | Fetch Google Doc",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "document_id", "type": "string" },
+            { "name": "config_key", "type": "string" },
+            { "name": "document_name", "type": "string" },
+            { "name": "slack_user_id", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "determine-input-type",
+      "name": "Determine Input Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Determine which input method was provided\nlet inputType = 'none';\nlet value = null;\n\nif (input.document_id && input.document_id.trim()) {\n  inputType = 'document_id';\n  value = input.document_id.trim();\n} else if (input.config_key && input.config_key.trim()) {\n  inputType = 'config_key';\n  value = input.config_key.trim();\n} else if (input.document_name && input.document_name.trim()) {\n  inputType = 'document_name';\n  value = input.document_name.trim();\n}\n\nreturn [{\n  json: {\n    input_type: inputType,\n    input_value: value,\n    slack_user_id: input.slack_user_id,\n    document_id: input.document_id || null,\n    config_key: input.config_key || null,\n    document_name: input.document_name || null\n  }\n}];"
+      }
+    },
+    {
+      "id": "check-input-type",
+      "name": "Check Input Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [690, 300],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "document_id",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "document_id"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "config_key",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "config_key"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "document_name",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "document_name"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      }
+    },
+    {
+      "id": "no-input-error",
+      "name": "No Input Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [910, 520],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "No document identifier provided. Please provide document_id, config_key, or document_name.",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_title",
+              "name": "document_title",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "resolve-config-key",
+      "name": "Resolve Config Key",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [910, 300],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT config_value FROM alfred.system_config WHERE config_key = $1",
+        "options": { "queryReplacement": "={{ $json.config_key }}" }
+      },
+      "credentials": {
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+      }
+    },
+    {
+      "id": "check-config-found",
+      "name": "Config Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1130, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-found",
+              "leftValue": "={{ $json.config_value }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "config-not-found",
+      "name": "Config Not Found",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1350, 460],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Config key '{{ $('Determine Input Type').item.json.config_key }}' not found in system_config",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_title",
+              "name": "document_title",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "set-resolved-doc-id",
+      "name": "Set Resolved Doc ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1350, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $json.config_value }}",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $('Determine Input Type').item.json.slack_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "resolved_from",
+              "name": "resolved_from",
+              "value": "config_key",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "set-direct-doc-id",
+      "name": "Set Direct Doc ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [910, 140],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $json.document_id }}",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $json.slack_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "resolved_from",
+              "name": "resolved_from",
+              "value": "document_id",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "search-by-name",
+      "name": "Search Doc by Name",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [910, 420],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "Search by document_name is not yet implemented. Please provide document_id or config_key instead.",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_title",
+              "name": "document_title",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-doc-ids",
+      "name": "Merge Doc IDs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [1570, 220],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1790, 220],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/documents.readonly"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-auth-context",
+      "name": "Merge Auth Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2010, 220],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "auth_success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "auth_error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $('Merge Doc IDs').item.json.document_id }}",
+              "type": "string"
+            },
+            {
+              "id": "resolved_from",
+              "name": "resolved_from",
+              "value": "={{ $('Merge Doc IDs').item.json.resolved_from }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2230, 220],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2450, 380],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_title",
+              "name": "document_title",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-document",
+      "name": "Fetch Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2450, 140],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "format-success",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2670, 80],
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\nconst resolvedFrom = $('Merge Auth Context').first().json.resolved_from;\n\n// Extract text content from document\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    content: text.trim(),\n    document_id: doc.documentId,\n    document_title: doc.title,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`,\n    resolved_from: resolvedFrom,\n    error: null\n  }\n}];"
+      }
+    },
+    {
+      "id": "format-fetch-error",
+      "name": "Format Fetch Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2670, 220],
+      "parameters": {
+        "jsCode": "const error = $input.first().json;\nconst documentId = $('Merge Auth Context').first().json.document_id;\n\nlet errorMessage = 'Failed to fetch document';\nif (error.error?.message) {\n  errorMessage = error.error.message;\n} else if (error.message) {\n  errorMessage = error.message;\n} else if (typeof error === 'string') {\n  errorMessage = error;\n}\n\nreturn [{\n  json: {\n    success: false,\n    content: null,\n    document_id: documentId,\n    document_title: null,\n    error: errorMessage\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [[{ "node": "Determine Input Type", "type": "main", "index": 0 }]]
+    },
+    "Determine Input Type": {
+      "main": [[{ "node": "Check Input Type", "type": "main", "index": 0 }]]
+    },
+    "Check Input Type": {
+      "main": [
+        [{ "node": "Set Direct Doc ID", "type": "main", "index": 0 }],
+        [{ "node": "Resolve Config Key", "type": "main", "index": 0 }],
+        [{ "node": "Search Doc by Name", "type": "main", "index": 0 }],
+        [{ "node": "No Input Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Direct Doc ID": {
+      "main": [[{ "node": "Merge Doc IDs", "type": "main", "index": 0 }]]
+    },
+    "Resolve Config Key": {
+      "main": [[{ "node": "Check Config Found?", "type": "main", "index": 0 }]]
+    },
+    "Check Config Found?": {
+      "main": [
+        [{ "node": "Set Resolved Doc ID", "type": "main", "index": 0 }],
+        [{ "node": "Config Not Found", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Resolved Doc ID": {
+      "main": [[{ "node": "Merge Doc IDs", "type": "main", "index": 1 }]]
+    },
+    "Merge Doc IDs": {
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+    },
+    "Get Google Auth": {
+      "main": [[{ "node": "Merge Auth Context", "type": "main", "index": 0 }]]
+    },
+    "Merge Auth Context": {
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+    },
+    "Check Auth Success": {
+      "main": [
+        [{ "node": "Fetch Document API", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Document API": {
+      "main": [
+        [{ "node": "Format Success Response", "type": "main", "index": 0 }],
+        [{ "node": "Format Fetch Error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}

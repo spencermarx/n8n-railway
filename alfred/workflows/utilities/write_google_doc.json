@@ -1,0 +1,411 @@
+{
+  "name": "Utility | Write Google Doc",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "title", "type": "string" },
+            { "name": "content", "type": "string" },
+            { "name": "folder_id", "type": "string" },
+            { "name": "slack_user_id", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [470, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-title",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            },
+            {
+              "id": "cond-content",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            },
+            {
+              "id": "cond-user",
+              "leftValue": "={{ $json.slack_user_id }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "validation-error",
+      "name": "Validation Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [690, 460],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "Missing required fields. title, content, and slack_user_id are required.",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_url",
+              "name": "document_url",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [690, 300],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/documents"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-context",
+      "name": "Merge Input Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [910, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "auth_success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "auth_error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Workflow Input').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $('Workflow Input').item.json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "folder_id",
+              "name": "folder_id",
+              "value": "={{ $('Workflow Input').item.json.folder_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1130, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1350, 460],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "document_url",
+              "name": "document_url",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "create-document",
+      "name": "Create Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 220],
+      "parameters": {
+        "method": "POST",
+        "url": "https://docs.googleapis.com/v1/documents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title || 'Untitled Document' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "add-content",
+      "name": "Add Document Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1570, 140],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.documentId }}:batchUpdate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "requests",
+              "value": "={{ [{ insertText: { location: { index: 1 }, text: $('Merge Input Context').item.json.content } }] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "format-success",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1790, 80],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $('Create Document API').item.json.documentId }}",
+              "type": "string"
+            },
+            {
+              "id": "document_url",
+              "name": "document_url",
+              "value": "=https://docs.google.com/document/d/{{ $('Create Document API').item.json.documentId }}/edit",
+              "type": "string"
+            },
+            {
+              "id": "document_title",
+              "name": "document_title",
+              "value": "={{ $('Create Document API').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-content-error",
+      "name": "Format Content Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1790, 220],
+      "parameters": {
+        "jsCode": "const createResult = $('Create Document API').first().json;\nconst error = $input.first().json;\n\n// Document was created but content addition failed\nlet errorMessage = 'Document created but failed to add content';\nif (error.error?.message) {\n  errorMessage = error.error.message;\n} else if (error.message) {\n  errorMessage = error.message;\n}\n\n// Still return the document info since it was created\nreturn [{\n  json: {\n    success: true,\n    document_id: createResult.documentId,\n    document_url: `https://docs.google.com/document/d/${createResult.documentId}/edit`,\n    document_title: createResult.title,\n    warning: errorMessage,\n    error: null\n  }\n}];"
+      }
+    },
+    {
+      "id": "format-create-error",
+      "name": "Format Create Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1570, 300],
+      "parameters": {
+        "jsCode": "const error = $input.first().json;\n\nlet errorMessage = 'Failed to create document';\nif (error.error?.message) {\n  errorMessage = error.error.message;\n} else if (error.message) {\n  errorMessage = error.message;\n} else if (typeof error === 'string') {\n  errorMessage = error;\n}\n\nreturn [{\n  json: {\n    success: false,\n    document_id: null,\n    document_url: null,\n    error: errorMessage\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
+    },
+    "Validate Input": {
+      "main": [
+        [{ "node": "Get Google Auth", "type": "main", "index": 0 }],
+        [{ "node": "Validation Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Google Auth": {
+      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+    },
+    "Merge Input Context": {
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+    },
+    "Check Auth Success": {
+      "main": [
+        [{ "node": "Create Document API", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Document API": {
+      "main": [
+        [{ "node": "Add Document Content", "type": "main", "index": 0 }],
+        [{ "node": "Format Create Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Add Document Content": {
+      "main": [
+        [{ "node": "Format Success Response", "type": "main", "index": 0 }],
+        [{ "node": "Format Content Error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}

@@ -21,7 +21,8 @@
             { "name": "document_id", "type": "string" },
             { "name": "title", "type": "string" },
             { "name": "content", "type": "string" },
-            { "name": "folder_id", "type": "string" }
+            { "name": "folder_id", "type": "string" },
+            { "name": "position", "type": "string" }
           ]
         }
       }
@@ -110,6 +111,12 @@
               "id": "folder_id",
               "name": "folder_id",
               "value": "={{ $('Workflow Input').item.json.folder_id }}",
+              "type": "string"
+            },
+            {
+              "id": "position",
+              "name": "position",
+              "value": "={{ $('Workflow Input').item.json.position || 'start' }}",
               "type": "string"
             }
           ]
@@ -242,6 +249,84 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "append_text",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-update-document",
+      "name": "Is Update Document?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1790, 540],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "update_document",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-insert-text",
+      "name": "Is Insert Text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2010, 620],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "insert_text",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-get-metadata",
+      "name": "Is Get Metadata?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2230, 700],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "get_metadata",
               "operator": { "type": "string", "operation": "equals" }
             }
           ]
@@ -507,11 +592,145 @@
       }
     },
     {
+      "id": "get-doc-for-update",
+      "name": "Get Doc For Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 540],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "update-document-api",
+      "name": "Update Document API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2230, 540],
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\n// Find end index from document body\nlet endIndex = 1;\nif (doc.body?.content) {\n  const lastElement = doc.body.content[doc.body.content.length - 1];\n  if (lastElement?.endIndex) {\n    endIndex = lastElement.endIndex;\n  }\n}\n\nconst previousLength = endIndex - 1;\nconst newContent = context.content;\n\n// Build requests array - delete existing content then insert new\nconst requests = [];\n\n// Only delete if there's content to delete (endIndex > 2 means there's actual content)\nif (endIndex > 2) {\n  requests.push({\n    deleteContentRange: {\n      range: {\n        startIndex: 1,\n        endIndex: endIndex - 1\n      }\n    }\n  });\n}\n\n// Insert new content\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: newContent\n  }\n});\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_document',\n    document_id: context.document_id,\n    document_url: `https://docs.google.com/document/d/${context.document_id}/edit`,\n    previous_length: previousLength,\n    new_length: newContent.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "get-doc-for-insert",
+      "name": "Get Doc For Insert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2230, 620],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "insert-text-api",
+      "name": "Insert Text API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2450, 620],
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\nconst content = context.content;\nconst position = context.position || 'start';\n\n// Determine insertion location\nlet insertRequest;\nlet insertedAt;\n\nif (position === 'end') {\n  // Use endOfSegmentLocation for end insertion\n  insertRequest = {\n    insertText: {\n      endOfSegmentLocation: {},\n      text: content\n    }\n  };\n  insertedAt = 'end';\n} else if (position === 'start') {\n  // Insert at beginning (index 1)\n  insertRequest = {\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  };\n  insertedAt = 1;\n} else {\n  // Numeric index\n  const index = parseInt(position, 10);\n  insertRequest = {\n    insertText: {\n      location: { index: index },\n      text: content\n    }\n  };\n  insertedAt = index;\n}\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests: [insertRequest] }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'insert_text',\n    document_id: context.document_id,\n    inserted_at: insertedAt,\n    character_count: content.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "get-metadata-api",
+      "name": "Get Metadata API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2450, 700],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}?fields=documentId,title,revisionId",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-get-metadata",
+      "name": "Format Get Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2670, 700],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "get_metadata",
+              "type": "string"
+            },
+            {
+              "id": "document_id",
+              "name": "document_id",
+              "value": "={{ $json.documentId }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "revision_id",
+              "name": "revision_id",
+              "value": "={{ $json.revisionId }}",
+              "type": "string"
+            },
+            {
+              "id": "document_url",
+              "name": "document_url",
+              "value": "=https://docs.google.com/document/d/{{ $json.documentId }}/edit",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
       "id": "invalid-action",
       "name": "Invalid Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1790, 600],
+      "position": [2450, 780],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -525,7 +744,7 @@
             {
               "id": "error",
               "name": "error",
-              "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text, update_document, insert_text, get_metadata",
               "type": "string"
             }
           ]
@@ -565,6 +784,24 @@
     "Is Append Text?": {
       "main": [
         [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
+        [{ "node": "Is Update Document?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Update Document?": {
+      "main": [
+        [{ "node": "Get Doc For Update", "type": "main", "index": 0 }],
+        [{ "node": "Is Insert Text?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Insert Text?": {
+      "main": [
+        [{ "node": "Get Doc For Insert", "type": "main", "index": 0 }],
+        [{ "node": "Is Get Metadata?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Get Metadata?": {
+      "main": [
+        [{ "node": "Get Metadata API", "type": "main", "index": 0 }],
         [{ "node": "Invalid Action", "type": "main", "index": 0 }]
       ]
     },
@@ -590,6 +827,15 @@
     },
     "Append Text API": {
       "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
+    },
+    "Get Doc For Update": {
+      "main": [[{ "node": "Update Document API", "type": "main", "index": 0 }]]
+    },
+    "Get Doc For Insert": {
+      "main": [[{ "node": "Insert Text API", "type": "main", "index": 0 }]]
+    },
+    "Get Metadata API": {
+      "main": [[{ "node": "Format Get Metadata", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -679,7 +925,8 @@
               { "name": "document_id", "type": "string" },
               { "name": "title", "type": "string" },
               { "name": "content", "type": "string" },
-              { "name": "folder_id", "type": "string" }
+              { "name": "folder_id", "type": "string" },
+              { "name": "position", "type": "string" }
             ]
           }
         }
@@ -768,6 +1015,12 @@
                 "id": "folder_id",
                 "name": "folder_id",
                 "value": "={{ $('Workflow Input').item.json.folder_id }}",
+                "type": "string"
+              },
+              {
+                "id": "position",
+                "name": "position",
+                "value": "={{ $('Workflow Input').item.json.position || 'start' }}",
                 "type": "string"
               }
             ]
@@ -900,6 +1153,84 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "append_text",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-update-document",
+        "name": "Is Update Document?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [1790, 540],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "update_document",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-insert-text",
+        "name": "Is Insert Text?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [2010, 620],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "insert_text",
+                "operator": { "type": "string", "operation": "equals" }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-get-metadata",
+        "name": "Is Get Metadata?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [2230, 700],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "get_metadata",
                 "operator": { "type": "string", "operation": "equals" }
               }
             ]
@@ -1165,11 +1496,145 @@
         }
       },
       {
+        "id": "get-doc-for-update",
+        "name": "Get Doc For Update",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [2010, 540],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "update-document-api",
+        "name": "Update Document API",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [2230, 540],
+        "parameters": {
+          "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\n// Find end index from document body\nlet endIndex = 1;\nif (doc.body?.content) {\n  const lastElement = doc.body.content[doc.body.content.length - 1];\n  if (lastElement?.endIndex) {\n    endIndex = lastElement.endIndex;\n  }\n}\n\nconst previousLength = endIndex - 1;\nconst newContent = context.content;\n\n// Build requests array - delete existing content then insert new\nconst requests = [];\n\n// Only delete if there's content to delete (endIndex > 2 means there's actual content)\nif (endIndex > 2) {\n  requests.push({\n    deleteContentRange: {\n      range: {\n        startIndex: 1,\n        endIndex: endIndex - 1\n      }\n    }\n  });\n}\n\n// Insert new content\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: newContent\n  }\n});\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_document',\n    document_id: context.document_id,\n    document_url: `https://docs.google.com/document/d/${context.document_id}/edit`,\n    previous_length: previousLength,\n    new_length: newContent.length\n  }\n}];"
+        }
+      },
+      {
+        "id": "get-doc-for-insert",
+        "name": "Get Doc For Insert",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [2230, 620],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "insert-text-api",
+        "name": "Insert Text API",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [2450, 620],
+        "parameters": {
+          "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\nconst content = context.content;\nconst position = context.position || 'start';\n\n// Determine insertion location\nlet insertRequest;\nlet insertedAt;\n\nif (position === 'end') {\n  // Use endOfSegmentLocation for end insertion\n  insertRequest = {\n    insertText: {\n      endOfSegmentLocation: {},\n      text: content\n    }\n  };\n  insertedAt = 'end';\n} else if (position === 'start') {\n  // Insert at beginning (index 1)\n  insertRequest = {\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  };\n  insertedAt = 1;\n} else {\n  // Numeric index\n  const index = parseInt(position, 10);\n  insertRequest = {\n    insertText: {\n      location: { index: index },\n      text: content\n    }\n  };\n  insertedAt = index;\n}\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests: [insertRequest] }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'insert_text',\n    document_id: context.document_id,\n    inserted_at: insertedAt,\n    character_count: content.length\n  }\n}];"
+        }
+      },
+      {
+        "id": "get-metadata-api",
+        "name": "Get Metadata API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [2450, 700],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}?fields=documentId,title,revisionId",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-get-metadata",
+        "name": "Format Get Metadata",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [2670, 700],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "get_metadata",
+                "type": "string"
+              },
+              {
+                "id": "document_id",
+                "name": "document_id",
+                "value": "={{ $json.documentId }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "revision_id",
+                "name": "revision_id",
+                "value": "={{ $json.revisionId }}",
+                "type": "string"
+              },
+              {
+                "id": "document_url",
+                "name": "document_url",
+                "value": "=https://docs.google.com/document/d/{{ $json.documentId }}/edit",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
         "id": "invalid-action",
         "name": "Invalid Action",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1790, 600],
+        "position": [2450, 780],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1183,7 +1648,7 @@
               {
                 "id": "error",
                 "name": "error",
-                "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text",
+                "value": "=Invalid action '{{ $json.action }}'. Valid actions: get_document, create_document, append_text, update_document, insert_text, get_metadata",
                 "type": "string"
               }
             ]
@@ -1225,6 +1690,24 @@
       "Is Append Text?": {
         "main": [
           [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
+          [{ "node": "Is Update Document?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Update Document?": {
+        "main": [
+          [{ "node": "Get Doc For Update", "type": "main", "index": 0 }],
+          [{ "node": "Is Insert Text?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Insert Text?": {
+        "main": [
+          [{ "node": "Get Doc For Insert", "type": "main", "index": 0 }],
+          [{ "node": "Is Get Metadata?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Get Metadata?": {
+        "main": [
+          [{ "node": "Get Metadata API", "type": "main", "index": 0 }],
           [{ "node": "Invalid Action", "type": "main", "index": 0 }]
         ]
       },
@@ -1254,6 +1737,15 @@
       },
       "Append Text API": {
         "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
+      },
+      "Get Doc For Update": {
+        "main": [[{ "node": "Update Document API", "type": "main", "index": 0 }]]
+      },
+      "Get Doc For Insert": {
+        "main": [[{ "node": "Insert Text API", "type": "main", "index": 0 }]]
+      },
+      "Get Metadata API": {
+        "main": [[{ "node": "Format Get Metadata", "type": "main", "index": 0 }]]
       }
     },
     "authors": "Spencer Marx",

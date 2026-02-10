@@ -1,0 +1,1092 @@
+{
+    "updatedAt": "2026-02-09T16:35:27.101Z",
+    "createdAt": "2026-02-05T13:48:47.870Z",
+    "id": "Z4pTCAwWwz153K3C",
+    "name": "Worker | Image Generator",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "id": "workflow-input",
+            "name": "Workflow Input",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                200,
+                300
+            ],
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "slack_user_id",
+                            "type": "string"
+                        },
+                        {
+                            "name": "drafts",
+                            "type": "string"
+                        },
+                        {
+                            "name": "target_channels",
+                            "type": "string"
+                        },
+                        {
+                            "name": "image_style_hints",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "prepare-context",
+            "name": "Prepare Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                420,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\n// Parse drafts - this is the actual content to generate images for\nlet drafts = input.drafts;\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\n// Parse target channels\nlet targetChannels = input.target_channels || '';\nif (typeof targetChannels === 'string') {\n  targetChannels = targetChannels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n}\nif (!Array.isArray(targetChannels) || targetChannels.length === 0) {\n  targetChannels = Object.keys(drafts).length > 0 ? Object.keys(drafts) : ['linkedin', 'twitter'];\n}\n\n// Build content context from the actual drafts\nlet contentContext = '';\nfor (const [channel, content] of Object.entries(drafts)) {\n  if (content) {\n    const text = typeof content === 'object' ? (content.content || content.text || JSON.stringify(content)) : String(content);\n    contentContext += `${channel.toUpperCase()}: ${text.substring(0, 300)}...\\n\\n`;\n  }\n}\n\n// Parse style hints\nconst styleHints = input.image_style_hints || '';\n\n// Channel-specific dimensions\nconst channelDimensions = {\n  linkedin: { width: 1200, height: 627, name: 'LinkedIn' },\n  twitter: { width: 1600, height: 900, name: 'Twitter/X' },\n  facebook: { width: 1200, height: 630, name: 'Facebook' },\n  blog: { width: 1200, height: 800, name: 'Blog Header' },\n  instagram: { width: 1080, height: 1080, name: 'Instagram Square' },\n  instagram_story: { width: 1080, height: 1920, name: 'Instagram Story' }\n};\n\n// Build channel configs\nconst channelConfigs = targetChannels.map(channel => {\n  const config = channelDimensions[channel.toLowerCase()] || channelDimensions.linkedin;\n  return {\n    channel: channel,\n    ...config\n  };\n});\n\nreturn [{\n  json: {\n    subtask_prompt: 'Generate professional marketing images based on the approved content drafts',\n    content_context: contentContext,\n    image_requirements: {\n      style: styleHints || 'professional, modern, clean',\n      mood: 'engaging, optimistic',\n      brand_colors: 'not specified',\n      notes: styleHints\n    },\n    target_channels: targetChannels,\n    channel_configs: channelConfigs,\n    slack_user_id: input.slack_user_id || '',\n    drafts: drafts\n  }\n}];"
+            }
+        },
+        {
+            "id": "build-image-prompt",
+            "name": "Build Image Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const context = $input.first().json;\n\n// Build content summary from drafts for the user prompt\nlet contentSummary = '';\nif (context.content_context) {\n  contentSummary = context.content_context;\n} else if (context.drafts) {\n  for (const [channel, content] of Object.entries(context.drafts)) {\n    const text = typeof content === 'object' ? (content.content || content.text || JSON.stringify(content)) : String(content);\n    contentSummary += `${channel.toUpperCase()}: ${text.substring(0, 500)}\\n\\n`;\n  }\n}\n\nconst systemPrompt = `You are an expert at crafting image generation prompts for professional marketing content.\n\nGiven the ACTUAL CONTENT of the posts and any style guidance, create a detailed, effective prompt for DALL-E.\n\n## STYLE GUIDANCE\nStyle: ${context.image_requirements?.style || 'professional, modern'}\nMood: ${context.image_requirements?.mood || 'engaging, optimistic'}\nBrand Colors: ${context.image_requirements?.brand_colors || 'not specified'}\nAdditional Notes: ${context.image_requirements?.notes || 'none'}\n\n## CRITICAL INSTRUCTIONS\n1. READ THE POST CONTENT IN THE USER MESSAGE CAREFULLY - your image MUST visually represent the topic/theme\n2. If the posts are about AI productivity, the image should show AI/productivity themes\n3. If the posts are about marketing, show marketing themes\n4. DO NOT generate generic stock photo images - make it relevant to the actual content\n5. Be specific about visual elements, composition, and style\n6. Avoid text in images (it often renders poorly)\n7. Focus on professional, clean aesthetics\n8. Consider the target audience (business professionals, founders, etc.)\n\n## OUTPUT FORMAT\nReturn a JSON object:\n{\n  \"image_prompt\": \"A detailed prompt that DIRECTLY RELATES to the post content...\",\n  \"style_notes\": \"Brief notes about visual choices made\"\n}\n\nThe prompt should be 50-150 words, highly descriptive, and DIRECTLY TIED TO THE POST CONTENT.`;\n\n// CRITICAL FIX: Include the actual content in the user_prompt so the LLM sees it\nconst userPrompt = `Generate a professional marketing image prompt based on these approved content drafts:\n\n## POST CONTENT TO BASE YOUR IMAGE ON:\n${contentSummary || 'No content available'}\n\nCreate an image prompt that visually represents the core theme and message of this content. The image must be relevant to the specific topic above.`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "claude-model",
+            "name": "Claude Sonnet",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.3,
+            "position": [
+                860,
+                480
+            ],
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "claude-sonnet-4-5-20250929"
+                },
+                "options": {
+                    "maxTokensToSample": 500,
+                    "temperature": 0.7
+                }
+            },
+            "credentials": {
+                "anthropicApi": {
+                    "id": "iKUsIHimnjBUibjJ",
+                    "name": "Anthropic account"
+                }
+            }
+        },
+        {
+            "id": "prompt-generator",
+            "name": "Generate Image Prompt",
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.5,
+            "position": [
+                860,
+                300
+            ],
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.user_prompt }}",
+                "options": {
+                    "systemMessage": "={{ $json.system_prompt }}"
+                },
+                "hasOutputParser": true
+            }
+        },
+        {
+            "id": "parse-prompt",
+            "name": "Parse Image Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1080,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst originalContext = $('Build Image Prompt').first().json.original_context;\n\nlet imagePrompt = '';\nlet styleNotes = '';\n\ntry {\n  // Check for structured output\n  if (input.output && typeof input.output === 'object') {\n    imagePrompt = input.output.image_prompt || '';\n    styleNotes = input.output.style_notes || '';\n  } else if (input.image_prompt) {\n    imagePrompt = input.image_prompt;\n    styleNotes = input.style_notes || '';\n  } else if (input.text) {\n    // Fallback: try to extract JSON\n    const response = input.text.replace(/\\`\\`\\`json\\n?/g, '').replace(/\\`\\`\\`\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      imagePrompt = parsed.image_prompt || '';\n      styleNotes = parsed.style_notes || '';\n    } else {\n      imagePrompt = response;\n    }\n  }\n} catch (e) {\n  imagePrompt = input.text || '';\n}\n\n// Fallback prompt if empty\nif (!imagePrompt) {\n  imagePrompt = `Professional marketing image for ${originalContext.content_context || 'business content'}, ${originalContext.image_requirements?.style || 'modern'} style, clean composition, high quality`;\n}\n\nreturn [{\n  json: {\n    image_prompt: imagePrompt,\n    style_notes: styleNotes,\n    channel_configs: originalContext.channel_configs,\n    slack_user_id: originalContext.slack_user_id,\n    original_context: originalContext\n  }\n}];"
+            }
+        },
+        {
+            "id": "split-channels",
+            "name": "Split by Channel",
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [
+                1300,
+                300
+            ],
+            "parameters": {
+                "fieldToSplitOut": "channel_configs",
+                "include": "allOtherFields"
+            }
+        },
+        {
+            "id": "generate-image",
+            "name": "Generate Image (OpenAI)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1520,
+                300
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.openai.com/v1/images/generations",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-image-1.5',\n  prompt: $json.image_prompt,\n  n: 1,\n  size: ($json.width === 1080 && $json.height === 1080) ? '1024x1024' :\n        ($json.width === 1080 && $json.height === 1920) ? '1024x1536' :\n        '1536x1024',\n  quality: 'high',\n  output_format: 'png',\n  background: 'auto'\n}) }}",
+                "options": {
+                    "timeout": 120000,
+                    "response": {
+                        "response": {
+                            "fullResponse": true
+                        }
+                    }
+                }
+            },
+            "credentials": {
+                "openAiApi": {
+                    "id": "K0dJSGlrxig3qa2p",
+                    "name": "OpenAi account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "process-image-result",
+            "name": "Process Image Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1740,
+                300
+            ],
+            "parameters": {
+                "jsCode": "// Process ALL items from the split (one per channel)\nconst items = $input.all();\nconst splitItems = $('Split by Channel').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const input = items[i].json;\n  const splitData = splitItems[i]?.json || splitItems[0]?.json;\n  // After splitOut, channel info is inside channel_configs sub-object\n  const channelConfig = splitData.channel_configs || splitData;\n  const channel = channelConfig.channel || splitData.channel || 'unknown';\n  const width = channelConfig.width || splitData.width || 1200;\n  const height = channelConfig.height || splitData.height || 627;\n  const dimensions = `${width}x${height}`;\n\n  let success = false;\n  let imageUrl = null;\n  let imageBase64 = null;\n  let error = null;\n\n  // Check for URL response (dall-e-3 style)\n  if (input.statusCode === 200 && input.body?.data?.[0]?.url) {\n    success = true;\n    imageUrl = input.body.data[0].url;\n  }\n  // Check for base64 response (gpt-image-1 style)\n  else if (input.statusCode === 200 && input.body?.data?.[0]?.b64_json) {\n    success = true;\n    imageBase64 = input.body.data[0].b64_json;\n  }\n  // Fallback: check without statusCode wrapper\n  else if (input.data?.[0]?.url) {\n    success = true;\n    imageUrl = input.data[0].url;\n  }\n  else if (input.data?.[0]?.b64_json) {\n    success = true;\n    imageBase64 = input.data[0].b64_json;\n  }\n  else {\n    error = input.body?.error?.message || input.error?.message || 'Image generation failed';\n  }\n\n  results.push({\n    json: {\n      channel: channel,\n      success: success,\n      image_url: imageUrl,\n      image_base64: imageBase64,\n      needs_upload: imageBase64 !== null,\n      dimensions: dimensions,\n      error: error,\n      image_prompt: splitData.image_prompt,\n      slack_user_id: splitData.slack_user_id || ''\n    }\n  });\n}\n\nreturn results;"
+            }
+        },
+        {
+            "id": "aggregate-results",
+            "name": "Aggregate Results",
+            "type": "n8n-nodes-base.aggregate",
+            "typeVersion": 1,
+            "position": [
+                2620,
+                300
+            ],
+            "parameters": {
+                "aggregate": "aggregateAllItemData",
+                "destinationFieldName": "image_results",
+                "include": "allFields"
+            }
+        },
+        {
+            "id": "format-output",
+            "name": "Format Output",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2840,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst imageResults = input.image_results || [];\nconst parsePromptData = $('Parse Image Prompt').first().json;\n\n// Build images object by channel\nconst images = {};\nconst artifacts = [];\nlet successCount = 0;\n\nfor (const result of imageResults) {\n  if (result.success && result.image_url) {\n    successCount++;\n    images[result.channel] = {\n      file_url: result.image_url,\n      dimensions: result.dimensions\n    };\n    artifacts.push({\n      type: 'image',\n      id: `img_${result.channel}_${Date.now()}`,\n      url: result.image_url,\n      channel: result.channel\n    });\n  } else {\n    images[result.channel] = {\n      error: result.error || 'Generation failed',\n      dimensions: result.dimensions\n    };\n  }\n}\n\nconst overallSuccess = successCount > 0;\n\nreturn [{\n  json: {\n    success: overallSuccess,\n    output: {\n      images_generated: successCount,\n      images: images,\n      prompt_used: parsePromptData.image_prompt\n    },\n    output_type: 'images',\n    artifacts: artifacts,\n    error: overallSuccess ? null : 'All image generations failed'\n  }\n}];"
+            }
+        },
+        {
+            "id": "image-prompt-parser",
+            "name": "Image Prompt Schema",
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.3,
+            "position": [
+                860,
+                480
+            ],
+            "parameters": {
+                "schemaType": "fromJson",
+                "jsonSchemaExample": "{\n  \"image_prompt\": \"A detailed description of the image to generate...\",\n  \"style_notes\": \"Brief notes about visual choices made\"\n}",
+                "autoFix": true
+            }
+        },
+        {
+            "id": "parser-llm",
+            "name": "Parser LLM",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.3,
+            "position": [
+                660,
+                480
+            ],
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "claude-3-5-haiku-20241022",
+                    "cachedResultName": "Claude 3.5 Haiku"
+                },
+                "options": {}
+            },
+            "credentials": {
+                "anthropicApi": {
+                    "id": "iKUsIHimnjBUibjJ",
+                    "name": "Anthropic account"
+                }
+            }
+        },
+        {
+            "id": "needs-drive-upload",
+            "name": "Needs Drive Upload?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                1960,
+                300
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "cond-needs-upload",
+                            "leftValue": "={{ $json.needs_upload }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "upload-to-drive",
+            "name": "Upload to Drive",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2180,
+                180
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "QMxT5NLQOL3jlrzv"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "source_base64": "={{ $json.image_base64 }}",
+                        "file_name": "=marketing_{{ $json.channel }}_{{ Date.now() }}.png",
+                        "mime_type": "image/png",
+                        "folder_id": "",
+                        "config_key": "marketing.blog_drafts_folder_id",
+                        "slack_user_id": "={{ $json.slack_user_id }}"
+                    }
+                },
+                "options": {}
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "set-drive-url",
+            "name": "Set Drive URL",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2400,
+                180
+            ],
+            "parameters": {
+                "jsCode": "const items = $input.all();\nconst ifItems = $('Needs Drive Upload?').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const uploadResult = items[i].json;\n  const originalData = ifItems[i]?.json || ifItems[0]?.json || {};\n\n  if (uploadResult.success && uploadResult.file_id) {\n    results.push({\n      json: {\n        channel: originalData.channel,\n        success: true,\n        image_url: uploadResult.file_url,\n        dimensions: originalData.dimensions,\n        error: null,\n        image_prompt: originalData.image_prompt\n      }\n    });\n  } else {\n    // Upload failed but image was generated - include error detail\n    results.push({\n      json: {\n        channel: originalData.channel,\n        success: false,\n        image_url: null,\n        dimensions: originalData.dimensions,\n        error: `Image generated but Drive upload failed: ${uploadResult.error || 'unknown'}`,\n        image_prompt: originalData.image_prompt\n      }\n    });\n  }\n}\n\nreturn results;"
+            }
+        }
+    ],
+    "connections": {
+        "Workflow Input": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Context": {
+            "main": [
+                [
+                    {
+                        "node": "Build Image Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Image Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Image Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Claude Sonnet": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Generate Image Prompt",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Image Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Image Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Image Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Split by Channel",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split by Channel": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Image (OpenAI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Image (OpenAI)": {
+            "main": [
+                [
+                    {
+                        "node": "Process Image Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate Results": {
+            "main": [
+                [
+                    {
+                        "node": "Format Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Image Prompt Schema": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Generate Image Prompt",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parser LLM": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Image Prompt Schema",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Process Image Result": {
+            "main": [
+                [
+                    {
+                        "node": "Needs Drive Upload?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Needs Drive Upload?": {
+            "main": [
+                [
+                    {
+                        "node": "Upload to Drive",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Aggregate Results",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload to Drive": {
+            "main": [
+                [
+                    {
+                        "node": "Set Drive URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Drive URL": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate Results",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "c2e08877-42ca-4edf-a63d-71b768251266",
+    "activeVersionId": "c2e08877-42ca-4edf-a63d-71b768251266",
+    "versionCounter": 56,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-05T13:48:47.870Z",
+            "createdAt": "2026-02-05T13:48:47.870Z",
+            "role": "workflow:owner",
+            "workflowId": "Z4pTCAwWwz153K3C",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "project": {
+                "updatedAt": "2026-02-02T12:27:52.037Z",
+                "createdAt": "2026-02-02T12:20:35.714Z",
+                "id": "Jd992SEPuokf8o5Z",
+                "name": "Spencer Marx <spencer@aclarify.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+                "projectRelations": [
+                    {
+                        "updatedAt": "2026-02-02T12:20:35.714Z",
+                        "createdAt": "2026-02-02T12:20:35.714Z",
+                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+                        "projectId": "Jd992SEPuokf8o5Z",
+                        "user": {
+                            "updatedAt": "2026-02-09T12:02:49.196Z",
+                            "createdAt": "2026-02-02T12:20:29.217Z",
+                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
+                            "email": "spencer@aclarify.com",
+                            "firstName": "Spencer",
+                            "lastName": "Marx",
+                            "personalizationAnswers": {
+                                "version": "v4",
+                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                                "personalization_survey_n8n_version": "2.6.2",
+                                "companySize": "<20",
+                                "companyType": "saas",
+                                "role": "business-owner",
+                                "reportedSource": "friend"
+                            },
+                            "settings": {
+                                "userActivated": true,
+                                "easyAIWorkflowOnboarded": true,
+                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                                "userActivatedAt": 1770049275864,
+                                "npsSurvey": {
+                                    "responded": true,
+                                    "lastShownAt": 1770325854784
+                                }
+                            },
+                            "disabled": false,
+                            "mfaEnabled": false,
+                            "lastActiveAt": "2026-02-09",
+                            "isPending": false
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-02-09T16:35:27.100Z",
+        "createdAt": "2026-02-09T16:35:27.100Z",
+        "versionId": "c2e08877-42ca-4edf-a63d-71b768251266",
+        "workflowId": "Z4pTCAwWwz153K3C",
+        "nodes": [
+            {
+                "id": "workflow-input",
+                "name": "Workflow Input",
+                "type": "n8n-nodes-base.executeWorkflowTrigger",
+                "typeVersion": 1.1,
+                "position": [
+                    200,
+                    300
+                ],
+                "parameters": {
+                    "workflowInputs": {
+                        "values": [
+                            {
+                                "name": "slack_user_id",
+                                "type": "string"
+                            },
+                            {
+                                "name": "drafts",
+                                "type": "string"
+                            },
+                            {
+                                "name": "target_channels",
+                                "type": "string"
+                            },
+                            {
+                                "name": "image_style_hints",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "prepare-context",
+                "name": "Prepare Context",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    420,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\n// Parse drafts - this is the actual content to generate images for\nlet drafts = input.drafts;\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\n// Parse target channels\nlet targetChannels = input.target_channels || '';\nif (typeof targetChannels === 'string') {\n  targetChannels = targetChannels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n}\nif (!Array.isArray(targetChannels) || targetChannels.length === 0) {\n  targetChannels = Object.keys(drafts).length > 0 ? Object.keys(drafts) : ['linkedin', 'twitter'];\n}\n\n// Build content context from the actual drafts\nlet contentContext = '';\nfor (const [channel, content] of Object.entries(drafts)) {\n  if (content) {\n    const text = typeof content === 'object' ? (content.content || content.text || JSON.stringify(content)) : String(content);\n    contentContext += `${channel.toUpperCase()}: ${text.substring(0, 300)}...\\n\\n`;\n  }\n}\n\n// Parse style hints\nconst styleHints = input.image_style_hints || '';\n\n// Channel-specific dimensions\nconst channelDimensions = {\n  linkedin: { width: 1200, height: 627, name: 'LinkedIn' },\n  twitter: { width: 1600, height: 900, name: 'Twitter/X' },\n  facebook: { width: 1200, height: 630, name: 'Facebook' },\n  blog: { width: 1200, height: 800, name: 'Blog Header' },\n  instagram: { width: 1080, height: 1080, name: 'Instagram Square' },\n  instagram_story: { width: 1080, height: 1920, name: 'Instagram Story' }\n};\n\n// Build channel configs\nconst channelConfigs = targetChannels.map(channel => {\n  const config = channelDimensions[channel.toLowerCase()] || channelDimensions.linkedin;\n  return {\n    channel: channel,\n    ...config\n  };\n});\n\nreturn [{\n  json: {\n    subtask_prompt: 'Generate professional marketing images based on the approved content drafts',\n    content_context: contentContext,\n    image_requirements: {\n      style: styleHints || 'professional, modern, clean',\n      mood: 'engaging, optimistic',\n      brand_colors: 'not specified',\n      notes: styleHints\n    },\n    target_channels: targetChannels,\n    channel_configs: channelConfigs,\n    slack_user_id: input.slack_user_id || '',\n    drafts: drafts\n  }\n}];"
+                }
+            },
+            {
+                "id": "build-image-prompt",
+                "name": "Build Image Prompt",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    640,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const context = $input.first().json;\n\n// Build content summary from drafts for the user prompt\nlet contentSummary = '';\nif (context.content_context) {\n  contentSummary = context.content_context;\n} else if (context.drafts) {\n  for (const [channel, content] of Object.entries(context.drafts)) {\n    const text = typeof content === 'object' ? (content.content || content.text || JSON.stringify(content)) : String(content);\n    contentSummary += `${channel.toUpperCase()}: ${text.substring(0, 500)}\\n\\n`;\n  }\n}\n\nconst systemPrompt = `You are an expert at crafting image generation prompts for professional marketing content.\n\nGiven the ACTUAL CONTENT of the posts and any style guidance, create a detailed, effective prompt for DALL-E.\n\n## STYLE GUIDANCE\nStyle: ${context.image_requirements?.style || 'professional, modern'}\nMood: ${context.image_requirements?.mood || 'engaging, optimistic'}\nBrand Colors: ${context.image_requirements?.brand_colors || 'not specified'}\nAdditional Notes: ${context.image_requirements?.notes || 'none'}\n\n## CRITICAL INSTRUCTIONS\n1. READ THE POST CONTENT IN THE USER MESSAGE CAREFULLY - your image MUST visually represent the topic/theme\n2. If the posts are about AI productivity, the image should show AI/productivity themes\n3. If the posts are about marketing, show marketing themes\n4. DO NOT generate generic stock photo images - make it relevant to the actual content\n5. Be specific about visual elements, composition, and style\n6. Avoid text in images (it often renders poorly)\n7. Focus on professional, clean aesthetics\n8. Consider the target audience (business professionals, founders, etc.)\n\n## OUTPUT FORMAT\nReturn a JSON object:\n{\n  \"image_prompt\": \"A detailed prompt that DIRECTLY RELATES to the post content...\",\n  \"style_notes\": \"Brief notes about visual choices made\"\n}\n\nThe prompt should be 50-150 words, highly descriptive, and DIRECTLY TIED TO THE POST CONTENT.`;\n\n// CRITICAL FIX: Include the actual content in the user_prompt so the LLM sees it\nconst userPrompt = `Generate a professional marketing image prompt based on these approved content drafts:\n\n## POST CONTENT TO BASE YOUR IMAGE ON:\n${contentSummary || 'No content available'}\n\nCreate an image prompt that visually represents the core theme and message of this content. The image must be relevant to the specific topic above.`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "claude-model",
+                "name": "Claude Sonnet",
+                "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+                "typeVersion": 1.3,
+                "position": [
+                    860,
+                    480
+                ],
+                "parameters": {
+                    "model": {
+                        "__rl": true,
+                        "mode": "list",
+                        "value": "claude-sonnet-4-5-20250929"
+                    },
+                    "options": {
+                        "maxTokensToSample": 500,
+                        "temperature": 0.7
+                    }
+                },
+                "credentials": {
+                    "anthropicApi": {
+                        "id": "iKUsIHimnjBUibjJ",
+                        "name": "Anthropic account"
+                    }
+                }
+            },
+            {
+                "id": "prompt-generator",
+                "name": "Generate Image Prompt",
+                "type": "@n8n/n8n-nodes-langchain.chainLlm",
+                "typeVersion": 1.5,
+                "position": [
+                    860,
+                    300
+                ],
+                "parameters": {
+                    "promptType": "define",
+                    "text": "={{ $json.user_prompt }}",
+                    "options": {
+                        "systemMessage": "={{ $json.system_prompt }}"
+                    },
+                    "hasOutputParser": true
+                }
+            },
+            {
+                "id": "parse-prompt",
+                "name": "Parse Image Prompt",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1080,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst originalContext = $('Build Image Prompt').first().json.original_context;\n\nlet imagePrompt = '';\nlet styleNotes = '';\n\ntry {\n  // Check for structured output\n  if (input.output && typeof input.output === 'object') {\n    imagePrompt = input.output.image_prompt || '';\n    styleNotes = input.output.style_notes || '';\n  } else if (input.image_prompt) {\n    imagePrompt = input.image_prompt;\n    styleNotes = input.style_notes || '';\n  } else if (input.text) {\n    // Fallback: try to extract JSON\n    const response = input.text.replace(/\\`\\`\\`json\\n?/g, '').replace(/\\`\\`\\`\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      imagePrompt = parsed.image_prompt || '';\n      styleNotes = parsed.style_notes || '';\n    } else {\n      imagePrompt = response;\n    }\n  }\n} catch (e) {\n  imagePrompt = input.text || '';\n}\n\n// Fallback prompt if empty\nif (!imagePrompt) {\n  imagePrompt = `Professional marketing image for ${originalContext.content_context || 'business content'}, ${originalContext.image_requirements?.style || 'modern'} style, clean composition, high quality`;\n}\n\nreturn [{\n  json: {\n    image_prompt: imagePrompt,\n    style_notes: styleNotes,\n    channel_configs: originalContext.channel_configs,\n    slack_user_id: originalContext.slack_user_id,\n    original_context: originalContext\n  }\n}];"
+                }
+            },
+            {
+                "id": "split-channels",
+                "name": "Split by Channel",
+                "type": "n8n-nodes-base.splitOut",
+                "typeVersion": 1,
+                "position": [
+                    1300,
+                    300
+                ],
+                "parameters": {
+                    "fieldToSplitOut": "channel_configs",
+                    "include": "allOtherFields"
+                }
+            },
+            {
+                "id": "generate-image",
+                "name": "Generate Image (OpenAI)",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1520,
+                    300
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.openai.com/v1/images/generations",
+                    "authentication": "predefinedCredentialType",
+                    "nodeCredentialType": "openAiApi",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-image-1.5',\n  prompt: $json.image_prompt,\n  n: 1,\n  size: ($json.width === 1080 && $json.height === 1080) ? '1024x1024' :\n        ($json.width === 1080 && $json.height === 1920) ? '1024x1536' :\n        '1536x1024',\n  quality: 'high',\n  output_format: 'png',\n  background: 'auto'\n}) }}",
+                    "options": {
+                        "timeout": 120000,
+                        "response": {
+                            "response": {
+                                "fullResponse": true
+                            }
+                        }
+                    }
+                },
+                "credentials": {
+                    "openAiApi": {
+                        "id": "K0dJSGlrxig3qa2p",
+                        "name": "OpenAi account"
+                    }
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "process-image-result",
+                "name": "Process Image Result",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1740,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "// Process ALL items from the split (one per channel)\nconst items = $input.all();\nconst splitItems = $('Split by Channel').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const input = items[i].json;\n  const splitData = splitItems[i]?.json || splitItems[0]?.json;\n  // After splitOut, channel info is inside channel_configs sub-object\n  const channelConfig = splitData.channel_configs || splitData;\n  const channel = channelConfig.channel || splitData.channel || 'unknown';\n  const width = channelConfig.width || splitData.width || 1200;\n  const height = channelConfig.height || splitData.height || 627;\n  const dimensions = `${width}x${height}`;\n\n  let success = false;\n  let imageUrl = null;\n  let imageBase64 = null;\n  let error = null;\n\n  // Check for URL response (dall-e-3 style)\n  if (input.statusCode === 200 && input.body?.data?.[0]?.url) {\n    success = true;\n    imageUrl = input.body.data[0].url;\n  }\n  // Check for base64 response (gpt-image-1 style)\n  else if (input.statusCode === 200 && input.body?.data?.[0]?.b64_json) {\n    success = true;\n    imageBase64 = input.body.data[0].b64_json;\n  }\n  // Fallback: check without statusCode wrapper\n  else if (input.data?.[0]?.url) {\n    success = true;\n    imageUrl = input.data[0].url;\n  }\n  else if (input.data?.[0]?.b64_json) {\n    success = true;\n    imageBase64 = input.data[0].b64_json;\n  }\n  else {\n    error = input.body?.error?.message || input.error?.message || 'Image generation failed';\n  }\n\n  results.push({\n    json: {\n      channel: channel,\n      success: success,\n      image_url: imageUrl,\n      image_base64: imageBase64,\n      needs_upload: imageBase64 !== null,\n      dimensions: dimensions,\n      error: error,\n      image_prompt: splitData.image_prompt,\n      slack_user_id: splitData.slack_user_id || ''\n    }\n  });\n}\n\nreturn results;"
+                }
+            },
+            {
+                "id": "aggregate-results",
+                "name": "Aggregate Results",
+                "type": "n8n-nodes-base.aggregate",
+                "typeVersion": 1,
+                "position": [
+                    2620,
+                    300
+                ],
+                "parameters": {
+                    "aggregate": "aggregateAllItemData",
+                    "destinationFieldName": "image_results",
+                    "include": "allFields"
+                }
+            },
+            {
+                "id": "format-output",
+                "name": "Format Output",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2840,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst imageResults = input.image_results || [];\nconst parsePromptData = $('Parse Image Prompt').first().json;\n\n// Build images object by channel\nconst images = {};\nconst artifacts = [];\nlet successCount = 0;\n\nfor (const result of imageResults) {\n  if (result.success && result.image_url) {\n    successCount++;\n    images[result.channel] = {\n      file_url: result.image_url,\n      dimensions: result.dimensions\n    };\n    artifacts.push({\n      type: 'image',\n      id: `img_${result.channel}_${Date.now()}`,\n      url: result.image_url,\n      channel: result.channel\n    });\n  } else {\n    images[result.channel] = {\n      error: result.error || 'Generation failed',\n      dimensions: result.dimensions\n    };\n  }\n}\n\nconst overallSuccess = successCount > 0;\n\nreturn [{\n  json: {\n    success: overallSuccess,\n    output: {\n      images_generated: successCount,\n      images: images,\n      prompt_used: parsePromptData.image_prompt\n    },\n    output_type: 'images',\n    artifacts: artifacts,\n    error: overallSuccess ? null : 'All image generations failed'\n  }\n}];"
+                }
+            },
+            {
+                "id": "image-prompt-parser",
+                "name": "Image Prompt Schema",
+                "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+                "typeVersion": 1.3,
+                "position": [
+                    860,
+                    480
+                ],
+                "parameters": {
+                    "schemaType": "fromJson",
+                    "jsonSchemaExample": "{\n  \"image_prompt\": \"A detailed description of the image to generate...\",\n  \"style_notes\": \"Brief notes about visual choices made\"\n}",
+                    "autoFix": true
+                }
+            },
+            {
+                "id": "parser-llm",
+                "name": "Parser LLM",
+                "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+                "typeVersion": 1.3,
+                "position": [
+                    660,
+                    480
+                ],
+                "parameters": {
+                    "model": {
+                        "__rl": true,
+                        "mode": "list",
+                        "value": "claude-3-5-haiku-20241022",
+                        "cachedResultName": "Claude 3.5 Haiku"
+                    },
+                    "options": {}
+                },
+                "credentials": {
+                    "anthropicApi": {
+                        "id": "iKUsIHimnjBUibjJ",
+                        "name": "Anthropic account"
+                    }
+                }
+            },
+            {
+                "id": "needs-drive-upload",
+                "name": "Needs Drive Upload?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    1960,
+                    300
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "cond-needs-upload",
+                                "leftValue": "={{ $json.needs_upload }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "upload-to-drive",
+                "name": "Upload to Drive",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2180,
+                    180
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "QMxT5NLQOL3jlrzv"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "source_base64": "={{ $json.image_base64 }}",
+                            "file_name": "=marketing_{{ $json.channel }}_{{ Date.now() }}.png",
+                            "mime_type": "image/png",
+                            "folder_id": "",
+                            "config_key": "marketing.blog_drafts_folder_id",
+                            "slack_user_id": "={{ $json.slack_user_id }}"
+                        }
+                    },
+                    "options": {}
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "set-drive-url",
+                "name": "Set Drive URL",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2400,
+                    180
+                ],
+                "parameters": {
+                    "jsCode": "const items = $input.all();\nconst ifItems = $('Needs Drive Upload?').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const uploadResult = items[i].json;\n  const originalData = ifItems[i]?.json || ifItems[0]?.json || {};\n\n  if (uploadResult.success && uploadResult.file_id) {\n    results.push({\n      json: {\n        channel: originalData.channel,\n        success: true,\n        image_url: uploadResult.file_url,\n        dimensions: originalData.dimensions,\n        error: null,\n        image_prompt: originalData.image_prompt\n      }\n    });\n  } else {\n    // Upload failed but image was generated - include error detail\n    results.push({\n      json: {\n        channel: originalData.channel,\n        success: false,\n        image_url: null,\n        dimensions: originalData.dimensions,\n        error: `Image generated but Drive upload failed: ${uploadResult.error || 'unknown'}`,\n        image_prompt: originalData.image_prompt\n      }\n    });\n  }\n}\n\nreturn results;"
+                }
+            }
+        ],
+        "connections": {
+            "Workflow Input": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Context",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Context": {
+                "main": [
+                    [
+                        {
+                            "node": "Build Image Prompt",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Build Image Prompt": {
+                "main": [
+                    [
+                        {
+                            "node": "Generate Image Prompt",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Claude Sonnet": {
+                "ai_languageModel": [
+                    [
+                        {
+                            "node": "Generate Image Prompt",
+                            "type": "ai_languageModel",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Generate Image Prompt": {
+                "main": [
+                    [
+                        {
+                            "node": "Parse Image Prompt",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Parse Image Prompt": {
+                "main": [
+                    [
+                        {
+                            "node": "Split by Channel",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Split by Channel": {
+                "main": [
+                    [
+                        {
+                            "node": "Generate Image (OpenAI)",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Generate Image (OpenAI)": {
+                "main": [
+                    [
+                        {
+                            "node": "Process Image Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Aggregate Results": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Image Prompt Schema": {
+                "ai_outputParser": [
+                    [
+                        {
+                            "node": "Generate Image Prompt",
+                            "type": "ai_outputParser",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Parser LLM": {
+                "ai_languageModel": [
+                    [
+                        {
+                            "node": "Image Prompt Schema",
+                            "type": "ai_languageModel",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Process Image Result": {
+                "main": [
+                    [
+                        {
+                            "node": "Needs Drive Upload?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Needs Drive Upload?": {
+                "main": [
+                    [
+                        {
+                            "node": "Upload to Drive",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Aggregate Results",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Upload to Drive": {
+                "main": [
+                    [
+                        {
+                            "node": "Set Drive URL",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Set Drive URL": {
+                "main": [
+                    [
+                        {
+                            "node": "Aggregate Results",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Spencer Marx",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-02-09T16:35:27.228Z",
+                "id": 555,
+                "workflowId": "Z4pTCAwWwz153K3C",
+                "versionId": "c2e08877-42ca-4edf-a63d-71b768251266",
+                "event": "activated",
+                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+            }
+        ]
+    }
+}

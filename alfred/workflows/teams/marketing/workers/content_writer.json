@@ -1,0 +1,740 @@
+{
+  "updatedAt": "2026-02-10T11:15:25.648Z",
+  "createdAt": "2026-02-05T13:47:27.044Z",
+  "id": "U5C3B4S9SIyXNGtH",
+  "name": "Worker | Content Writer",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "subtask_prompt"
+            },
+            {
+              "name": "context",
+              "type": "object"
+            },
+            {
+              "name": "feedback"
+            },
+            {
+              "name": "iteration_count",
+              "type": "number"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "winning_idea"
+            },
+            {
+              "name": "target_channels"
+            },
+            {
+              "name": "editor_feedback"
+            },
+            {
+              "name": "iteration_number",
+              "type": "number"
+            },
+            {
+              "name": "brand_context"
+            },
+            {
+              "name": "content_brief",
+              "type": "string"
+            },
+            {
+              "name": "max_iterations",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Parse winning_idea - can be JSON string or object\nlet winningIdea = {};\nif (input.winning_idea) {\n  try {\n    winningIdea = typeof input.winning_idea === 'string' \n      ? JSON.parse(input.winning_idea) \n      : input.winning_idea;\n  } catch (e) {\n    winningIdea = { topic: input.winning_idea, angle: '', rationale: '' };\n  }\n} else if (input.context?.winning_idea) {\n  winningIdea = input.context.winning_idea;\n}\n\n// Parse target_channels - can be string or array\nlet targetChannels = ['linkedin', 'twitter'];\nif (input.target_channels) {\n  if (Array.isArray(input.target_channels)) {\n    targetChannels = input.target_channels;\n  } else if (typeof input.target_channels === 'string') {\n    targetChannels = input.target_channels.split(',').map(s => s.trim()).filter(Boolean);\n  }\n} else if (input.context?.target_channels) {\n  targetChannels = input.context.target_channels;\n}\n\n// Parse brand_context - can be JSON string or object\nlet brandContext = null;\nif (input.brand_context) {\n  try {\n    brandContext = typeof input.brand_context === 'string' \n      ? JSON.parse(input.brand_context) \n      : input.brand_context;\n  } catch (e) {\n    brandContext = null;\n  }\n}\n\n// Parse content_brief - can be JSON string or object\nlet contentBrief = null;\nif (input.content_brief) {\n  try {\n    contentBrief = typeof input.content_brief === 'string'\n      ? JSON.parse(input.content_brief)\n      : input.content_brief;\n  } catch (e) {\n    contentBrief = null;\n  }\n}\n\n// Get feedback (support both field names)\nconst feedback = input.editor_feedback || input.feedback || null;\nconst iterationCount = input.iteration_number || input.iteration_count || 0;\nconst maxIterations = input.max_iterations || 3;\n\nreturn [{\n  json: {\n    subtask_prompt: input.subtask_prompt || 'Create content drafts',\n    winning_idea: winningIdea,\n    target_channels: targetChannels,\n    brand_context: brandContext,\n    content_brief: contentBrief,\n    feedback: feedback,\n    iteration_count: iterationCount,\n    max_iterations: maxIterations,\n    user_context: input.user_context || {}\n  }\n}];\n"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $input.first().json;\n\nconst iterationNumber = context.iteration_count + 1;\nconst maxIterations = context.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst channelList = context.target_channels.join(', ');\nconst brief = context.content_brief;\n\n// Build channel specs section from brief or fallback defaults\nconst defaultSpecs = {\n  linkedin: { word_count_range: [150, 200], char_limit: 1500, tone: 'Professional, data-backed', format: 'Hook in first 2 lines. 3-5 hashtags.', hashtag_count_range: [3, 5] },\n  twitter: { word_count_range: [20, 50], char_limit: 280, tone: 'Punchy, conversational', format: '1-2 hashtags.', hashtag_count_range: [1, 2] },\n  facebook: { word_count_range: [15, 30], char_limit: 80, tone: 'Casual, emoji-friendly', format: 'Questions drive engagement.', hashtag_count_range: [0, 2] },\n  blog: { word_count_range: [1500, 2500], char_limit: null, tone: 'Authoritative, SEO-friendly', format: 'H2/H3 headers. Meta description 150-160 chars.', hashtag_count_range: [0, 0] }\n};\n\nlet channelSpecsText = '';\nfor (const ch of context.target_channels) {\n  const spec = brief?.channel_specs?.[ch] || defaultSpecs[ch.toLowerCase()] || defaultSpecs.linkedin;\n  const wcRange = spec.word_count_range || [150, 200];\n  const charLim = spec.char_limit || 1500;\n  channelSpecsText += `### ${ch.toUpperCase()}\\n`;\n  channelSpecsText += `- Word count: ${wcRange[0]}-${wcRange[1]} words (HARD REQUIREMENT)\\n`;\n  channelSpecsText += `- Character limit: ${charLim} chars MAX\\n`;\n  channelSpecsText += `- Tone: ${spec.tone || 'Professional'}\\n`;\n  channelSpecsText += `- Format: ${spec.format || 'Standard'}\\n`;\n  if (spec.cta) channelSpecsText += `- CTA: ${spec.cta}\\n`;\n  if (spec.hashtag_count_range) channelSpecsText += `- Hashtags: ${spec.hashtag_count_range[0]}-${spec.hashtag_count_range[1]}\\n`;\n  channelSpecsText += '\\n';\n}\n\nconst systemPrompt = `You are a Content Writer. You write against a Content Brief and you write like a REAL PERSON \u2014 not an AI.\n\n${brief ? `##############################################\n# THE CONTENT BRIEF (YOUR SINGLE SOURCE OF TRUTH)\n##############################################\n\nKEY MESSAGE: ${brief.key_message || 'Not specified'}\nTARGET AUDIENCE: ${brief.target_audience || 'Not specified'}\nCONTENT TYPE: ${brief.content_type || 'value'}\n` : ''}\n\n##############################################\n# VOICE & TONE (READ THIS FIRST)            #\n##############################################\n\nYou are ghostwriting as the author. Write as if YOU are the person posting this. Use \"I\", \"we\", \"our\" naturally. Frame insights from personal/professional experience.\n\nGOOD: \"I've watched this pattern play out across dozens of contractor sites\"\nGOOD: \"We ran the numbers on this and the gap is staggering\"\nGOOD: \"Here's what I keep telling our clients\"\nBAD: \"Studies show that...\" (academic, detached)\nBAD: \"It has been observed that...\" (passive, robotic)\nBAD: \"Research indicates...\" (generic, no personality)\n\n### PERPLEXITY & PREDICTABILITY CONTROL\n- Use unexpected word choices occasionally. A \"staggering\" gap becomes a \"brutal\" one. A \"significant\" improvement becomes \"night and day.\"\n- Mix in colloquialisms and informal phrasing: \"the math doesn't lie\", \"that's money walking out the door\", \"dead simple\"\n- Avoid overused AI phrases: \"game-changer\", \"landscape\", \"leverage\", \"delve into\", \"it's worth noting\", \"in today's world\"\n\n### BURSTINESS & SENTENCE VARIATION\n- Vary sentence length DRAMATICALLY. Mix 3-5 word punches with 20+ word complex sentences.\n- Use fragments for emphasis. \"Dead simple.\" \"Not even close.\" \"That's the gap.\"\n- Throw in parenthetical asides (the kind you'd say to a friend at a conference)\n- Break grammatical rules occasionally for effect. Start sentences with \"And\" or \"But.\"\n\n### EMOTIONAL INTELLIGENCE & HUMAN TOUCH\n- Show genuine opinion: \"Honestly, this one surprised me\" or \"I'll die on this hill\"\n- Express hesitation where real: \"I'm not 100% sure this applies to everyone, but...\"\n- Use contractions always. \"It's\" not \"It is.\" \"Don't\" not \"Do not.\"\n- Occasional self-deprecation or humility: \"Took me embarrassingly long to figure this out\"\n\n### STRUCTURAL PATTERN DISRUPTION\n- Do NOT follow a predictable intro\u2192body\u2192conclusion pattern\n- Start with an unexpected angle \u2014 a question, a bold claim, a personal observation\n- Let a tangential thought intrude naturally mid-post\n- Vary paragraph lengths. One-liners next to chunky paragraphs.\n\n### CONTEXTUAL AUTHENTICITY\n- Reference real, current things when relevant (recent industry events, seasonal context)\n- Use specific concrete details over abstractions: \"$47,000\" not \"significant revenue\"\n- Choose metaphors a real person in this industry would use, not generic business metaphors\n\n### ANTI-AI TELLS\n- NEVER use parenthetical citations like (Source Name). This is the #1 AI fingerprint.\n- Instead, weave sources naturally: \"Formstack found that...\" or \"According to a NextAfter study...\" \u2014 or just state the data confidently without attribution when the claim is well-established.\n- NEVER use a perfectly symmetrical list where every item follows the exact same grammatical pattern\n- NEVER end with a generic wrap-up like \"In conclusion\" or \"The bottom line is\"\n- Avoid the three-part rhythm that AI loves: \"It's not just X. It's Y. And it's Z.\"\n\n##############################################\n# FACTUAL ACCURACY (ZERO TOLERANCE)         #\n##############################################\n\n1. NEVER fabricate, invent, or hallucinate statistics or specific percentages\n2. ONLY cite data that you found via web_search with a verifiable source\n3. If you CANNOT find a specific statistic, use qualitative language:\n   - WRONG: \"Studies show a 18.7% decrease\" (fabricated)\n   - RIGHT: \"The drop-off is significant \u2014 and I've seen it firsthand with our clients\"\n   - RIGHT: \"Formstack found a 50% increase when forms were trimmed from 4 to 3 fields\"\n4. Do NOT use parenthetical citations (Source). Weave source names naturally into the prose OR omit them.\n5. Do NOT round or modify statistics from your research \u2014 use exact figures\n6. If the reviewer flagged a statistic as inaccurate, REMOVE it entirely\n7. Keep a mental list of all sources used \u2014 the system will extract these for reference notes separately\n8. NEVER fabricate client stories, case studies, or anecdotes \u2014 even vague ones\n9. Do NOT invent scenarios like \"I watched a client...\" or \"One contractor lost...\" unless the specific story is verifiable\n10. Personal framing (\"I've seen this pattern play out\") is ACCEPTABLE \u2014 it expresses general experience\n11. Specific fabricated anecdotes (\"I watched a contractor's receptionist fumble through...\") are PROHIBITED \u2014 they create false specificity\n12. If the reviewer flags content as fabricated, REMOVE IT entirely \u2014 do not rephrase, do not make it vaguer, just cut it\n\n\n## REVISION DISCIPLINE \u2014 ZERO TOLERANCE FOR UNNECESSARY CHANGES\nWhen revising based on reviewer feedback:\n1. Make ONLY the changes the reviewer explicitly requested\n2. Do NOT rewrite paragraphs that were not flagged\n3. Do NOT change statistics or sources unless specifically flagged as inaccurate\n4. Do NOT alter your overall structure, angle, or hook unless told to\n5. Preserve the parts that are working \u2014 the reviewer only flags what needs fixing\n6. Think of revisions as surgical fixes, not full rewrites\n7. If the reviewer said \"fix X and Y\", fix X and Y. Nothing else.\n\nDIFF CHECK (mandatory before submitting revision):\n- Mentally compare your revision to the previous draft\n- If you changed more than 3 sentences that were NOT flagged by the reviewer, you have over-edited \u2014 REVERT the unnecessary changes\n- A \"revision\" that rewrites 50%+ of unflagged content is NOT a revision \u2014 it is a violation of these rules\n- Your changes_made array MUST list ONLY changes the reviewer requested \u2014 if you cannot trace a change back to specific reviewer feedback, remove it\n- When told \"Fix ONLY these factual errors. No other changes.\" \u2014 that means ZERO structural, stylistic, or tonal changes. Fix the facts. Stop.\n\n## CHANNEL TARGETS (from ${brief ? 'the brief' : 'defaults'})\n${channelSpecsText}\n\nBEFORE finalizing each draft:\n1. Count your words. MUST be within the range above.\n2. Count your characters. MUST be under the limit above.\n3. If over the limit, CUT ruthlessly. Every sentence must earn its place.\n\n${brief?.content_requirements?.length ? `## CONTENT REQUIREMENTS (from the brief)\\n${brief.content_requirements.map((r, i) => (i+1) + '. ' + r).join('\\n')}\\n` : ''}\n${brief?.what_to_avoid?.length ? `## WHAT TO AVOID\\n${brief.what_to_avoid.map(r => '- ' + r).join('\\n')}\\n` : ''}\n${brief?.success_criteria?.length ? `## SUCCESS CRITERIA (the reviewer will check EACH of these as PASS/FAIL)\\n${brief.success_criteria.map((r, i) => (i+1) + '. ' + r).join('\\n')}\\n\\nYou MUST satisfy EVERY success criterion. The reviewer checks each one individually.\\n` : ''}\n\n## WORKFLOW: BRIEF FIRST, RESEARCH TO FILL GAPS\n1. READ the Content Brief thoroughly \\u2014 it IS your primary source of truth\n2. The brief already contains a winning idea, key message, research guidance, and channel specs \\u2014 USE THEM\n3. ${brief?.research_guidance?.length ? 'Use web_search for these specific queries: ' + brief.research_guidance.join('; ') : 'Use web_search ONLY to verify claims or fill specific data gaps'}\n4. Write the draft grounded in the brief's key message, angle, and requirements\n5. Use ONLY verified data \\u2014 if you cannot find a stat, use qualitative language\n6. Count words and characters against channel specs\n7. Self-check: Does this draft serve the brief's key message? Does it sound human?\n\nCRITICAL: The Content Brief is your contract. Do NOT go on tangential research.\nDo NOT pick a different angle than what the brief specifies.\nDo NOT substitute your own statistics for the brief's research guidance.\n\n${isFinalIteration ? `## FINAL ITERATION (${iterationNumber} of ${maxIterations})\\nThis is your LAST chance. PRIORITIES:\\n1. Fix ALL factual issues flagged by the reviewer\\n2. Meet word count and character limits EXACTLY\\n3. Address the reviewer's top required fixes\\n4. Everything else is secondary\\n` : ''}\n\n## AVAILABLE TOOLS\nYou have access to a web_search tool. USE IT before writing.\n\nCRITICAL: You MUST write about the SPECIFIC TOPIC provided in the user message.\n\n${context.brand_context ? '## Brand Context\\n' + ((context.brand_context.brand_guide || '').substring(0, 1500)) + '\\n\\n## Content Strategy\\n' + ((context.brand_context.content_strategy || '').substring(0, 1000)) + '\\n\\n## Product Knowledge (Wrkbelt Scheduler & Industry Context)\\n' + ((context.brand_context.product_knowledge || '').substring(0, 2000)) + '\\n\\n## Voice Reference (Spencer Marx Writing Samples)\\nStudy these examples carefully. Match the rhythm, sentence variation, and conversational style.\\n' + ((context.brand_context.voice_reference || '').substring(0, 2500)) : ''}\n\n## Output Format\nYou MUST produce drafts for EXACTLY these channels: ${channelList}\n\nRespond with ONLY valid JSON (no markdown, no code blocks):\n{\n  \"drafts\": {\n    \"${context.target_channels[0]}\": \"Full content here...\"${context.target_channels.length > 1 ? context.target_channels.slice(1).map(ch => ',\\n    \"' + ch + '\": \"Full content here...\"').join('') : ''}\n  },\n  \"iteration\": ${iterationNumber},\n  \"changes_made\": [\"List of changes if revision, or empty array for first draft\"],\n  \"sources_used\": [\"Source Name - URL or description for each fact referenced\"]\n}\n\nRULES:\n- Include ONLY the channels listed above\n- Every listed channel MUST have a draft\n- Do NOT add channels that were not requested\n- sources_used MUST list every source you relied on (these go into calendar notes, NOT into the post)`;\n\n// Build winning idea description\nconst topic = context.winning_idea?.topic || context.winning_idea || 'Not specified';\nconst angle = context.winning_idea?.angle || '';\nconst rationale = context.winning_idea?.rationale || '';\n\n// Feedback section for revisions\nconst feedbackSection = context.feedback\n  ? `\\n\\n\\u26a0\\ufe0f REVISION REQUIRED - Address this feedback:\\n${context.feedback}\\n\\nIMPORTANT: If the reviewer flagged any statistics as inaccurate, REMOVE them entirely. Use web_search to find verified replacements, or use qualitative language.\\n`\n  : '';\n\nconst userPrompt = `${brief?.key_message ? 'KEY MESSAGE TO CONVEY: \"' + brief.key_message + '\"\\n\\n' : ''}TOPIC: \"${topic}\"\\n${angle ? 'ANGLE: ' + angle + '\\n' : ''}${rationale ? 'RATIONALE: ' + rationale + '\\n' : ''}${feedbackSection}\\nTARGET CHANNELS: ${channelList}\\n${brief?.research_guidance?.length ? 'RESEARCH GUIDANCE: ' + brief.research_guidance.join('; ') + '\\n' : ''}\\nITERATION: #${iterationNumber} of ${maxIterations}${isFinalIteration ? ' (FINAL - fix factual issues and meet word limits first)' : ''}\\n\\nSTEPS:\\n1. Use web_search to research the topic\\n2. Write the draft as the author \u2014 first person, authentic voice, conversational\\n3. Count words and characters against channel specs\\n4. Self-check each success criterion from the brief\\n5. Read it back: Does this sound human? Would you believe a real person posted this?`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    target_channels: context.target_channels,\n    iteration_count: context.iteration_count,\n    max_iterations: maxIterations,\n    content_brief: context.content_brief\n  }\n}];\n"
+      },
+      "id": "build-system-prompt",
+      "name": "Build System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929"
+        },
+        "options": {
+          "maxTokensToSample": 4000,
+          "temperature": 0.7
+        }
+      },
+      "id": "claude-model",
+      "name": "Claude Sonnet",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        480
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_prompt }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}",
+          "maxIterations": 10,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "ai-agent",
+      "name": "Content Writer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        864,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Output - receives structured data from Output Parser + adds pre-check validation\nconst input = $input.first().json;\nconst preparedContext = $('Prepare Context').first().json;\nconst contentBrief = preparedContext.content_brief;\n\nlet parsed = null;\nlet success = true;\nlet error = null;\n\ntry {\n  if (input.output && typeof input.output === 'object') {\n    parsed = input.output;\n  } else if (input.drafts) {\n    parsed = input;\n  } else if (input.text) {\n    const response = input.text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsed = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('No JSON object found in response');\n    }\n  } else {\n    throw new Error('Unexpected output format');\n  }\n\n  if (!parsed.drafts) {\n    throw new Error('Missing drafts in response');\n  }\n} catch (e) {\n  success = false;\n  error = `Failed to parse AI response: ${e.message}`;\n  parsed = {\n    drafts: { error: { content: JSON.stringify(input).substring(0, 500), character_count: 0 } },\n    iteration: 1,\n    changes_made: []\n  };\n}\n\n// === PRE-CHECK VALIDATION ===\nconst preCheck = { passed: true, failures: [], warnings: [] };\n\nif (success && contentBrief && contentBrief.channel_specs && parsed.drafts) {\n  for (const [channel, draft] of Object.entries(parsed.drafts)) {\n    const spec = contentBrief.channel_specs[channel];\n    if (!spec) continue;\n\n    const content = typeof draft === 'string' ? draft : (draft.content || String(draft));\n    const wordCount = content.split(/\\s+/).filter(Boolean).length;\n    const charCount = content.length;\n\n    // Word count check (15% buffer on max)\n    if (spec.word_count_range) {\n      const [min, max] = spec.word_count_range;\n      if (wordCount < min * 0.85) {\n        preCheck.failures.push(`${channel}: ${wordCount} words is below minimum ${min} (spec: ${min}-${max})`);\n        preCheck.passed = false;\n      } else if (wordCount > max * 1.15) {\n        preCheck.failures.push(`${channel}: ${wordCount} words exceeds maximum ${max} by >15% (spec: ${min}-${max})`);\n        preCheck.passed = false;\n      } else if (wordCount > max) {\n        preCheck.warnings.push(`${channel}: ${wordCount} words slightly over max ${max} (spec: ${min}-${max})`);\n      } else if (wordCount < min) {\n        preCheck.warnings.push(`${channel}: ${wordCount} words slightly under min ${min} (spec: ${min}-${max})`);\n      }\n    }\n\n    // Character limit check (hard limit, no buffer)\n    if (spec.char_limit && charCount > spec.char_limit) {\n      preCheck.failures.push(`${channel}: ${charCount} chars exceeds limit ${spec.char_limit}`);\n      preCheck.passed = false;\n    }\n\n    // Hashtag count check\n    if (spec.hashtag_count_range) {\n      const hashtagMatch = content.match(/#\\w+/g) || [];\n      const [minH, maxH] = spec.hashtag_count_range;\n      if (hashtagMatch.length < minH) {\n        preCheck.warnings.push(`${channel}: ${hashtagMatch.length} hashtags, brief wants ${minH}-${maxH}`);\n      }\n    }\n  }\n}\n\n// Extract sources for calendar notes\nconst sourcesUsed = parsed.sources_used || [];\n\nreturn [{\n  json: {\n    success: success,\n    output: parsed,\n    output_type: 'draft',\n    pre_check: preCheck,\n    error: error\n  }\n}];\n"
+      },
+      "id": "parse-output",
+      "name": "Parse Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"drafts\": {\"type\": \"object\", \"description\": \"Content drafts keyed by channel name (e.g. linkedin, twitter, blog). Include ONLY the channels listed in TARGET CHANNELS.\", \"additionalProperties\": {\"type\": \"string\"}, \"minProperties\": 1}, \"iteration\": {\"type\": \"number\", \"description\": \"Current iteration number\"}, \"changes_made\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"List of changes from previous iteration, or empty array for first draft\"}, \"sources_used\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"List of sources used for fact references (Source Name - URL). These go in calendar notes, NOT in the post.\"}}, \"required\": [\"drafts\", \"iteration\", \"changes_made\"]}",
+        "autoFix": true
+      },
+      "id": "writer-output-parser",
+      "name": "Writer Output Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Search the web to research topics, find data, statistics, and supporting sources. Use this to back up claims with real data.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "F0TUHVEzA79rroyS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI(\"query\", \"The search query to research or verify\", \"string\", \"\") }}",
+            "context": "={{ $fromAI(\"context\", \"Optional context about what you're researching\", \"string\", \"\") }}"
+          },
+          "schema": [
+            {
+              "id": "query",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "query"
+            },
+            {
+              "id": "context",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "context"
+            }
+          ]
+        }
+      },
+      "id": "tool-web-search",
+      "name": "Tool: Web Search",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-3-5-haiku-20241022",
+          "cachedResultName": "Claude 3.5 Haiku"
+        },
+        "options": {}
+      },
+      "id": "parser-llm",
+      "name": "Parser LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        592
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Build System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Content Writer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content Writer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Writer Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Writer Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content Writer Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Content Writer Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Writer Output Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
+  "activeVersionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
+  "versionCounter": 91,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-05T13:47:27.044Z",
+      "createdAt": "2026-02-05T13:47:27.044Z",
+      "role": "workflow:owner",
+      "workflowId": "U5C3B4S9SIyXNGtH",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-10T09:40:41.292Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770325854784
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-10",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-10T11:15:25.648Z",
+    "createdAt": "2026-02-10T11:15:25.648Z",
+    "versionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
+    "workflowId": "U5C3B4S9SIyXNGtH",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "subtask_prompt"
+              },
+              {
+                "name": "context",
+                "type": "object"
+              },
+              {
+                "name": "feedback"
+              },
+              {
+                "name": "iteration_count",
+                "type": "number"
+              },
+              {
+                "name": "user_context",
+                "type": "object"
+              },
+              {
+                "name": "winning_idea"
+              },
+              {
+                "name": "target_channels"
+              },
+              {
+                "name": "editor_feedback"
+              },
+              {
+                "name": "iteration_number",
+                "type": "number"
+              },
+              {
+                "name": "brand_context"
+              },
+              {
+                "name": "content_brief",
+                "type": "string"
+              },
+              {
+                "name": "max_iterations",
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          208,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\n// Parse winning_idea - can be JSON string or object\nlet winningIdea = {};\nif (input.winning_idea) {\n  try {\n    winningIdea = typeof input.winning_idea === 'string' \n      ? JSON.parse(input.winning_idea) \n      : input.winning_idea;\n  } catch (e) {\n    winningIdea = { topic: input.winning_idea, angle: '', rationale: '' };\n  }\n} else if (input.context?.winning_idea) {\n  winningIdea = input.context.winning_idea;\n}\n\n// Parse target_channels - can be string or array\nlet targetChannels = ['linkedin', 'twitter'];\nif (input.target_channels) {\n  if (Array.isArray(input.target_channels)) {\n    targetChannels = input.target_channels;\n  } else if (typeof input.target_channels === 'string') {\n    targetChannels = input.target_channels.split(',').map(s => s.trim()).filter(Boolean);\n  }\n} else if (input.context?.target_channels) {\n  targetChannels = input.context.target_channels;\n}\n\n// Parse brand_context - can be JSON string or object\nlet brandContext = null;\nif (input.brand_context) {\n  try {\n    brandContext = typeof input.brand_context === 'string' \n      ? JSON.parse(input.brand_context) \n      : input.brand_context;\n  } catch (e) {\n    brandContext = null;\n  }\n}\n\n// Parse content_brief - can be JSON string or object\nlet contentBrief = null;\nif (input.content_brief) {\n  try {\n    contentBrief = typeof input.content_brief === 'string'\n      ? JSON.parse(input.content_brief)\n      : input.content_brief;\n  } catch (e) {\n    contentBrief = null;\n  }\n}\n\n// Get feedback (support both field names)\nconst feedback = input.editor_feedback || input.feedback || null;\nconst iterationCount = input.iteration_number || input.iteration_count || 0;\nconst maxIterations = input.max_iterations || 3;\n\nreturn [{\n  json: {\n    subtask_prompt: input.subtask_prompt || 'Create content drafts',\n    winning_idea: winningIdea,\n    target_channels: targetChannels,\n    brand_context: brandContext,\n    content_brief: contentBrief,\n    feedback: feedback,\n    iteration_count: iterationCount,\n    max_iterations: maxIterations,\n    user_context: input.user_context || {}\n  }\n}];\n"
+        },
+        "id": "prepare-context",
+        "name": "Prepare Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          432,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const context = $input.first().json;\n\nconst iterationNumber = context.iteration_count + 1;\nconst maxIterations = context.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst channelList = context.target_channels.join(', ');\nconst brief = context.content_brief;\n\n// Build channel specs section from brief or fallback defaults\nconst defaultSpecs = {\n  linkedin: { word_count_range: [150, 200], char_limit: 1500, tone: 'Professional, data-backed', format: 'Hook in first 2 lines. 3-5 hashtags.', hashtag_count_range: [3, 5] },\n  twitter: { word_count_range: [20, 50], char_limit: 280, tone: 'Punchy, conversational', format: '1-2 hashtags.', hashtag_count_range: [1, 2] },\n  facebook: { word_count_range: [15, 30], char_limit: 80, tone: 'Casual, emoji-friendly', format: 'Questions drive engagement.', hashtag_count_range: [0, 2] },\n  blog: { word_count_range: [1500, 2500], char_limit: null, tone: 'Authoritative, SEO-friendly', format: 'H2/H3 headers. Meta description 150-160 chars.', hashtag_count_range: [0, 0] }\n};\n\nlet channelSpecsText = '';\nfor (const ch of context.target_channels) {\n  const spec = brief?.channel_specs?.[ch] || defaultSpecs[ch.toLowerCase()] || defaultSpecs.linkedin;\n  const wcRange = spec.word_count_range || [150, 200];\n  const charLim = spec.char_limit || 1500;\n  channelSpecsText += `### ${ch.toUpperCase()}\\n`;\n  channelSpecsText += `- Word count: ${wcRange[0]}-${wcRange[1]} words (HARD REQUIREMENT)\\n`;\n  channelSpecsText += `- Character limit: ${charLim} chars MAX\\n`;\n  channelSpecsText += `- Tone: ${spec.tone || 'Professional'}\\n`;\n  channelSpecsText += `- Format: ${spec.format || 'Standard'}\\n`;\n  if (spec.cta) channelSpecsText += `- CTA: ${spec.cta}\\n`;\n  if (spec.hashtag_count_range) channelSpecsText += `- Hashtags: ${spec.hashtag_count_range[0]}-${spec.hashtag_count_range[1]}\\n`;\n  channelSpecsText += '\\n';\n}\n\nconst systemPrompt = `You are a Content Writer. You write against a Content Brief and you write like a REAL PERSON \u2014 not an AI.\n\n${brief ? `##############################################\n# THE CONTENT BRIEF (YOUR SINGLE SOURCE OF TRUTH)\n##############################################\n\nKEY MESSAGE: ${brief.key_message || 'Not specified'}\nTARGET AUDIENCE: ${brief.target_audience || 'Not specified'}\nCONTENT TYPE: ${brief.content_type || 'value'}\n` : ''}\n\n##############################################\n# VOICE & TONE (READ THIS FIRST)            #\n##############################################\n\nYou are ghostwriting as the author. Write as if YOU are the person posting this. Use \"I\", \"we\", \"our\" naturally. Frame insights from personal/professional experience.\n\nGOOD: \"I've watched this pattern play out across dozens of contractor sites\"\nGOOD: \"We ran the numbers on this and the gap is staggering\"\nGOOD: \"Here's what I keep telling our clients\"\nBAD: \"Studies show that...\" (academic, detached)\nBAD: \"It has been observed that...\" (passive, robotic)\nBAD: \"Research indicates...\" (generic, no personality)\n\n### PERPLEXITY & PREDICTABILITY CONTROL\n- Use unexpected word choices occasionally. A \"staggering\" gap becomes a \"brutal\" one. A \"significant\" improvement becomes \"night and day.\"\n- Mix in colloquialisms and informal phrasing: \"the math doesn't lie\", \"that's money walking out the door\", \"dead simple\"\n- Avoid overused AI phrases: \"game-changer\", \"landscape\", \"leverage\", \"delve into\", \"it's worth noting\", \"in today's world\"\n\n### BURSTINESS & SENTENCE VARIATION\n- Vary sentence length DRAMATICALLY. Mix 3-5 word punches with 20+ word complex sentences.\n- Use fragments for emphasis. \"Dead simple.\" \"Not even close.\" \"That's the gap.\"\n- Throw in parenthetical asides (the kind you'd say to a friend at a conference)\n- Break grammatical rules occasionally for effect. Start sentences with \"And\" or \"But.\"\n\n### EMOTIONAL INTELLIGENCE & HUMAN TOUCH\n- Show genuine opinion: \"Honestly, this one surprised me\" or \"I'll die on this hill\"\n- Express hesitation where real: \"I'm not 100% sure this applies to everyone, but...\"\n- Use contractions always. \"It's\" not \"It is.\" \"Don't\" not \"Do not.\"\n- Occasional self-deprecation or humility: \"Took me embarrassingly long to figure this out\"\n\n### STRUCTURAL PATTERN DISRUPTION\n- Do NOT follow a predictable intro\u2192body\u2192conclusion pattern\n- Start with an unexpected angle \u2014 a question, a bold claim, a personal observation\n- Let a tangential thought intrude naturally mid-post\n- Vary paragraph lengths. One-liners next to chunky paragraphs.\n\n### CONTEXTUAL AUTHENTICITY\n- Reference real, current things when relevant (recent industry events, seasonal context)\n- Use specific concrete details over abstractions: \"$47,000\" not \"significant revenue\"\n- Choose metaphors a real person in this industry would use, not generic business metaphors\n\n### ANTI-AI TELLS\n- NEVER use parenthetical citations like (Source Name). This is the #1 AI fingerprint.\n- Instead, weave sources naturally: \"Formstack found that...\" or \"According to a NextAfter study...\" \u2014 or just state the data confidently without attribution when the claim is well-established.\n- NEVER use a perfectly symmetrical list where every item follows the exact same grammatical pattern\n- NEVER end with a generic wrap-up like \"In conclusion\" or \"The bottom line is\"\n- Avoid the three-part rhythm that AI loves: \"It's not just X. It's Y. And it's Z.\"\n\n##############################################\n# FACTUAL ACCURACY (ZERO TOLERANCE)         #\n##############################################\n\n1. NEVER fabricate, invent, or hallucinate statistics or specific percentages\n2. ONLY cite data that you found via web_search with a verifiable source\n3. If you CANNOT find a specific statistic, use qualitative language:\n   - WRONG: \"Studies show a 18.7% decrease\" (fabricated)\n   - RIGHT: \"The drop-off is significant \u2014 and I've seen it firsthand with our clients\"\n   - RIGHT: \"Formstack found a 50% increase when forms were trimmed from 4 to 3 fields\"\n4. Do NOT use parenthetical citations (Source). Weave source names naturally into the prose OR omit them.\n5. Do NOT round or modify statistics from your research \u2014 use exact figures\n6. If the reviewer flagged a statistic as inaccurate, REMOVE it entirely\n7. Keep a mental list of all sources used \u2014 the system will extract these for reference notes separately\n8. NEVER fabricate client stories, case studies, or anecdotes \u2014 even vague ones\n9. Do NOT invent scenarios like \"I watched a client...\" or \"One contractor lost...\" unless the specific story is verifiable\n10. Personal framing (\"I've seen this pattern play out\") is ACCEPTABLE \u2014 it expresses general experience\n11. Specific fabricated anecdotes (\"I watched a contractor's receptionist fumble through...\") are PROHIBITED \u2014 they create false specificity\n12. If the reviewer flags content as fabricated, REMOVE IT entirely \u2014 do not rephrase, do not make it vaguer, just cut it\n\n\n## REVISION DISCIPLINE \u2014 ZERO TOLERANCE FOR UNNECESSARY CHANGES\nWhen revising based on reviewer feedback:\n1. Make ONLY the changes the reviewer explicitly requested\n2. Do NOT rewrite paragraphs that were not flagged\n3. Do NOT change statistics or sources unless specifically flagged as inaccurate\n4. Do NOT alter your overall structure, angle, or hook unless told to\n5. Preserve the parts that are working \u2014 the reviewer only flags what needs fixing\n6. Think of revisions as surgical fixes, not full rewrites\n7. If the reviewer said \"fix X and Y\", fix X and Y. Nothing else.\n\nDIFF CHECK (mandatory before submitting revision):\n- Mentally compare your revision to the previous draft\n- If you changed more than 3 sentences that were NOT flagged by the reviewer, you have over-edited \u2014 REVERT the unnecessary changes\n- A \"revision\" that rewrites 50%+ of unflagged content is NOT a revision \u2014 it is a violation of these rules\n- Your changes_made array MUST list ONLY changes the reviewer requested \u2014 if you cannot trace a change back to specific reviewer feedback, remove it\n- When told \"Fix ONLY these factual errors. No other changes.\" \u2014 that means ZERO structural, stylistic, or tonal changes. Fix the facts. Stop.\n\n## CHANNEL TARGETS (from ${brief ? 'the brief' : 'defaults'})\n${channelSpecsText}\n\nBEFORE finalizing each draft:\n1. Count your words. MUST be within the range above.\n2. Count your characters. MUST be under the limit above.\n3. If over the limit, CUT ruthlessly. Every sentence must earn its place.\n\n${brief?.content_requirements?.length ? `## CONTENT REQUIREMENTS (from the brief)\\n${brief.content_requirements.map((r, i) => (i+1) + '. ' + r).join('\\n')}\\n` : ''}\n${brief?.what_to_avoid?.length ? `## WHAT TO AVOID\\n${brief.what_to_avoid.map(r => '- ' + r).join('\\n')}\\n` : ''}\n${brief?.success_criteria?.length ? `## SUCCESS CRITERIA (the reviewer will check EACH of these as PASS/FAIL)\\n${brief.success_criteria.map((r, i) => (i+1) + '. ' + r).join('\\n')}\\n\\nYou MUST satisfy EVERY success criterion. The reviewer checks each one individually.\\n` : ''}\n\n## WORKFLOW: BRIEF FIRST, RESEARCH TO FILL GAPS\n1. READ the Content Brief thoroughly \\u2014 it IS your primary source of truth\n2. The brief already contains a winning idea, key message, research guidance, and channel specs \\u2014 USE THEM\n3. ${brief?.research_guidance?.length ? 'Use web_search for these specific queries: ' + brief.research_guidance.join('; ') : 'Use web_search ONLY to verify claims or fill specific data gaps'}\n4. Write the draft grounded in the brief's key message, angle, and requirements\n5. Use ONLY verified data \\u2014 if you cannot find a stat, use qualitative language\n6. Count words and characters against channel specs\n7. Self-check: Does this draft serve the brief's key message? Does it sound human?\n\nCRITICAL: The Content Brief is your contract. Do NOT go on tangential research.\nDo NOT pick a different angle than what the brief specifies.\nDo NOT substitute your own statistics for the brief's research guidance.\n\n${isFinalIteration ? `## FINAL ITERATION (${iterationNumber} of ${maxIterations})\\nThis is your LAST chance. PRIORITIES:\\n1. Fix ALL factual issues flagged by the reviewer\\n2. Meet word count and character limits EXACTLY\\n3. Address the reviewer's top required fixes\\n4. Everything else is secondary\\n` : ''}\n\n## AVAILABLE TOOLS\nYou have access to a web_search tool. USE IT before writing.\n\nCRITICAL: You MUST write about the SPECIFIC TOPIC provided in the user message.\n\n${context.brand_context ? '## Brand Context\\n' + ((context.brand_context.brand_guide || '').substring(0, 1500)) + '\\n\\n## Content Strategy\\n' + ((context.brand_context.content_strategy || '').substring(0, 1000)) + '\\n\\n## Product Knowledge (Wrkbelt Scheduler & Industry Context)\\n' + ((context.brand_context.product_knowledge || '').substring(0, 2000)) + '\\n\\n## Voice Reference (Spencer Marx Writing Samples)\\nStudy these examples carefully. Match the rhythm, sentence variation, and conversational style.\\n' + ((context.brand_context.voice_reference || '').substring(0, 2500)) : ''}\n\n## Output Format\nYou MUST produce drafts for EXACTLY these channels: ${channelList}\n\nRespond with ONLY valid JSON (no markdown, no code blocks):\n{\n  \"drafts\": {\n    \"${context.target_channels[0]}\": \"Full content here...\"${context.target_channels.length > 1 ? context.target_channels.slice(1).map(ch => ',\\n    \"' + ch + '\": \"Full content here...\"').join('') : ''}\n  },\n  \"iteration\": ${iterationNumber},\n  \"changes_made\": [\"List of changes if revision, or empty array for first draft\"],\n  \"sources_used\": [\"Source Name - URL or description for each fact referenced\"]\n}\n\nRULES:\n- Include ONLY the channels listed above\n- Every listed channel MUST have a draft\n- Do NOT add channels that were not requested\n- sources_used MUST list every source you relied on (these go into calendar notes, NOT into the post)`;\n\n// Build winning idea description\nconst topic = context.winning_idea?.topic || context.winning_idea || 'Not specified';\nconst angle = context.winning_idea?.angle || '';\nconst rationale = context.winning_idea?.rationale || '';\n\n// Feedback section for revisions\nconst feedbackSection = context.feedback\n  ? `\\n\\n\\u26a0\\ufe0f REVISION REQUIRED - Address this feedback:\\n${context.feedback}\\n\\nIMPORTANT: If the reviewer flagged any statistics as inaccurate, REMOVE them entirely. Use web_search to find verified replacements, or use qualitative language.\\n`\n  : '';\n\nconst userPrompt = `${brief?.key_message ? 'KEY MESSAGE TO CONVEY: \"' + brief.key_message + '\"\\n\\n' : ''}TOPIC: \"${topic}\"\\n${angle ? 'ANGLE: ' + angle + '\\n' : ''}${rationale ? 'RATIONALE: ' + rationale + '\\n' : ''}${feedbackSection}\\nTARGET CHANNELS: ${channelList}\\n${brief?.research_guidance?.length ? 'RESEARCH GUIDANCE: ' + brief.research_guidance.join('; ') + '\\n' : ''}\\nITERATION: #${iterationNumber} of ${maxIterations}${isFinalIteration ? ' (FINAL - fix factual issues and meet word limits first)' : ''}\\n\\nSTEPS:\\n1. Use web_search to research the topic\\n2. Write the draft as the author \u2014 first person, authentic voice, conversational\\n3. Count words and characters against channel specs\\n4. Self-check each success criterion from the brief\\n5. Read it back: Does this sound human? Would you believe a real person posted this?`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    target_channels: context.target_channels,\n    iteration_count: context.iteration_count,\n    max_iterations: maxIterations,\n    content_brief: context.content_brief\n  }\n}];\n"
+        },
+        "id": "build-system-prompt",
+        "name": "Build System Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          640,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-sonnet-4-5-20250929"
+          },
+          "options": {
+            "maxTokensToSample": 4000,
+            "temperature": 0.7
+          }
+        },
+        "id": "claude-model",
+        "name": "Claude Sonnet",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          864,
+          480
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.user_prompt }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "={{ $json.system_prompt }}",
+            "maxIterations": 10,
+            "returnIntermediateSteps": true
+          }
+        },
+        "id": "ai-agent",
+        "name": "Content Writer Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          864,
+          304
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      },
+      {
+        "parameters": {
+          "jsCode": "// Parse Output - receives structured data from Output Parser + adds pre-check validation\nconst input = $input.first().json;\nconst preparedContext = $('Prepare Context').first().json;\nconst contentBrief = preparedContext.content_brief;\n\nlet parsed = null;\nlet success = true;\nlet error = null;\n\ntry {\n  if (input.output && typeof input.output === 'object') {\n    parsed = input.output;\n  } else if (input.drafts) {\n    parsed = input;\n  } else if (input.text) {\n    const response = input.text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsed = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('No JSON object found in response');\n    }\n  } else {\n    throw new Error('Unexpected output format');\n  }\n\n  if (!parsed.drafts) {\n    throw new Error('Missing drafts in response');\n  }\n} catch (e) {\n  success = false;\n  error = `Failed to parse AI response: ${e.message}`;\n  parsed = {\n    drafts: { error: { content: JSON.stringify(input).substring(0, 500), character_count: 0 } },\n    iteration: 1,\n    changes_made: []\n  };\n}\n\n// === PRE-CHECK VALIDATION ===\nconst preCheck = { passed: true, failures: [], warnings: [] };\n\nif (success && contentBrief && contentBrief.channel_specs && parsed.drafts) {\n  for (const [channel, draft] of Object.entries(parsed.drafts)) {\n    const spec = contentBrief.channel_specs[channel];\n    if (!spec) continue;\n\n    const content = typeof draft === 'string' ? draft : (draft.content || String(draft));\n    const wordCount = content.split(/\\s+/).filter(Boolean).length;\n    const charCount = content.length;\n\n    // Word count check (15% buffer on max)\n    if (spec.word_count_range) {\n      const [min, max] = spec.word_count_range;\n      if (wordCount < min * 0.85) {\n        preCheck.failures.push(`${channel}: ${wordCount} words is below minimum ${min} (spec: ${min}-${max})`);\n        preCheck.passed = false;\n      } else if (wordCount > max * 1.15) {\n        preCheck.failures.push(`${channel}: ${wordCount} words exceeds maximum ${max} by >15% (spec: ${min}-${max})`);\n        preCheck.passed = false;\n      } else if (wordCount > max) {\n        preCheck.warnings.push(`${channel}: ${wordCount} words slightly over max ${max} (spec: ${min}-${max})`);\n      } else if (wordCount < min) {\n        preCheck.warnings.push(`${channel}: ${wordCount} words slightly under min ${min} (spec: ${min}-${max})`);\n      }\n    }\n\n    // Character limit check (hard limit, no buffer)\n    if (spec.char_limit && charCount > spec.char_limit) {\n      preCheck.failures.push(`${channel}: ${charCount} chars exceeds limit ${spec.char_limit}`);\n      preCheck.passed = false;\n    }\n\n    // Hashtag count check\n    if (spec.hashtag_count_range) {\n      const hashtagMatch = content.match(/#\\w+/g) || [];\n      const [minH, maxH] = spec.hashtag_count_range;\n      if (hashtagMatch.length < minH) {\n        preCheck.warnings.push(`${channel}: ${hashtagMatch.length} hashtags, brief wants ${minH}-${maxH}`);\n      }\n    }\n  }\n}\n\n// Extract sources for calendar notes\nconst sourcesUsed = parsed.sources_used || [];\n\nreturn [{\n  json: {\n    success: success,\n    output: parsed,\n    output_type: 'draft',\n    pre_check: preCheck,\n    error: error\n  }\n}];\n"
+        },
+        "id": "parse-output",
+        "name": "Parse Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1088,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\"type\": \"object\", \"properties\": {\"drafts\": {\"type\": \"object\", \"description\": \"Content drafts keyed by channel name (e.g. linkedin, twitter, blog). Include ONLY the channels listed in TARGET CHANNELS.\", \"additionalProperties\": {\"type\": \"string\"}, \"minProperties\": 1}, \"iteration\": {\"type\": \"number\", \"description\": \"Current iteration number\"}, \"changes_made\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"List of changes from previous iteration, or empty array for first draft\"}, \"sources_used\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"List of sources used for fact references (Source Name - URL). These go in calendar notes, NOT in the post.\"}}, \"required\": [\"drafts\", \"iteration\", \"changes_made\"]}",
+          "autoFix": true
+        },
+        "id": "writer-output-parser",
+        "name": "Writer Output Schema",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          992,
+          592
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Search the web to research topics, find data, statistics, and supporting sources. Use this to back up claims with real data.",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "F0TUHVEzA79rroyS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "query": "={{ $fromAI(\"query\", \"The search query to research or verify\", \"string\", \"\") }}",
+              "context": "={{ $fromAI(\"context\", \"Optional context about what you're researching\", \"string\", \"\") }}"
+            },
+            "schema": [
+              {
+                "id": "query",
+                "type": "string",
+                "display": true,
+                "required": true,
+                "displayName": "query"
+              },
+              {
+                "id": "context",
+                "type": "string",
+                "display": true,
+                "required": false,
+                "displayName": "context"
+              }
+            ]
+          }
+        },
+        "id": "tool-web-search",
+        "name": "Tool: Web Search",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          992,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-3-5-haiku-20241022",
+            "cachedResultName": "Claude 3.5 Haiku"
+          },
+          "options": {}
+        },
+        "id": "parser-llm",
+        "name": "Parser LLM",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          672,
+          592
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Prepare Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Context": {
+        "main": [
+          [
+            {
+              "node": "Build System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build System Prompt": {
+        "main": [
+          [
+            {
+              "node": "Content Writer Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Sonnet": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Content Writer Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Content Writer Agent": {
+        "main": [
+          [
+            {
+              "node": "Parse Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Writer Output Schema": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Content Writer Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Web Search": {
+        "ai_tool": [
+          [
+            {
+              "node": "Content Writer Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parser LLM": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Writer Output Schema",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-10T11:15:25.788Z",
+        "id": 578,
+        "workflowId": "U5C3B4S9SIyXNGtH",
+        "versionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

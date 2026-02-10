@@ -1,0 +1,1276 @@
+{
+  "name": "📁 Tool | Google Drive",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 500],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "slack_user_id", "type": "string" },
+            { "name": "action", "type": "string" },
+            { "name": "file_id", "type": "string" },
+            { "name": "folder_id", "type": "string" },
+            { "name": "file_name", "type": "string" },
+            { "name": "query", "type": "string" },
+            { "name": "mime_type", "type": "string" },
+            { "name": "content_base64", "type": "string" },
+            { "name": "destination_folder_id", "type": "string" },
+            { "name": "max_results", "type": "string" },
+            { "name": "new_name", "type": "string" },
+            { "name": "parent_folder_id", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [470, 500],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/drive.file"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-context",
+      "name": "Merge Input Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [690, 500],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $('Workflow Input').item.json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "user_email",
+              "name": "user_email",
+              "value": "={{ $json.user_email }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "file_id",
+              "name": "file_id",
+              "value": "={{ $('Workflow Input').item.json.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "folder_id",
+              "name": "folder_id",
+              "value": "={{ $('Workflow Input').item.json.folder_id }}",
+              "type": "string"
+            },
+            {
+              "id": "file_name",
+              "name": "file_name",
+              "value": "={{ $('Workflow Input').item.json.file_name }}",
+              "type": "string"
+            },
+            {
+              "id": "query",
+              "name": "query",
+              "value": "={{ $('Workflow Input').item.json.query }}",
+              "type": "string"
+            },
+            {
+              "id": "mime_type",
+              "name": "mime_type",
+              "value": "={{ $('Workflow Input').item.json.mime_type }}",
+              "type": "string"
+            },
+            {
+              "id": "content_base64",
+              "name": "content_base64",
+              "value": "={{ $('Workflow Input').item.json.content_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "destination_folder_id",
+              "name": "destination_folder_id",
+              "value": "={{ $('Workflow Input').item.json.destination_folder_id }}",
+              "type": "string"
+            },
+            {
+              "id": "max_results",
+              "name": "max_results",
+              "value": "={{ $('Workflow Input').item.json.max_results || '100' }}",
+              "type": "string"
+            },
+            {
+              "id": "new_name",
+              "name": "new_name",
+              "value": "={{ $('Workflow Input').item.json.new_name }}",
+              "type": "string"
+            },
+            {
+              "id": "parent_folder_id",
+              "name": "parent_folder_id",
+              "value": "={{ $('Workflow Input').item.json.parent_folder_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [910, 500],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1130, 720],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "is-list-files",
+      "name": "Is List Files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1130, 500],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "list_files",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-search-files",
+      "name": "Is Search Files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1350, 580],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "search_files",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-get-file",
+      "name": "Is Get File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1570, 660],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "get_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-upload-file",
+      "name": "Is Upload File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1790, 740],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "upload_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-download-file",
+      "name": "Is Download File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2010, 820],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "download_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-create-folder",
+      "name": "Is Create Folder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2230, 900],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create_folder",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-move-file",
+      "name": "Is Move File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2450, 980],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "move_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-copy-file",
+      "name": "Is Copy File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2670, 1060],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "copy_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "is-delete-file",
+      "name": "Is Delete File?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2890, 1140],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "delete_file",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "list-files-api",
+      "name": "List Files API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 340],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "='{{ $json.folder_id }}' in parents and trashed = false"
+            },
+            {
+              "name": "pageSize",
+              "value": "={{ $json.max_results }}"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,mimeType,modifiedTime,webViewLink)"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-list-files",
+      "name": "Format List Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1570, 340],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst files = response.files || [];\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list_files',\n    files: files.map(f => ({\n      id: f.id,\n      name: f.name,\n      mimeType: f.mimeType,\n      modifiedTime: f.modifiedTime,\n      webViewLink: f.webViewLink\n    })),\n    total_count: files.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "search-files-api",
+      "name": "Search Files API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1570, 420],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=name contains '{{ $json.query }}' and trashed = false"
+            },
+            {
+              "name": "pageSize",
+              "value": "={{ $json.max_results }}"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,mimeType,modifiedTime,webViewLink)"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-search-files",
+      "name": "Format Search Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1790, 420],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst files = response.files || [];\n\nreturn [{\n  json: {\n    success: true,\n    action: 'search_files',\n    files: files.map(f => ({\n      id: f.id,\n      name: f.name,\n      mimeType: f.mimeType,\n      modifiedTime: f.modifiedTime,\n      webViewLink: f.webViewLink\n    })),\n    total_count: files.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "get-file-api",
+      "name": "Get File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1790, 500],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.file_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,mimeType,parents,size,modifiedTime,webViewLink"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-get-file",
+      "name": "Format Get File",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2010, 500],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "get_file",
+              "type": "string"
+            },
+            {
+              "id": "file_id",
+              "name": "file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "mime_type",
+              "name": "mime_type",
+              "value": "={{ $json.mimeType }}",
+              "type": "string"
+            },
+            {
+              "id": "size_bytes",
+              "name": "size_bytes",
+              "value": "={{ $json.size }}",
+              "type": "string"
+            },
+            {
+              "id": "modified_time",
+              "name": "modified_time",
+              "value": "={{ $json.modifiedTime }}",
+              "type": "string"
+            },
+            {
+              "id": "web_link",
+              "name": "web_link",
+              "value": "={{ $json.webViewLink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "upload-file-api",
+      "name": "Upload File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 580],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/related; boundary=foo_bar_baz"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "=--foo_bar_baz\nContent-Type: application/json; charset=UTF-8\n\n{{ $json.folder_id ? JSON.stringify({ name: $json.file_name, mimeType: $json.mime_type, parents: [$json.folder_id] }) : JSON.stringify({ name: $json.file_name, mimeType: $json.mime_type }) }}\n--foo_bar_baz\nContent-Type: {{ $json.mime_type }}\nContent-Transfer-Encoding: base64\n\n{{ $json.content_base64 }}\n--foo_bar_baz--",
+        "options": {}
+      }
+    },
+    {
+      "id": "format-upload-file",
+      "name": "Format Upload File",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2230, 580],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "upload_file",
+              "type": "string"
+            },
+            {
+              "id": "file_id",
+              "name": "file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "file_name",
+              "name": "file_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "web_link",
+              "name": "web_link",
+              "value": "=https://drive.google.com/file/d/{{ $json.id }}/view",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-file-for-download",
+      "name": "Get File Name",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2230, 660],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.file_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "download-file-api",
+      "name": "Download File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2450, 660],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.id }}?alt=media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "format-download-file",
+      "name": "Format Download File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2670, 660],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst fileName = $('Get File Name').item.json.name;\nconst fileId = $('Get File Name').item.json.id;\n\nlet contentBase64 = '';\nif (item.binary && item.binary.data) {\n  contentBase64 = item.binary.data.data;\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'download_file',\n    file_id: fileId,\n    file_name: fileName,\n    content_base64: contentBase64\n  }\n}];"
+      }
+    },
+    {
+      "id": "create-folder-api",
+      "name": "Create Folder API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2450, 740],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.file_name }}"
+            },
+            {
+              "name": "mimeType",
+              "value": "application/vnd.google-apps.folder"
+            },
+            {
+              "name": "parents",
+              "value": "={{ $json.parent_folder_id ? [$json.parent_folder_id] : [] }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-create-folder",
+      "name": "Format Create Folder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2670, 740],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_folder",
+              "type": "string"
+            },
+            {
+              "id": "folder_id",
+              "name": "folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "folder_name",
+              "name": "folder_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "web_link",
+              "name": "web_link",
+              "value": "=https://drive.google.com/drive/folders/{{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-file-for-move",
+      "name": "Get Current Parents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2670, 820],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.file_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,parents"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "move-file-api",
+      "name": "Move File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2890, 820],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "addParents",
+              "value": "={{ $('Merge Input Context').item.json.destination_folder_id }}"
+            },
+            {
+              "name": "removeParents",
+              "value": "={{ $json.parents ? $json.parents.join(',') : '' }}"
+            },
+            {
+              "name": "fields",
+              "value": "id,name,parents"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-move-file",
+      "name": "Format Move File",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3110, 820],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "move_file",
+              "type": "string"
+            },
+            {
+              "id": "file_id",
+              "name": "file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "new_parent",
+              "name": "new_parent",
+              "value": "={{ $json.parents ? $json.parents[0] : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "file_name",
+              "name": "file_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "copy-file-api",
+      "name": "Copy File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2890, 900],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.file_id }}/copy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.new_name || undefined }}"
+            },
+            {
+              "name": "parents",
+              "value": "={{ $json.destination_folder_id ? [$json.destination_folder_id] : undefined }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-copy-file",
+      "name": "Format Copy File",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3110, 900],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "copy_file",
+              "type": "string"
+            },
+            {
+              "id": "original_id",
+              "name": "original_id",
+              "value": "={{ $('Merge Input Context').item.json.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "new_file_id",
+              "name": "new_file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "new_file_name",
+              "name": "new_file_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "delete-file-api",
+      "name": "Delete File API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3110, 980],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.file_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "trashed",
+              "value": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-delete-file",
+      "name": "Format Delete File",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3330, 980],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "delete_file",
+              "type": "string"
+            },
+            {
+              "id": "file_id",
+              "name": "file_id",
+              "value": "={{ $('Merge Input Context').item.json.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "File moved to trash",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3110, 1220],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: list_files, search_files, get_file, upload_file, download_file, create_folder, move_file, copy_file, delete_file",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+    },
+    "Get Google Auth": {
+      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+    },
+    "Merge Input Context": {
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+    },
+    "Check Auth Success": {
+      "main": [
+        [{ "node": "Is List Files?", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is List Files?": {
+      "main": [
+        [{ "node": "List Files API", "type": "main", "index": 0 }],
+        [{ "node": "Is Search Files?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Search Files?": {
+      "main": [
+        [{ "node": "Search Files API", "type": "main", "index": 0 }],
+        [{ "node": "Is Get File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Get File?": {
+      "main": [
+        [{ "node": "Get File API", "type": "main", "index": 0 }],
+        [{ "node": "Is Upload File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Upload File?": {
+      "main": [
+        [{ "node": "Upload File API", "type": "main", "index": 0 }],
+        [{ "node": "Is Download File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Download File?": {
+      "main": [
+        [{ "node": "Get File Name", "type": "main", "index": 0 }],
+        [{ "node": "Is Create Folder?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Create Folder?": {
+      "main": [
+        [{ "node": "Create Folder API", "type": "main", "index": 0 }],
+        [{ "node": "Is Move File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Move File?": {
+      "main": [
+        [{ "node": "Get Current Parents", "type": "main", "index": 0 }],
+        [{ "node": "Is Copy File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Copy File?": {
+      "main": [
+        [{ "node": "Copy File API", "type": "main", "index": 0 }],
+        [{ "node": "Is Delete File?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Delete File?": {
+      "main": [
+        [{ "node": "Delete File API", "type": "main", "index": 0 }],
+        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+      ]
+    },
+    "List Files API": {
+      "main": [[{ "node": "Format List Files", "type": "main", "index": 0 }]]
+    },
+    "Search Files API": {
+      "main": [[{ "node": "Format Search Files", "type": "main", "index": 0 }]]
+    },
+    "Get File API": {
+      "main": [[{ "node": "Format Get File", "type": "main", "index": 0 }]]
+    },
+    "Upload File API": {
+      "main": [[{ "node": "Format Upload File", "type": "main", "index": 0 }]]
+    },
+    "Get File Name": {
+      "main": [[{ "node": "Download File API", "type": "main", "index": 0 }]]
+    },
+    "Download File API": {
+      "main": [[{ "node": "Format Download File", "type": "main", "index": 0 }]]
+    },
+    "Create Folder API": {
+      "main": [[{ "node": "Format Create Folder", "type": "main", "index": 0 }]]
+    },
+    "Get Current Parents": {
+      "main": [[{ "node": "Move File API", "type": "main", "index": 0 }]]
+    },
+    "Move File API": {
+      "main": [[{ "node": "Format Move File", "type": "main", "index": 0 }]]
+    },
+    "Copy File API": {
+      "main": [[{ "node": "Format Copy File", "type": "main", "index": 0 }]]
+    },
+    "Delete File API": {
+      "main": [[{ "node": "Format Delete File", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "triggerCount": 0,
+  "tags": []
+}

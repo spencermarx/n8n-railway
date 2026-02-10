@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-02-05T12:12:14.181Z",
+  "updatedAt": "2026-02-10T11:32:52.939Z",
   "createdAt": "2026-02-04T09:42:14.888Z",
   "id": "GVUVTmfFfdIpApKq",
-  "name": "📅 Tool | Scheduled Tasks",
+  "name": "\ud83d\udcc5 Tool | Scheduled Tasks",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -12,22 +12,61 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "slack_user_id", "type": "string" },
-            { "name": "action", "type": "string" },
-            { "name": "task_id", "type": "string" },
-            { "name": "name", "type": "string" },
-            { "name": "request", "type": "string" },
-            { "name": "schedule_type", "type": "string" },
-            { "name": "scheduled_time", "type": "string" },
-            { "name": "days_of_week", "type": "string" },
-            { "name": "interval_minutes", "type": "string" },
-            { "name": "one_time_at", "type": "string" },
-            { "name": "channels", "type": "string" },
-            { "name": "is_active", "type": "string" }
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "task_id",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "request",
+              "type": "string"
+            },
+            {
+              "name": "schedule_type",
+              "type": "string"
+            },
+            {
+              "name": "scheduled_time",
+              "type": "string"
+            },
+            {
+              "name": "days_of_week",
+              "type": "string"
+            },
+            {
+              "name": "interval_minutes",
+              "type": "string"
+            },
+            {
+              "name": "one_time_at",
+              "type": "string"
+            },
+            {
+              "name": "channels",
+              "type": "string"
+            },
+            {
+              "name": "is_active",
+              "type": "string"
+            }
           ]
         }
       }
@@ -37,14 +76,20 @@
       "name": "Get User",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [450, 300],
+      "position": [
+        450,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT id, slack_user_id, preferences->>'timezone' as timezone FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}'",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -52,7 +97,10 @@
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [650, 300],
+      "position": [
+        650,
+        300
+      ],
       "parameters": {
         "mode": "rules",
         "rules": {
@@ -70,7 +118,10 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "create",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               },
@@ -90,7 +141,10 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "list",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               },
@@ -110,7 +164,10 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "update",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               },
@@ -130,7 +187,10 @@
                   {
                     "leftValue": "={{ $('Workflow Input').item.json.action }}",
                     "rightValue": "delete",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               },
@@ -139,7 +199,9 @@
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       }
     },
     {
@@ -147,9 +209,12 @@
       "name": "Create Task",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 100],
+      "position": [
+        900,
+        100
+      ],
       "parameters": {
-        "jsCode": "const input = $('Workflow Input').item.json;\nconst user = $('Get User').first().json;\n\nif (!user.id) {\n  return [{ json: { success: false, error: 'User not found' } }];\n}\n\nconst timezone = user.timezone || 'America/New_York';\nconst channels = input.channels ? input.channels.split(',').map(c => c.trim()) : ['slack'];\n\n// Parse days_of_week if provided (e.g., \"1,2,3,4,5\" for weekdays)\nlet daysOfWeek = null;\nif (input.days_of_week) {\n  daysOfWeek = input.days_of_week.split(',').map(d => parseInt(d.trim()));\n}\n\n// SMART REQUEST ANALYSIS\n// Detect task type and intent from the request to generate robust configurations\nconst requestLower = (input.request || '').toLowerCase();\nconst nameLower = (input.name || '').toLowerCase();\n\n// Task type detection\nconst isMeetingReminder = \n  requestLower.includes('meeting') || \n  requestLower.includes('calendar') || \n  requestLower.includes('event') ||\n  requestLower.includes('block') ||\n  requestLower.includes('upcoming') ||\n  nameLower.includes('reminder') ||\n  nameLower.includes('meeting') ||\n  nameLower.includes('prep');\n\nconst isDailySummary = \n  requestLower.includes('daily') || \n  requestLower.includes('summary') || \n  requestLower.includes('morning') ||\n  nameLower.includes('daily');\n\nconst isOneTimeTask = input.schedule_type === 'once' || input.one_time_at;\n\n// Determine schedule type intelligently\nlet scheduleType = input.schedule_type;\nlet intervalMinutes = input.interval_minutes ? parseInt(input.interval_minutes) : null;\nlet scheduledTime = input.scheduled_time || null;\nlet oneTimeAt = input.one_time_at || null;\n\n// SMART DEFAULTS based on task type\nif (!scheduleType) {\n  if (isOneTimeTask) {\n    scheduleType = 'once';\n  } else if (isDailySummary) {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '08:00';\n  } else if (isMeetingReminder) {\n    scheduleType = 'interval';\n    intervalMinutes = intervalMinutes || 5; // Check every 5 min for meeting reminders\n  } else {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '09:00';\n  }\n}\n\n// SMART REQUEST ENHANCEMENT\n// Rewrite problematic request patterns to be more robust\nlet enhancedRequest = input.request;\n\nif (isMeetingReminder && scheduleType === 'interval') {\n  // Check for problematic patterns like \"15-30 minutes\" or narrow windows\n  const narrowWindowPattern = /\\b(\\d+)\\s*-\\s*(\\d+)\\s*minutes?/i;\n  const match = enhancedRequest.match(narrowWindowPattern);\n  \n  if (match) {\n    // Replace narrow window with simpler \"next 30 minutes\" approach\n    const maxMinutes = Math.max(parseInt(match[1]), parseInt(match[2]));\n    enhancedRequest = enhancedRequest.replace(narrowWindowPattern, `next ${maxMinutes} minutes`);\n  }\n  \n  // Ensure the request has proper \"no action\" clause\n  if (!enhancedRequest.toLowerCase().includes('no action') && \n      !enhancedRequest.toLowerCase().includes('do not send') &&\n      !enhancedRequest.toLowerCase().includes('take no action')) {\n    enhancedRequest += '\\n\\nIf there are no upcoming events in the time window, take no action and do not send any message.';\n  }\n  \n  // Ensure deduplication instruction\n  if (!enhancedRequest.toLowerCase().includes('already been notified') &&\n      !enhancedRequest.toLowerCase().includes('not already')) {\n    enhancedRequest = enhancedRequest.replace(\n      /for (any |each |every )?upcoming event/i,\n      'for each upcoming event that I have NOT already been notified about today'\n    );\n  }\n}\n\n// INTERVAL GUARDRAILS\nif (scheduleType === 'interval' && intervalMinutes !== null) {\n  const MIN_INTERVAL = 5;\n  const MAX_INTERVAL = 1440; // 24 hours\n  \n  if (intervalMinutes < MIN_INTERVAL) {\n    intervalMinutes = MIN_INTERVAL;\n  }\n  if (intervalMinutes > MAX_INTERVAL) {\n    intervalMinutes = MAX_INTERVAL;\n  }\n}\n\n// Initialize metadata for event-based tasks\nlet metadata = {};\nif (isMeetingReminder) {\n  metadata = {\n    notified_event_ids: [],\n    last_reset: null,\n    task_type: 'meeting_reminder'\n  };\n} else if (isDailySummary) {\n  metadata = {\n    task_type: 'daily_summary'\n  };\n} else {\n  metadata = {\n    task_type: 'general'\n  };\n}\n\n// Generate smart task name if not provided\nlet taskName = input.name;\nif (!taskName || taskName === 'Scheduled Task') {\n  if (isMeetingReminder) {\n    taskName = 'Meeting Prep Reminder';\n  } else if (isDailySummary) {\n    taskName = 'Daily Schedule Summary';\n  } else {\n    taskName = 'Scheduled Task';\n  }\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    timezone: timezone,\n    name: taskName,\n    request: enhancedRequest,\n    schedule_type: scheduleType,\n    scheduled_time: scheduledTime,\n    days_of_week: daysOfWeek,\n    interval_minutes: intervalMinutes,\n    one_time_at: oneTimeAt,\n    channels: channels,\n    metadata: metadata,\n    _analysis: {\n      detected_type: isMeetingReminder ? 'meeting_reminder' : (isDailySummary ? 'daily_summary' : 'general'),\n      request_enhanced: enhancedRequest !== input.request\n    }\n  }\n}];"
+        "jsCode": "const input = $('Workflow Input').item.json;\nconst user = $('Get User').first().json;\n\nif (!user.id) {\n  return [{ json: { success: false, error: 'User not found' } }];\n}\n\nconst timezone = user.timezone || 'America/New_York';\nconst channels = input.channels ? input.channels.split(',').map(c => c.trim()) : ['slack'];\n\n// Parse days_of_week if provided (e.g., \"1,2,3,4,5\" for weekdays)\nlet daysOfWeek = null;\nif (input.days_of_week) {\n  daysOfWeek = input.days_of_week.split(',').map(d => parseInt(d.trim()));\n}\n\n// TASK TYPE DETECTION\nconst requestLower = (input.request || '').toLowerCase();\nconst nameLower = (input.name || '').toLowerCase();\n\nconst isMeetingReminder = \n  requestLower.includes('meeting') || \n  requestLower.includes('calendar') || \n  requestLower.includes('event') ||\n  requestLower.includes('block') ||\n  requestLower.includes('upcoming') ||\n  nameLower.includes('reminder') ||\n  nameLower.includes('meeting') ||\n  nameLower.includes('prep');\n\nconst isDailySummary = \n  requestLower.includes('daily') || \n  requestLower.includes('summary') || \n  requestLower.includes('morning') ||\n  nameLower.includes('daily');\n\nconst isOneTimeTask = input.schedule_type === 'once' || input.one_time_at;\n\n// Determine schedule type intelligently\nlet scheduleType = input.schedule_type;\nlet intervalMinutes = input.interval_minutes ? parseInt(input.interval_minutes) : null;\nlet scheduledTime = input.scheduled_time || null;\nlet oneTimeAt = input.one_time_at || null;\n\nif (!scheduleType) {\n  if (isOneTimeTask) {\n    scheduleType = 'once';\n  } else if (isDailySummary) {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '08:00';\n  } else if (isMeetingReminder) {\n    scheduleType = 'interval';\n    intervalMinutes = intervalMinutes || 5;\n  } else {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '09:00';\n  }\n}\n\n// =============================================================================\n// ROBUST REQUEST GENERATION\n// Instead of storing the LLM's raw request, generate a hardened template\n// that the executor (Utility Worker) can reliably follow.\n// =============================================================================\nlet enhancedRequest = input.request;\n\nif (isMeetingReminder && scheduleType === 'interval') {\n  // Extract time window from user request (default 30 min)\n  let windowMinutes = 30;\n  const windowMatch = requestLower.match(/(\\d+)\\s*min/);\n  if (windowMatch) {\n    windowMinutes = Math.max(15, Math.min(60, parseInt(windowMatch[1])));\n  }\n\n  enhancedRequest = `Check my calendar for events STARTING within the provided time window (see EXACT TIMESTAMPS section appended below).\n\nINCLUDE only events that:\n- Have OTHER attendees (not just me) OR are explicitly labeled as meetings/calls/syncs\n- Start within the time window (ignore already-ongoing events)\n- Have NOT been listed in the CRITICAL DEDUP section below (if present)\n\nEXCLUDE:\n- Solo time blocks (Deep Work, Focus Time, Lunch, Break, Personal, etc.)\n- All-day events\n- Events that already started before the time window\n\nFor each qualifying event:\n1. Event title and start time (e.g. \"Team Standup at 2:30 PM\")\n2. Key attendees (if any)\n3. One-line context from the event description (if meaningful)\n\nIf NO qualifying events start in the time window, output EXACTLY an empty string. No explanation, no status update, no filler.\n\nIMPORTANT: Use the exact time_min and time_max values from the EXACT TIMESTAMPS section appended to this prompt. Do NOT compute your own timestamps.`;\n\n} else if (isDailySummary) {\n  // Keep user's request but ensure key elements\n  if (!enhancedRequest.toLowerCase().includes('today')) {\n    enhancedRequest = 'Get my calendar events for today and ' + enhancedRequest;\n  }\n} else {\n  // General tasks: ensure no-action clause for interval tasks\n  if (scheduleType === 'interval' && \n      !enhancedRequest.toLowerCase().includes('no action') && \n      !enhancedRequest.toLowerCase().includes('do not send') &&\n      !enhancedRequest.toLowerCase().includes('empty string')) {\n    enhancedRequest += '\\n\\nIf there is nothing to report, output EXACTLY an empty string. Do not explain why.';\n  }\n}\n\n// INTERVAL GUARDRAILS\nif (scheduleType === 'interval' && intervalMinutes !== null) {\n  intervalMinutes = Math.max(5, Math.min(1440, intervalMinutes));\n}\n\n// Initialize metadata\nlet metadata = {};\nif (isMeetingReminder) {\n  metadata = { notified_event_ids: [], last_reset: null, task_type: 'meeting_reminder' };\n} else if (isDailySummary) {\n  metadata = { task_type: 'daily_summary' };\n} else {\n  metadata = { task_type: 'general' };\n}\n\n// Generate smart task name if not provided\nlet taskName = input.name;\nif (!taskName || taskName === 'Scheduled Task') {\n  if (isMeetingReminder) taskName = 'Meeting Prep Reminder';\n  else if (isDailySummary) taskName = 'Daily Schedule Summary';\n  else taskName = 'Scheduled Task';\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    timezone: timezone,\n    name: taskName,\n    request: enhancedRequest,\n    schedule_type: scheduleType,\n    scheduled_time: scheduledTime,\n    days_of_week: daysOfWeek,\n    interval_minutes: intervalMinutes,\n    one_time_at: oneTimeAt,\n    channels: channels,\n    metadata: metadata,\n    _analysis: {\n      detected_type: isMeetingReminder ? 'meeting_reminder' : (isDailySummary ? 'daily_summary' : 'general'),\n      request_enhanced: enhancedRequest !== input.request\n    }\n  }\n}];"
       }
     },
     {
@@ -157,14 +222,20 @@
       "name": "Insert Task",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1100, 100],
+      "position": [
+        1100,
+        100
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO alfred.scheduled_tasks (\n  user_id, name, request, schedule_type, \n  scheduled_time, days_of_week, interval_minutes, one_time_at,\n  channels, next_run_at\n) VALUES (\n  {{ $json.user_id }},\n  '{{ $json.name.replace(/'/g, \"''\") }}',\n  '{{ $json.request.replace(/'/g, \"''\") }}',\n  '{{ $json.schedule_type }}',\n  {{ $json.scheduled_time ? \"'\" + $json.scheduled_time + \"'\" : 'NULL' }},\n  {{ $json.days_of_week ? \"ARRAY[\" + $json.days_of_week.join(',') + \"]\" : 'NULL' }},\n  {{ $json.interval_minutes || 'NULL' }},\n  {{ $json.one_time_at ? \"'\" + $json.one_time_at + \"'\" : 'NULL' }},\n  ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n  alfred.calculate_next_run(\n    '{{ $json.schedule_type }}',\n    '{{ $json.timezone }}',\n    {{ $json.one_time_at ? \"'\" + $json.one_time_at + \"'::timestamptz\" : 'NULL' }},\n    {{ $json.scheduled_time ? \"'\" + $json.scheduled_time + \"'::time\" : 'NULL' }},\n    {{ $json.days_of_week ? \"ARRAY[\" + $json.days_of_week.join(',') + \"]\" : 'NULL' }},\n    {{ $json.interval_minutes || 'NULL' }},\n    NULL\n  )\n)\nRETURNING id, name, schedule_type, scheduled_time, days_of_week, interval_minutes, channels, next_run_at;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -172,7 +243,10 @@
       "name": "Format Create Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1300, 100],
+      "position": [
+        1300,
+        100
+      ],
       "parameters": {
         "jsCode": "const task = $input.first().json;\n\nlet scheduleDesc = '';\nswitch (task.schedule_type) {\n  case 'daily':\n    scheduleDesc = `daily at ${task.scheduled_time}`;\n    break;\n  case 'weekly':\n    const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];\n    const days = task.days_of_week.map(d => dayNames[d]).join(', ');\n    scheduleDesc = `every ${days} at ${task.scheduled_time}`;\n    break;\n  case 'interval':\n    scheduleDesc = `every ${task.interval_minutes} minutes`;\n    break;\n  case 'once':\n    scheduleDesc = `once at ${task.next_run_at}`;\n    break;\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'create',\n    task: {\n      id: task.id,\n      name: task.name,\n      schedule: scheduleDesc,\n      channels: task.channels,\n      next_run: task.next_run_at\n    },\n    message: `Created scheduled task \"${task.name}\" to run ${scheduleDesc} via ${task.channels.join(' and ')}.`\n  }\n}];"
       }
@@ -182,14 +256,20 @@
       "name": "List Tasks",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 240],
+      "position": [
+        900,
+        240
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT \n  id, name, request, schedule_type, scheduled_time, \n  days_of_week, interval_minutes, channels, \n  is_active, next_run_at, last_run_at, run_count\nFROM alfred.scheduled_tasks\nWHERE user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nORDER BY is_active DESC, next_run_at ASC;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -197,7 +277,10 @@
       "name": "Format List Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 240],
+      "position": [
+        1100,
+        240
+      ],
       "parameters": {
         "jsCode": "const tasks = $input.all().map(item => item.json);\n\nif (tasks.length === 0 || !tasks[0].id) {\n  return [{\n    json: {\n      success: true,\n      action: 'list',\n      tasks: [],\n      message: 'You have no scheduled tasks.'\n    }\n  }];\n}\n\nconst dayNames = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];\n\nconst formattedTasks = tasks.map(t => {\n  let scheduleDesc = '';\n  switch (t.schedule_type) {\n    case 'daily':\n      scheduleDesc = `Daily at ${t.scheduled_time}`;\n      break;\n    case 'weekly':\n      const days = t.days_of_week ? t.days_of_week.map(d => dayNames[d]).join(', ') : '';\n      scheduleDesc = `${days} at ${t.scheduled_time}`;\n      break;\n    case 'interval':\n      scheduleDesc = `Every ${t.interval_minutes} min`;\n      break;\n    case 'once':\n      scheduleDesc = `Once at ${t.next_run_at}`;\n      break;\n  }\n  \n  return {\n    id: t.id,\n    name: t.name,\n    schedule: scheduleDesc,\n    channels: t.channels,\n    active: t.is_active,\n    next_run: t.next_run_at,\n    run_count: t.run_count\n  };\n});\n\nconst activeCount = formattedTasks.filter(t => t.active).length;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list',\n    tasks: formattedTasks,\n    message: `You have ${formattedTasks.length} scheduled task(s) (${activeCount} active).`\n  }\n}];"
       }
@@ -207,14 +290,20 @@
       "name": "Update Task",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 380],
+      "position": [
+        900,
+        380
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "=UPDATE alfred.scheduled_tasks SET\n  {{ $('Workflow Input').item.json.name ? \"name = '\" + $('Workflow Input').item.json.name.replace(/'/g, \"''\") + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.request ? \"request = '\" + $('Workflow Input').item.json.request.replace(/'/g, \"''\") + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.scheduled_time ? \"scheduled_time = '\" + $('Workflow Input').item.json.scheduled_time + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.is_active !== undefined ? \"is_active = \" + ($('Workflow Input').item.json.is_active === 'true' || $('Workflow Input').item.json.is_active === true) + \",\" : '' }}\n  updated_at = NOW()\nWHERE id = {{ $('Workflow Input').item.json.task_id }}\n  AND user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nRETURNING id, name, is_active;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -222,7 +311,10 @@
       "name": "Format Update Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 380],
+      "position": [
+        1100,
+        380
+      ],
       "parameters": {
         "jsCode": "const result = $input.first().json;\n\nif (!result.id) {\n  return [{\n    json: {\n      success: false,\n      action: 'update',\n      error: 'Task not found or you do not have permission to update it.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update',\n    task: result,\n    message: `Updated task \"${result.name}\" successfully.`\n  }\n}];"
       }
@@ -232,14 +324,20 @@
       "name": "Delete Task",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 520],
+      "position": [
+        900,
+        520
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "DELETE FROM alfred.scheduled_tasks\nWHERE id = {{ $('Workflow Input').item.json.task_id }}\n  AND user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nRETURNING id, name;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -247,7 +345,10 @@
       "name": "Format Delete Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 520],
+      "position": [
+        1100,
+        520
+      ],
       "parameters": {
         "jsCode": "const result = $input.first().json;\n\nif (!result.id) {\n  return [{\n    json: {\n      success: false,\n      action: 'delete',\n      error: 'Task not found or you do not have permission to delete it.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'delete',\n    message: `Deleted task \"${result.name}\" successfully.`\n  }\n}];"
       }
@@ -257,7 +358,10 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [900, 660],
+      "position": [
+        900,
+        660
+      ],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -281,34 +385,120 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Get User", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get User": {
-      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Route by Action": {
       "main": [
-        [{ "node": "Create Task", "type": "main", "index": 0 }],
-        [{ "node": "List Tasks", "type": "main", "index": 0 }],
-        [{ "node": "Update Task", "type": "main", "index": 0 }],
-        [{ "node": "Delete Task", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create Task": {
-      "main": [[{ "node": "Insert Task", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Insert Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Insert Task": {
-      "main": [[{ "node": "Format Create Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Create Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "List Tasks": {
-      "main": [[{ "node": "Format List Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format List Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Task": {
-      "main": [[{ "node": "Format Update Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Update Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Delete Task": {
-      "main": [[{ "node": "Format Delete Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Delete Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -319,9 +509,582 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "c018831d-ef05-4af1-beee-7ce6cc17dcd6",
-  "activeVersionId": "c018831d-ef05-4af1-beee-7ce6cc17dcd6",
-  "versionCounter": 16,
+  "versionId": "f83969a1-105b-45ac-8afb-f660ed2c9391",
+  "activeVersionId": "f83969a1-105b-45ac-8afb-f660ed2c9391",
+  "versionCounter": 23,
   "triggerCount": 0,
-  "tags": []
+  "shared": [
+    {
+      "updatedAt": "2026-02-04T09:42:14.888Z",
+      "createdAt": "2026-02-04T09:42:14.888Z",
+      "role": "workflow:owner",
+      "workflowId": "GVUVTmfFfdIpApKq",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-10T09:40:41.292Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770325854784
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-10",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-10T11:32:52.938Z",
+    "createdAt": "2026-02-10T11:32:52.938Z",
+    "versionId": "f83969a1-105b-45ac-8afb-f660ed2c9391",
+    "workflowId": "GVUVTmfFfdIpApKq",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "task_id",
+                "type": "string"
+              },
+              {
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "name": "request",
+                "type": "string"
+              },
+              {
+                "name": "schedule_type",
+                "type": "string"
+              },
+              {
+                "name": "scheduled_time",
+                "type": "string"
+              },
+              {
+                "name": "days_of_week",
+                "type": "string"
+              },
+              {
+                "name": "interval_minutes",
+                "type": "string"
+              },
+              {
+                "name": "one_time_at",
+                "type": "string"
+              },
+              {
+                "name": "channels",
+                "type": "string"
+              },
+              {
+                "name": "is_active",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-user",
+        "name": "Get User",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          450,
+          300
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, slack_user_id, preferences->>'timezone' as timezone FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}'",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          650,
+          300
+        ],
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "create",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "create"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "list",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "list"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "update",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "update"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "leftValue": "",
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Workflow Input').item.json.action }}",
+                      "rightValue": "delete",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "delete"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "create-task",
+        "name": "Create Task",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          900,
+          100
+        ],
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').item.json;\nconst user = $('Get User').first().json;\n\nif (!user.id) {\n  return [{ json: { success: false, error: 'User not found' } }];\n}\n\nconst timezone = user.timezone || 'America/New_York';\nconst channels = input.channels ? input.channels.split(',').map(c => c.trim()) : ['slack'];\n\n// Parse days_of_week if provided (e.g., \"1,2,3,4,5\" for weekdays)\nlet daysOfWeek = null;\nif (input.days_of_week) {\n  daysOfWeek = input.days_of_week.split(',').map(d => parseInt(d.trim()));\n}\n\n// TASK TYPE DETECTION\nconst requestLower = (input.request || '').toLowerCase();\nconst nameLower = (input.name || '').toLowerCase();\n\nconst isMeetingReminder = \n  requestLower.includes('meeting') || \n  requestLower.includes('calendar') || \n  requestLower.includes('event') ||\n  requestLower.includes('block') ||\n  requestLower.includes('upcoming') ||\n  nameLower.includes('reminder') ||\n  nameLower.includes('meeting') ||\n  nameLower.includes('prep');\n\nconst isDailySummary = \n  requestLower.includes('daily') || \n  requestLower.includes('summary') || \n  requestLower.includes('morning') ||\n  nameLower.includes('daily');\n\nconst isOneTimeTask = input.schedule_type === 'once' || input.one_time_at;\n\n// Determine schedule type intelligently\nlet scheduleType = input.schedule_type;\nlet intervalMinutes = input.interval_minutes ? parseInt(input.interval_minutes) : null;\nlet scheduledTime = input.scheduled_time || null;\nlet oneTimeAt = input.one_time_at || null;\n\nif (!scheduleType) {\n  if (isOneTimeTask) {\n    scheduleType = 'once';\n  } else if (isDailySummary) {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '08:00';\n  } else if (isMeetingReminder) {\n    scheduleType = 'interval';\n    intervalMinutes = intervalMinutes || 5;\n  } else {\n    scheduleType = 'daily';\n    scheduledTime = scheduledTime || '09:00';\n  }\n}\n\n// =============================================================================\n// ROBUST REQUEST GENERATION\n// Instead of storing the LLM's raw request, generate a hardened template\n// that the executor (Utility Worker) can reliably follow.\n// =============================================================================\nlet enhancedRequest = input.request;\n\nif (isMeetingReminder && scheduleType === 'interval') {\n  // Extract time window from user request (default 30 min)\n  let windowMinutes = 30;\n  const windowMatch = requestLower.match(/(\\d+)\\s*min/);\n  if (windowMatch) {\n    windowMinutes = Math.max(15, Math.min(60, parseInt(windowMatch[1])));\n  }\n\n  enhancedRequest = `Check my calendar for events STARTING within the provided time window (see EXACT TIMESTAMPS section appended below).\n\nINCLUDE only events that:\n- Have OTHER attendees (not just me) OR are explicitly labeled as meetings/calls/syncs\n- Start within the time window (ignore already-ongoing events)\n- Have NOT been listed in the CRITICAL DEDUP section below (if present)\n\nEXCLUDE:\n- Solo time blocks (Deep Work, Focus Time, Lunch, Break, Personal, etc.)\n- All-day events\n- Events that already started before the time window\n\nFor each qualifying event:\n1. Event title and start time (e.g. \"Team Standup at 2:30 PM\")\n2. Key attendees (if any)\n3. One-line context from the event description (if meaningful)\n\nIf NO qualifying events start in the time window, output EXACTLY an empty string. No explanation, no status update, no filler.\n\nIMPORTANT: Use the exact time_min and time_max values from the EXACT TIMESTAMPS section appended to this prompt. Do NOT compute your own timestamps.`;\n\n} else if (isDailySummary) {\n  // Keep user's request but ensure key elements\n  if (!enhancedRequest.toLowerCase().includes('today')) {\n    enhancedRequest = 'Get my calendar events for today and ' + enhancedRequest;\n  }\n} else {\n  // General tasks: ensure no-action clause for interval tasks\n  if (scheduleType === 'interval' && \n      !enhancedRequest.toLowerCase().includes('no action') && \n      !enhancedRequest.toLowerCase().includes('do not send') &&\n      !enhancedRequest.toLowerCase().includes('empty string')) {\n    enhancedRequest += '\\n\\nIf there is nothing to report, output EXACTLY an empty string. Do not explain why.';\n  }\n}\n\n// INTERVAL GUARDRAILS\nif (scheduleType === 'interval' && intervalMinutes !== null) {\n  intervalMinutes = Math.max(5, Math.min(1440, intervalMinutes));\n}\n\n// Initialize metadata\nlet metadata = {};\nif (isMeetingReminder) {\n  metadata = { notified_event_ids: [], last_reset: null, task_type: 'meeting_reminder' };\n} else if (isDailySummary) {\n  metadata = { task_type: 'daily_summary' };\n} else {\n  metadata = { task_type: 'general' };\n}\n\n// Generate smart task name if not provided\nlet taskName = input.name;\nif (!taskName || taskName === 'Scheduled Task') {\n  if (isMeetingReminder) taskName = 'Meeting Prep Reminder';\n  else if (isDailySummary) taskName = 'Daily Schedule Summary';\n  else taskName = 'Scheduled Task';\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    timezone: timezone,\n    name: taskName,\n    request: enhancedRequest,\n    schedule_type: scheduleType,\n    scheduled_time: scheduledTime,\n    days_of_week: daysOfWeek,\n    interval_minutes: intervalMinutes,\n    one_time_at: oneTimeAt,\n    channels: channels,\n    metadata: metadata,\n    _analysis: {\n      detected_type: isMeetingReminder ? 'meeting_reminder' : (isDailySummary ? 'daily_summary' : 'general'),\n      request_enhanced: enhancedRequest !== input.request\n    }\n  }\n}];"
+        }
+      },
+      {
+        "id": "insert-task",
+        "name": "Insert Task",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1100,
+          100
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO alfred.scheduled_tasks (\n  user_id, name, request, schedule_type, \n  scheduled_time, days_of_week, interval_minutes, one_time_at,\n  channels, next_run_at\n) VALUES (\n  {{ $json.user_id }},\n  '{{ $json.name.replace(/'/g, \"''\") }}',\n  '{{ $json.request.replace(/'/g, \"''\") }}',\n  '{{ $json.schedule_type }}',\n  {{ $json.scheduled_time ? \"'\" + $json.scheduled_time + \"'\" : 'NULL' }},\n  {{ $json.days_of_week ? \"ARRAY[\" + $json.days_of_week.join(',') + \"]\" : 'NULL' }},\n  {{ $json.interval_minutes || 'NULL' }},\n  {{ $json.one_time_at ? \"'\" + $json.one_time_at + \"'\" : 'NULL' }},\n  ARRAY[{{ $json.channels.map(c => \"'\" + c + \"'\").join(',') }}],\n  alfred.calculate_next_run(\n    '{{ $json.schedule_type }}',\n    '{{ $json.timezone }}',\n    {{ $json.one_time_at ? \"'\" + $json.one_time_at + \"'::timestamptz\" : 'NULL' }},\n    {{ $json.scheduled_time ? \"'\" + $json.scheduled_time + \"'::time\" : 'NULL' }},\n    {{ $json.days_of_week ? \"ARRAY[\" + $json.days_of_week.join(',') + \"]\" : 'NULL' }},\n    {{ $json.interval_minutes || 'NULL' }},\n    NULL\n  )\n)\nRETURNING id, name, schedule_type, scheduled_time, days_of_week, interval_minutes, channels, next_run_at;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-create",
+        "name": "Format Create Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1300,
+          100
+        ],
+        "parameters": {
+          "jsCode": "const task = $input.first().json;\n\nlet scheduleDesc = '';\nswitch (task.schedule_type) {\n  case 'daily':\n    scheduleDesc = `daily at ${task.scheduled_time}`;\n    break;\n  case 'weekly':\n    const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];\n    const days = task.days_of_week.map(d => dayNames[d]).join(', ');\n    scheduleDesc = `every ${days} at ${task.scheduled_time}`;\n    break;\n  case 'interval':\n    scheduleDesc = `every ${task.interval_minutes} minutes`;\n    break;\n  case 'once':\n    scheduleDesc = `once at ${task.next_run_at}`;\n    break;\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'create',\n    task: {\n      id: task.id,\n      name: task.name,\n      schedule: scheduleDesc,\n      channels: task.channels,\n      next_run: task.next_run_at\n    },\n    message: `Created scheduled task \"${task.name}\" to run ${scheduleDesc} via ${task.channels.join(' and ')}.`\n  }\n}];"
+        }
+      },
+      {
+        "id": "list-tasks",
+        "name": "List Tasks",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          240
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT \n  id, name, request, schedule_type, scheduled_time, \n  days_of_week, interval_minutes, channels, \n  is_active, next_run_at, last_run_at, run_count\nFROM alfred.scheduled_tasks\nWHERE user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nORDER BY is_active DESC, next_run_at ASC;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-list",
+        "name": "Format List Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          240
+        ],
+        "parameters": {
+          "jsCode": "const tasks = $input.all().map(item => item.json);\n\nif (tasks.length === 0 || !tasks[0].id) {\n  return [{\n    json: {\n      success: true,\n      action: 'list',\n      tasks: [],\n      message: 'You have no scheduled tasks.'\n    }\n  }];\n}\n\nconst dayNames = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];\n\nconst formattedTasks = tasks.map(t => {\n  let scheduleDesc = '';\n  switch (t.schedule_type) {\n    case 'daily':\n      scheduleDesc = `Daily at ${t.scheduled_time}`;\n      break;\n    case 'weekly':\n      const days = t.days_of_week ? t.days_of_week.map(d => dayNames[d]).join(', ') : '';\n      scheduleDesc = `${days} at ${t.scheduled_time}`;\n      break;\n    case 'interval':\n      scheduleDesc = `Every ${t.interval_minutes} min`;\n      break;\n    case 'once':\n      scheduleDesc = `Once at ${t.next_run_at}`;\n      break;\n  }\n  \n  return {\n    id: t.id,\n    name: t.name,\n    schedule: scheduleDesc,\n    channels: t.channels,\n    active: t.is_active,\n    next_run: t.next_run_at,\n    run_count: t.run_count\n  };\n});\n\nconst activeCount = formattedTasks.filter(t => t.active).length;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'list',\n    tasks: formattedTasks,\n    message: `You have ${formattedTasks.length} scheduled task(s) (${activeCount} active).`\n  }\n}];"
+        }
+      },
+      {
+        "id": "update-task",
+        "name": "Update Task",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          380
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "=UPDATE alfred.scheduled_tasks SET\n  {{ $('Workflow Input').item.json.name ? \"name = '\" + $('Workflow Input').item.json.name.replace(/'/g, \"''\") + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.request ? \"request = '\" + $('Workflow Input').item.json.request.replace(/'/g, \"''\") + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.scheduled_time ? \"scheduled_time = '\" + $('Workflow Input').item.json.scheduled_time + \"',\" : '' }}\n  {{ $('Workflow Input').item.json.is_active !== undefined ? \"is_active = \" + ($('Workflow Input').item.json.is_active === 'true' || $('Workflow Input').item.json.is_active === true) + \",\" : '' }}\n  updated_at = NOW()\nWHERE id = {{ $('Workflow Input').item.json.task_id }}\n  AND user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nRETURNING id, name, is_active;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-update",
+        "name": "Format Update Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          380
+        ],
+        "parameters": {
+          "jsCode": "const result = $input.first().json;\n\nif (!result.id) {\n  return [{\n    json: {\n      success: false,\n      action: 'update',\n      error: 'Task not found or you do not have permission to update it.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update',\n    task: result,\n    message: `Updated task \"${result.name}\" successfully.`\n  }\n}];"
+        }
+      },
+      {
+        "id": "delete-task",
+        "name": "Delete Task",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          520
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "DELETE FROM alfred.scheduled_tasks\nWHERE id = {{ $('Workflow Input').item.json.task_id }}\n  AND user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $('Workflow Input').item.json.slack_user_id }}')\nRETURNING id, name;",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-delete",
+        "name": "Format Delete Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1100,
+          520
+        ],
+        "parameters": {
+          "jsCode": "const result = $input.first().json;\n\nif (!result.id) {\n  return [{\n    json: {\n      success: false,\n      action: 'delete',\n      error: 'Task not found or you do not have permission to delete it.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'delete',\n    message: `Deleted task \"${result.name}\" successfully.`\n  }\n}];"
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          900,
+          660
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ 'Invalid action: ' + $('Workflow Input').item.json.action + '. Valid actions: create, list, update, delete' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Get User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get User": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "Create Task",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "List Tasks",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Update Task",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Delete Task",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Task": {
+        "main": [
+          [
+            {
+              "node": "Insert Task",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Insert Task": {
+        "main": [
+          [
+            {
+              "node": "Format Create Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Tasks": {
+        "main": [
+          [
+            {
+              "node": "Format List Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Task": {
+        "main": [
+          [
+            {
+              "node": "Format Update Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete Task": {
+        "main": [
+          [
+            {
+              "node": "Format Delete Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-10T11:32:53.096Z",
+        "id": 581,
+        "workflowId": "GVUVTmfFfdIpApKq",
+        "versionId": "f83969a1-105b-45ac-8afb-f660ed2c9391",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

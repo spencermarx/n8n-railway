@@ -1,0 +1,2532 @@
+{
+    "updatedAt": "2026-02-08T16:23:55.769Z",
+    "createdAt": "2026-02-05T13:46:13.149Z",
+    "id": "ezvCaPeNM8P7gEWj",
+    "name": "Worker | Content Calendar Manager",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "id": "workflow-input",
+            "name": "Workflow Input",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                200,
+                300
+            ],
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "slack_user_id",
+                            "type": "string"
+                        },
+                        {
+                            "name": "action",
+                            "type": "string"
+                        },
+                        {
+                            "name": "drafts",
+                            "type": "string"
+                        },
+                        {
+                            "name": "images",
+                            "type": "string"
+                        },
+                        {
+                            "name": "winning_idea",
+                            "type": "string"
+                        },
+                        {
+                            "name": "target_channels",
+                            "type": "string"
+                        },
+                        {
+                            "name": "row_number",
+                            "type": "number"
+                        },
+                        {
+                            "name": "count",
+                            "type": "number"
+                        },
+                        {
+                            "name": "query_filter",
+                            "type": "string"
+                        },
+                        {
+                            "name": "spreadsheet_id",
+                            "type": "string"
+                        },
+                        {
+                            "name": "new_status",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "prepare-context",
+            "name": "Prepare Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                860,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const input = $('Workflow Input').first().json;\nconst configResult = $('Fetch Calendar Configs').first().json;\n\n// Extract configs\nconst configs = configResult.configs || {};\nconst contentCalendarSheetId = input.spreadsheet_id || configs['marketing.content_calendar_sheet_id'] || '';\nconst contentCalendarSheetName = configs['marketing.content_calendar_sheet_name'] || 'Content Tracker';\nconst blogDraftsFolderId = configs['marketing.blog_drafts_folder_id'] || '';\n\n// Parse drafts\nlet drafts = input.drafts;\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\n// Parse images\nlet images = input.images;\nif (typeof images === 'string') {\n  try { images = JSON.parse(images); } catch (e) { images = {}; }\n}\n\nconst sourcesUsed = input.sources_used || [];\n\nreturn [{\n  json: {\n    sources_used: sourcesUsed,\n    action: input.action || 'update_tracker',\n    slack_user_id: input.slack_user_id || '',\n    drafts: drafts,\n    images: images,\n    winning_idea: input.winning_idea || '',\n    target_channels: input.target_channels || '',\n    content_calendar_sheet_id: contentCalendarSheetId,\n    content_calendar_sheet_name: contentCalendarSheetName,\n    blog_drafts_folder_id: blogDraftsFolderId,\n    // New fields for enhanced actions\n    row_number: input.row_number || null,\n    count: input.count || 10,\n    query_filter: input.query_filter || '',\n    new_status: input.new_status || ''\n  }\n}];"
+            }
+        },
+        {
+            "id": "route-action",
+            "name": "Route by Action",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                1200,
+                300
+            ],
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "outputKey": "update_tracker",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "update_tracker",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "outputKey": "save_blog",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "save_blog",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "outputKey": "both",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "both",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "outputKey": "read_recent",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "read_recent",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "outputKey": "update_row",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "update_row",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "outputKey": "query",
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.action }}",
+                                        "rightValue": "query",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            }
+        },
+        {
+            "id": "prepare-tracker-row",
+            "name": "Prepare Tracker Row",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                160
+            ],
+            "parameters": {
+                "jsCode": "const context = $('Prepare Context').first().json;\n\n// Parse drafts and extract content properly\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\n// Try to parse winning_idea if it's a JSON string\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try {\n    winningIdea = JSON.parse(winningIdea);\n  } catch (e) {\n    // Keep as string if parsing fails\n  }\n}\n\n// Helper to extract actual content from draft object\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') {\n    // Content is nested in .content field\n    return draft.content || draft.text || '';\n  }\n  return '';\n}\n\n// Helper to format channel name to exact expected values\nfunction formatChannelName(channel) {\n  if (!channel) return '';\n  const names = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog post',\n    'instagram': 'Instagram'\n  };\n  return names[channel.toLowerCase()] || channel;\n}\n\n// Extract summary from winning idea - DO NOT TRUNCATE\nlet postSummary = 'New Content';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    // Structured winning idea from brainstormer - use full topic\n    postSummary = winningIdea.topic || winningIdea.title || winningIdea.subject || 'New Content';\n  } else if (typeof winningIdea === 'string') {\n    // Plain string - use the FULL string, no truncation\n    postSummary = winningIdea;\n  }\n}\n\n// Format date as M/D/YYYY\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Determine channels to write rows for\nlet channels = [];\nif (context.target_channels) {\n  if (typeof context.target_channels === 'string') {\n    channels = context.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n  } else if (Array.isArray(context.target_channels)) {\n    channels = context.target_channels.map(c => c.toLowerCase());\n  }\n}\nif (channels.length === 0) {\n  channels = Object.keys(drafts).filter(k => k !== 'error');\n}\n\n// Build notes with fact references\nconst sourcesUsed = context.sources_used || [];\nlet notesText = 'Auto-generated by Marketing Team';\nif (sourcesUsed.length > 0) {\n  notesText = 'Sources: ' + sourcesUsed.join('; ') + ' | Auto-generated by Marketing Team';\n}\n\n// Build rows - one per channel\n// Columns: Post Summary, Post Group, Type, Full Post Content, Owner, Status, Post date, File (If Blog), Post Image File, Notes\nconst rows = [];\nconst isMultiChannel = channels.length > 1;\nconst postGroup = isMultiChannel ? postSummary : '--';\n\nfor (const channel of channels) {\n  const draft = drafts[channel];\n  const content = extractContent(draft);  // FULL content, no truncation\n  const image = images[channel];\n\n  // Get image URL if available\n  let imageUrl = '';\n  if (image) {\n    imageUrl = image.file_url || image.url || '';\n  }\n\n  rows.push([\n    postSummary,                        // A: Post Summary (FULL, not truncated)\n    postGroup,                          // B: Post Group (-- for single, title for multi)\n    formatChannelName(channel),         // C: Type (LinkedIn, Facebook, Twitter/X, Blog post)\n    content,                            // D: Full Post Content (FULL, not truncated!)\n    'Alfred AI',                        // E: Owner\n    'Under review',                     // F: Status\n    postDate,                           // G: Post date\n    channel === 'blog' ? 'Pending' : '',// H: File (If Blog)\n    imageUrl,                           // I: Post Image File\n    notesText  // J: Notes\n  ]);\n}\n\n// If no valid rows, create a placeholder\nif (rows.length === 0) {\n  rows.push([\n    postSummary,\n    '--',\n    'Unknown',\n    'No content generated',\n    'Alfred AI',\n    'Under review',\n    postDate,\n    '',\n    '',\n    'Error: No content could be extracted from drafts'\n  ]);\n}\n\nreturn [{\n  json: {\n    row_values: JSON.stringify(rows),\n    slack_user_id: context.slack_user_id,\n    config: {\n      content_calendar_sheet_id: context.content_calendar_sheet_id,\n      content_calendar_sheet_name: context.content_calendar_sheet_name,\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "update-tracker",
+            "name": "Update Content Tracker",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1560,
+                160
+            ],
+            "parameters": {
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "append_rows",
+                        "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+                        "range": "={{ $json.config.content_calendar_sheet_name }}!A:J",
+                        "values": "={{ $json.row_values }}"
+                    }
+                },
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "tWgJgDHdIHBhCOr0"
+                }
+            }
+        },
+        {
+            "id": "format-tracker-result",
+            "name": "Format Tracker Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                160
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst originalContext = $('Prepare Tracker Row').first().json.original_context;\n\nconst success = input.success === true;\n\nreturn [{\n  json: {\n    tracker_updated: success,\n    tracker_row_id: input.updated_range || null,\n    tracker_error: success ? null : (input.error || 'Failed to update tracker'),\n    original_context: originalContext\n  }\n}];"
+            }
+        },
+        {
+            "id": "prepare-blog-doc",
+            "name": "Prepare Blog Document",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                340
+            ],
+            "parameters": {
+                "jsCode": "const context = $('Prepare Context').first().json;\n\n// Access drafts correctly (not final_drafts)\nconst drafts = context.drafts || {};\nconst blogDraft = drafts.blog;\n\nif (!blogDraft || (typeof blogDraft === 'object' && !blogDraft.content)) {\n  return [{\n    json: {\n      skip_blog: true,\n      reason: 'No blog content provided',\n      config: {\n        blog_drafts_folder_id: context.blog_drafts_folder_id\n      },\n      original_context: context\n    }\n  }];\n}\n\n// Extract content from blog draft\nconst content = typeof blogDraft === 'object' ? blogDraft.content : blogDraft;\n\n// Create document title from winning_idea\nconst winningIdea = context.winning_idea || '';\nconst title = winningIdea \n  ? `Blog Draft: ${winningIdea.substring(0, 50)}`\n  : `Blog Draft - ${new Date().toISOString().split('T')[0]}`;\n\nreturn [{\n  json: {\n    skip_blog: false,\n    title: title,\n    content: content,\n    slack_user_id: context.slack_user_id,\n    config: {\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "check-skip-blog",
+            "name": "Check Skip Blog",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                1560,
+                340
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "skip-check",
+                            "leftValue": "={{ $json.skip_blog }}",
+                            "rightValue": false,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "create-blog-doc",
+            "name": "Create Blog Document",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1780,
+                280
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "ZUMZ7oNUzDRDnFft"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "create_document",
+                        "title": "={{ $json.title }}",
+                        "content": "={{ $json.content }}",
+                        "folder_id": "={{ $json.config.blog_drafts_folder_id }}"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "format-blog-result",
+            "name": "Format Blog Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2000,
+                280
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Blog Document').first().json;\n\nconst success = input.success === true;\n\nreturn [{\n  json: {\n    blog_created: success,\n    blog_document: success ? {\n      id: input.document_id,\n      url: input.document_url,\n      title: input.title || prepareData.title\n    } : null,\n    blog_error: success ? null : (input.error || 'Failed to create blog document'),\n    original_context: prepareData.original_context\n  }\n}];"
+            }
+        },
+        {
+            "id": "skip-blog-result",
+            "name": "Skip Blog Result",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                1780,
+                420
+            ],
+            "parameters": {
+                "mode": "manual",
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "blog_created",
+                            "name": "blog_created",
+                            "value": false,
+                            "type": "boolean"
+                        },
+                        {
+                            "id": "blog_document",
+                            "name": "blog_document",
+                            "value": null,
+                            "type": "string"
+                        },
+                        {
+                            "id": "blog_error",
+                            "name": "blog_error",
+                            "value": "={{ $json.reason }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "original_context",
+                            "name": "original_context",
+                            "value": "={{ $json.original_context }}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "both-prepare-tracker",
+            "name": "Both: Prepare Tracker",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                520
+            ],
+            "parameters": {
+                "jsCode": "const context = $('Prepare Context').first().json;\n\n// Parse drafts and extract content properly\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\n// Try to parse winning_idea if it's a JSON string\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try {\n    winningIdea = JSON.parse(winningIdea);\n  } catch (e) {\n    // Keep as string if parsing fails\n  }\n}\n\n// Helper to extract actual content from draft object\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') {\n    // Content is nested in .content field\n    return draft.content || draft.text || '';\n  }\n  return '';\n}\n\n// Helper to format channel name to exact expected values\nfunction formatChannelName(channel) {\n  if (!channel) return '';\n  const names = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog post',\n    'instagram': 'Instagram'\n  };\n  return names[channel.toLowerCase()] || channel;\n}\n\n// Extract summary from winning idea - DO NOT TRUNCATE\nlet postSummary = 'New Content';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    // Structured winning idea from brainstormer - use full topic\n    postSummary = winningIdea.topic || winningIdea.title || winningIdea.subject || 'New Content';\n  } else if (typeof winningIdea === 'string') {\n    // Plain string - use the FULL string, no truncation\n    postSummary = winningIdea;\n  }\n}\n\n// Format date as M/D/YYYY\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Determine channels to write rows for\nlet channels = [];\nif (context.target_channels) {\n  if (typeof context.target_channels === 'string') {\n    channels = context.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n  } else if (Array.isArray(context.target_channels)) {\n    channels = context.target_channels.map(c => c.toLowerCase());\n  }\n}\nif (channels.length === 0) {\n  channels = Object.keys(drafts).filter(k => k !== 'error');\n}\n\n// Build rows - one per channel\n// Columns: Post Summary, Post Group, Type, Full Post Content, Owner, Status, Post date, File (If Blog), Post Image File, Notes\nconst rows = [];\nconst isMultiChannel = channels.length > 1;\nconst postGroup = isMultiChannel ? postSummary : '--';\n\nfor (const channel of channels) {\n  const draft = drafts[channel];\n  const content = extractContent(draft);  // FULL content, no truncation\n  const image = images[channel];\n\n  // Get image URL if available\n  let imageUrl = '';\n  if (image) {\n    imageUrl = image.file_url || image.url || '';\n  }\n\n  rows.push([\n    postSummary,                        // A: Post Summary (FULL, not truncated)\n    postGroup,                          // B: Post Group (-- for single, title for multi)\n    formatChannelName(channel),         // C: Type (LinkedIn, Facebook, Twitter/X, Blog post)\n    content,                            // D: Full Post Content (FULL, not truncated!)\n    'Alfred AI',                        // E: Owner\n    'Under review',                     // F: Status\n    postDate,                           // G: Post date\n    channel === 'blog' ? 'Pending' : '',// H: File (If Blog)\n    imageUrl,                           // I: Post Image File\n    'Auto-generated by Marketing Team'  // J: Notes\n  ]);\n}\n\n// If no valid rows, create a placeholder\nif (rows.length === 0) {\n  rows.push([\n    postSummary,\n    '--',\n    'Unknown',\n    'No content generated',\n    'Alfred AI',\n    'Under review',\n    postDate,\n    '',\n    '',\n    'Error: No content could be extracted from drafts'\n  ]);\n}\n\nreturn [{\n  json: {\n    row_values: JSON.stringify(rows),\n    slack_user_id: context.slack_user_id,\n    config: {\n      content_calendar_sheet_id: context.content_calendar_sheet_id,\n      content_calendar_sheet_name: context.content_calendar_sheet_name,\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "both-update-tracker",
+            "name": "Both: Update Tracker",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1560,
+                520
+            ],
+            "parameters": {
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "append_rows",
+                        "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+                        "range": "={{ $json.config.content_calendar_sheet_name }}!A:J",
+                        "values": "={{ $json.row_values }}"
+                    }
+                },
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "tWgJgDHdIHBhCOr0"
+                }
+            }
+        },
+        {
+            "id": "both-prepare-blog",
+            "name": "Both: Prepare Blog",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                520
+            ],
+            "parameters": {
+                "jsCode": "const trackerResult = $input.first().json;\nconst originalContext = $('Both: Prepare Tracker').first().json.original_context;\nconst config = $('Both: Prepare Tracker').first().json.config;\n\n// Extract blog draft - drafts.blog is a string (not {content: \"...\"})\nconst drafts = originalContext.drafts || {};\nconst blogDraft = drafts.blog;\n\nconst trackerSuccess = trackerResult.success === true;\n\nif (!blogDraft) {\n  return [{\n    json: {\n      skip_blog: true,\n      tracker_updated: trackerSuccess,\n      tracker_row_id: trackerResult.updated_range || null,\n      config: config,\n      original_context: originalContext\n    }\n  }];\n}\n\n// Extract content - handle both string and object formats\nconst content = typeof blogDraft === 'object' ? (blogDraft.content || blogDraft.text || JSON.stringify(blogDraft)) : blogDraft;\n\n// Extract topic from winning_idea\nlet topicText = null;\nconst winningIdea = originalContext.winning_idea;\nif (winningIdea) {\n  if (typeof winningIdea === 'string') {\n    try {\n      const parsed = JSON.parse(winningIdea);\n      topicText = parsed.topic;\n    } catch (e) {\n      topicText = winningIdea.substring(0, 50);\n    }\n  } else if (typeof winningIdea === 'object') {\n    topicText = winningIdea.topic;\n  }\n}\n\nconst title = topicText\n  ? `Blog Draft: ${topicText}`\n  : `Blog Draft - ${new Date().toISOString().split('T')[0]}`;\n\nreturn [{\n  json: {\n    skip_blog: false,\n    title: title,\n    content: content,\n    slack_user_id: originalContext.slack_user_id,\n    tracker_updated: trackerSuccess,\n    tracker_row_id: trackerResult.updated_range || null,\n    config: config,\n    original_context: originalContext\n  }\n}];"
+            }
+        },
+        {
+            "id": "both-check-skip",
+            "name": "Both: Check Skip Blog",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                2000,
+                520
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "skip-check",
+                            "leftValue": "={{ $json.skip_blog }}",
+                            "rightValue": false,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "both-create-blog",
+            "name": "Both: Create Blog",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2220,
+                460
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "ZUMZ7oNUzDRDnFft"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "create_document",
+                        "title": "={{ $json.title }}",
+                        "content": "={{ $json.content }}",
+                        "folder_id": "={{ $json.config.blog_drafts_folder_id }}"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "both-format-result",
+            "name": "Both: Format Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2440,
+                520
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\n// Determine if we came from blog creation or skip path\nlet blogCreated = false;\nlet blogDocument = null;\nlet blogError = null;\nlet trackerUpdated = false;\nlet trackerRowId = null;\n\ntry {\n  // Try to get blog creation result\n  const blogPrepare = $('Both: Prepare Blog').first().json;\n  trackerUpdated = blogPrepare.tracker_updated;\n  trackerRowId = blogPrepare.tracker_row_id;\n  \n  if (blogPrepare.skip_blog) {\n    blogCreated = false;\n    blogError = 'No blog content provided';\n  } else {\n    // This is the blog creation result\n    blogCreated = input.success === true;\n    blogDocument = blogCreated ? {\n      id: input.document_id,\n      url: input.document_url,\n      title: input.title || blogPrepare.title\n    } : null;\n    blogError = blogCreated ? null : (input.error || 'Failed to create blog document');\n  }\n} catch (e) {\n  // Fallback parsing\n  trackerUpdated = input.tracker_updated || false;\n  trackerRowId = input.tracker_row_id || null;\n}\n\nconst artifacts = [];\nif (blogDocument) {\n  artifacts.push({\n    type: 'google_doc',\n    id: blogDocument.id,\n    url: blogDocument.url\n  });\n}\n\nreturn [{\n  json: {\n    success: trackerUpdated || blogCreated,\n    output: {\n      tracker_updated: trackerUpdated,\n      tracker_row_id: trackerRowId,\n      blog_created: blogCreated,\n      blog_document: blogDocument\n    },\n    output_type: 'data',\n    artifacts: artifacts,\n    error: (!trackerUpdated && !blogCreated) ? 'Both operations failed' : null\n  }\n}];"
+            }
+        },
+        {
+            "id": "both-skip-blog",
+            "name": "Both: Skip Blog Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2220,
+                600
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.tracker_updated,\n    output: {\n      tracker_updated: input.tracker_updated,\n      tracker_row_id: input.tracker_row_id,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: input.tracker_updated ? null : 'Tracker update failed'\n  }\n}];"
+            }
+        },
+        {
+            "id": "format-tracker-only",
+            "name": "Format Tracker Only",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2000,
+                160
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.tracker_updated,\n    output: {\n      tracker_updated: input.tracker_updated,\n      tracker_row_id: input.tracker_row_id,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: input.tracker_error\n  }\n}];"
+            }
+        },
+        {
+            "id": "format-blog-only",
+            "name": "Format Blog Only",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2220,
+                340
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nconst artifacts = [];\nif (input.blog_created && input.blog_document) {\n  artifacts.push({\n    type: 'google_doc',\n    id: input.blog_document.id,\n    url: input.blog_document.url\n  });\n}\n\nreturn [{\n  json: {\n    success: input.blog_created,\n    output: {\n      tracker_updated: false,\n      tracker_row_id: null,\n      blog_created: input.blog_created,\n      blog_document: input.blog_document\n    },\n    output_type: 'data',\n    artifacts: artifacts,\n    error: input.blog_error\n  }\n}];"
+            }
+        },
+        {
+            "id": "invalid-action",
+            "name": "Invalid Action",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                680
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: {\n      tracker_updated: false,\n      tracker_row_id: null,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: `Invalid action '${input.action}'. Valid actions: update_tracker, save_blog, both, read_recent, update_row, query`\n  }\n}];"
+            }
+        },
+        {
+            "id": "fetch-configs",
+            "name": "Fetch Calendar Configs",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                420,
+                300
+            ],
+            "parameters": {
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "get_configs",
+                        "config_keys": "={{ JSON.stringify(['marketing.content_calendar_sheet_id', 'marketing.content_calendar_sheet_name', 'marketing.blog_drafts_folder_id']) }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "action",
+                            "type": "string",
+                            "displayName": "action"
+                        },
+                        {
+                            "id": "config_keys",
+                            "type": "string",
+                            "displayName": "config_keys"
+                        }
+                    ]
+                },
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "YEsW3AOvJZpR1jJS"
+                }
+            }
+        },
+        {
+            "id": "check-configs",
+            "name": "Config Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                640,
+                300
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "loose"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            },
+                            "id": "condition-1770317543073-tmex6dzf4"
+                        }
+                    ]
+                },
+                "looseTypeValidation": true
+            }
+        },
+        {
+            "id": "config-error",
+            "name": "Config Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                860,
+                500
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nreturn [{\n  json: {\n    success: false,\n    error: input.error || 'Missing required calendar configs',\n    missing: input.missing || []\n  }\n}];"
+            }
+        },
+        {
+            "id": "prepare-read-recent",
+            "name": "Prepare Read Recent",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                820
+            ],
+            "parameters": {
+                "jsCode": "const context = $input.first().json;\nconst count = context.count || 10;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\n// Read all rows and we'll limit after\nreturn [{\n  json: {\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    sheet_name: sheetName,\n    range: sheetName + '!A:J',\n    count: count,\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "execute-read-recent",
+            "name": "Execute Read Recent",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1560,
+                820
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "tWgJgDHdIHBhCOr0"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "read_range",
+                        "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                        "range": "={{ $json.range }}"
+                    }
+                }
+            }
+        },
+        {
+            "id": "format-read-recent",
+            "name": "Format Read Recent",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                820
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Read Recent').first().json;\nconst count = prepareData.count || 10;\n\nif (!input.success) {\n  return [{\n    json: {\n      success: false,\n      output: { posts: [], count: 0 },\n      output_type: 'data',\n      error: input.error || 'Failed to read calendar'\n    }\n  }];\n}\n\nconst values = input.values || [];\nif (values.length === 0) {\n  return [{\n    json: {\n      success: true,\n      output: { posts: [], count: 0 },\n      output_type: 'data'\n    }\n  }];\n}\n\n// First row is headers\nconst headers = values[0] || [];\nconst dataRows = values.slice(1);\n\n// Get last N rows (most recent)\nconst recentRows = dataRows.slice(-count);\n\n// Convert to objects with headers\nconst posts = recentRows.map((row, index) => {\n  const post = { row_number: dataRows.length - count + index + 2 }; // +2 for 1-based and header row\n  headers.forEach((header, i) => {\n    post[header.toLowerCase().replace(/ /g, '_')] = row[i] || '';\n  });\n  return post;\n}).reverse(); // Most recent first\n\nreturn [{\n  json: {\n    success: true,\n    output: {\n      posts: posts,\n      count: posts.length,\n      headers: headers\n    },\n    output_type: 'data'\n  }\n}];"
+            }
+        },
+        {
+            "id": "prepare-update-row",
+            "name": "Prepare Update Row",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                960
+            ],
+            "parameters": {
+                "jsCode": "const context = $input.first().json;\nconst rowNumber = context.row_number;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\nif (!rowNumber) {\n  return [{\n    json: {\n      error: 'row_number is required for update_row action',\n      skip: true\n    }\n  }];\n}\n\n// Parse drafts and images\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try { winningIdea = JSON.parse(winningIdea); } catch (e) {}\n}\n\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') return draft.content || draft.text || '';\n  return '';\n}\n\nfunction formatChannelName(channel) {\n  const names = {\n    'linkedin': 'LinkedIn', 'twitter': 'Twitter/X', 'facebook': 'Facebook',\n    'blog': 'Blog post', 'instagram': 'Instagram'\n  };\n  return names[(channel || '').toLowerCase()] || channel;\n}\n\n// Get the first channel's data (assuming single row update)\nconst channels = Object.keys(drafts).filter(k => k !== 'error');\nconst channel = channels[0] || '';\nconst draft = drafts[channel];\nconst content = extractContent(draft);\nconst image = images[channel];\nconst imageUrl = image ? (image.file_url || image.url || '') : '';\n\nlet postSummary = '';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    postSummary = winningIdea.topic || winningIdea.title || '';\n  } else {\n    postSummary = winningIdea;\n  }\n}\n\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Build the row values - can update specific columns or all\n// Columns: A: Post Summary, B: Post Group, C: Type, D: Full Post Content,\n//          E: Owner, F: Status, G: Post date, H: File, I: Post Image File, J: Notes\nconst rowValues = [\n  postSummary || '',                      // A: Post Summary\n  '--',                                    // B: Post Group\n  formatChannelName(channel),              // C: Type\n  content,                                 // D: Full Post Content\n  'Alfred AI',                             // E: Owner\n  context.new_status || 'Under review',    // F: Status\n  postDate,                                // G: Post date\n  channel === 'blog' ? 'Pending' : '',     // H: File\n  imageUrl,                                // I: Post Image File\n  'Updated by Marketing Team'              // J: Notes\n];\n\nreturn [{\n  json: {\n    skip: false,\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    range: sheetName + '!A' + rowNumber + ':J' + rowNumber,\n    values: JSON.stringify([rowValues]),\n    row_number: rowNumber,\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "check-update-row-skip",
+            "name": "Check Update Row Skip",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                1560,
+                960
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "skip-check",
+                            "leftValue": "={{ $json.skip }}",
+                            "rightValue": false,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "execute-update-row",
+            "name": "Execute Update Row",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1780,
+                900
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "tWgJgDHdIHBhCOr0"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "write_range",
+                        "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                        "range": "={{ $json.range }}",
+                        "values": "={{ $json.values }}"
+                    }
+                }
+            }
+        },
+        {
+            "id": "format-update-row",
+            "name": "Format Update Row",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2000,
+                900
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Update Row').first().json;\n\nreturn [{\n  json: {\n    success: input.success === true,\n    output: {\n      row_updated: input.success === true,\n      row_number: prepareData.row_number,\n      updated_range: input.updated_range\n    },\n    output_type: 'data',\n    error: input.success ? null : (input.error || 'Failed to update row')\n  }\n}];"
+            }
+        },
+        {
+            "id": "update-row-skip",
+            "name": "Update Row Skip",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                1020
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nreturn [{\n  json: {\n    success: false,\n    output: { row_updated: false },\n    output_type: 'data',\n    error: input.error || 'Update row skipped - missing row_number'\n  }\n}];"
+            }
+        },
+        {
+            "id": "prepare-query",
+            "name": "Prepare Query",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                1140
+            ],
+            "parameters": {
+                "jsCode": "const context = $input.first().json;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\nreturn [{\n  json: {\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    sheet_name: sheetName,\n    range: sheetName + '!A:J',\n    query_filter: context.query_filter || '',\n    original_context: context\n  }\n}];"
+            }
+        },
+        {
+            "id": "execute-query",
+            "name": "Execute Query",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1560,
+                1140
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "tWgJgDHdIHBhCOr0"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "read_range",
+                        "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                        "range": "={{ $json.range }}"
+                    }
+                }
+            }
+        },
+        {
+            "id": "format-query",
+            "name": "Format Query",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                1140
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Query').first().json;\nconst queryFilter = (prepareData.query_filter || '').toLowerCase();\n\nif (!input.success) {\n  return [{\n    json: {\n      success: false,\n      output: { posts: [], count: 0 },\n      output_type: 'data',\n      error: input.error || 'Failed to query calendar'\n    }\n  }];\n}\n\nconst values = input.values || [];\nif (values.length === 0) {\n  return [{\n    json: {\n      success: true,\n      output: { posts: [], count: 0, query: queryFilter },\n      output_type: 'data'\n    }\n  }];\n}\n\n// First row is headers\nconst headers = values[0] || [];\nconst dataRows = values.slice(1);\n\n// Convert to objects and filter\nlet posts = dataRows.map((row, index) => {\n  const post = { row_number: index + 2 }; // +2 for 1-based and header row\n  headers.forEach((header, i) => {\n    post[header.toLowerCase().replace(/ /g, '_')] = row[i] || '';\n  });\n  return post;\n});\n\n// Apply filter if provided\nif (queryFilter) {\n  posts = posts.filter(post => {\n    // Search across all text fields\n    const searchableText = Object.values(post)\n      .filter(v => typeof v === 'string')\n      .join(' ')\n      .toLowerCase();\n    return searchableText.includes(queryFilter);\n  });\n}\n\nreturn [{\n  json: {\n    success: true,\n    output: {\n      posts: posts,\n      count: posts.length,\n      query: queryFilter,\n      headers: headers\n    },\n    output_type: 'data'\n  }\n}];"
+            }
+        }
+    ],
+    "connections": {
+        "Prepare Context": {
+            "main": [
+                [
+                    {
+                        "node": "Route by Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Action": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Tracker Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Blog Document",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Both: Prepare Tracker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Read Recent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Update Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Query",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Invalid Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Tracker Row": {
+            "main": [
+                [
+                    {
+                        "node": "Update Content Tracker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Content Tracker": {
+            "main": [
+                [
+                    {
+                        "node": "Format Tracker Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Tracker Result": {
+            "main": [
+                [
+                    {
+                        "node": "Format Tracker Only",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Blog Document": {
+            "main": [
+                [
+                    {
+                        "node": "Check Skip Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Skip Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Create Blog Document",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Skip Blog Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Blog Document": {
+            "main": [
+                [
+                    {
+                        "node": "Format Blog Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Blog Result": {
+            "main": [
+                [
+                    {
+                        "node": "Format Blog Only",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Skip Blog Result": {
+            "main": [
+                [
+                    {
+                        "node": "Format Blog Only",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Both: Prepare Tracker": {
+            "main": [
+                [
+                    {
+                        "node": "Both: Update Tracker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Both: Update Tracker": {
+            "main": [
+                [
+                    {
+                        "node": "Both: Prepare Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Both: Prepare Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Both: Check Skip Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Both: Check Skip Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Both: Create Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Both: Skip Blog Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Both: Create Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Both: Format Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Workflow Input": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Calendar Configs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Calendar Configs": {
+            "main": [
+                [
+                    {
+                        "node": "Config Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Config Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Config Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Read Recent": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Read Recent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Read Recent": {
+            "main": [
+                [
+                    {
+                        "node": "Format Read Recent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Update Row": {
+            "main": [
+                [
+                    {
+                        "node": "Check Update Row Skip",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Update Row Skip": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Update Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update Row Skip",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Update Row": {
+            "main": [
+                [
+                    {
+                        "node": "Format Update Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Query": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Query",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Query": {
+            "main": [
+                [
+                    {
+                        "node": "Format Query",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "ca7385e3-6a93-47a6-b947-7db56c25bf17",
+    "activeVersionId": "ca7385e3-6a93-47a6-b947-7db56c25bf17",
+    "versionCounter": 57,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-05T13:46:13.149Z",
+            "createdAt": "2026-02-05T13:46:13.149Z",
+            "role": "workflow:owner",
+            "workflowId": "ezvCaPeNM8P7gEWj",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "project": {
+                "updatedAt": "2026-02-02T12:27:52.037Z",
+                "createdAt": "2026-02-02T12:20:35.714Z",
+                "id": "Jd992SEPuokf8o5Z",
+                "name": "Spencer Marx <spencer@aclarify.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+                "projectRelations": [
+                    {
+                        "updatedAt": "2026-02-02T12:20:35.714Z",
+                        "createdAt": "2026-02-02T12:20:35.714Z",
+                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+                        "projectId": "Jd992SEPuokf8o5Z",
+                        "user": {
+                            "updatedAt": "2026-02-08T07:18:29.189Z",
+                            "createdAt": "2026-02-02T12:20:29.217Z",
+                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
+                            "email": "spencer@aclarify.com",
+                            "firstName": "Spencer",
+                            "lastName": "Marx",
+                            "personalizationAnswers": {
+                                "version": "v4",
+                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                                "personalization_survey_n8n_version": "2.6.2",
+                                "companySize": "<20",
+                                "companyType": "saas",
+                                "role": "business-owner",
+                                "reportedSource": "friend"
+                            },
+                            "settings": {
+                                "userActivated": true,
+                                "easyAIWorkflowOnboarded": true,
+                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                                "userActivatedAt": 1770049275864,
+                                "npsSurvey": {
+                                    "responded": true,
+                                    "lastShownAt": 1770325854784
+                                }
+                            },
+                            "disabled": false,
+                            "mfaEnabled": false,
+                            "lastActiveAt": "2026-02-08",
+                            "isPending": false
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-02-08T16:23:55.770Z",
+        "createdAt": "2026-02-08T16:23:55.770Z",
+        "versionId": "ca7385e3-6a93-47a6-b947-7db56c25bf17",
+        "workflowId": "ezvCaPeNM8P7gEWj",
+        "nodes": [
+            {
+                "id": "workflow-input",
+                "name": "Workflow Input",
+                "type": "n8n-nodes-base.executeWorkflowTrigger",
+                "typeVersion": 1.1,
+                "position": [
+                    200,
+                    300
+                ],
+                "parameters": {
+                    "workflowInputs": {
+                        "values": [
+                            {
+                                "name": "slack_user_id",
+                                "type": "string"
+                            },
+                            {
+                                "name": "action",
+                                "type": "string"
+                            },
+                            {
+                                "name": "drafts",
+                                "type": "string"
+                            },
+                            {
+                                "name": "images",
+                                "type": "string"
+                            },
+                            {
+                                "name": "winning_idea",
+                                "type": "string"
+                            },
+                            {
+                                "name": "target_channels",
+                                "type": "string"
+                            },
+                            {
+                                "name": "row_number",
+                                "type": "number"
+                            },
+                            {
+                                "name": "count",
+                                "type": "number"
+                            },
+                            {
+                                "name": "query_filter",
+                                "type": "string"
+                            },
+                            {
+                                "name": "spreadsheet_id",
+                                "type": "string"
+                            },
+                            {
+                                "name": "new_status",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "prepare-context",
+                "name": "Prepare Context",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    860,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const input = $('Workflow Input').first().json;\nconst configResult = $('Fetch Calendar Configs').first().json;\n\n// Extract configs\nconst configs = configResult.configs || {};\nconst contentCalendarSheetId = input.spreadsheet_id || configs['marketing.content_calendar_sheet_id'] || '';\nconst contentCalendarSheetName = configs['marketing.content_calendar_sheet_name'] || 'Content Tracker';\nconst blogDraftsFolderId = configs['marketing.blog_drafts_folder_id'] || '';\n\n// Parse drafts\nlet drafts = input.drafts;\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\n// Parse images\nlet images = input.images;\nif (typeof images === 'string') {\n  try { images = JSON.parse(images); } catch (e) { images = {}; }\n}\n\nconst sourcesUsed = input.sources_used || [];\n\nreturn [{\n  json: {\n    sources_used: sourcesUsed,\n    action: input.action || 'update_tracker',\n    slack_user_id: input.slack_user_id || '',\n    drafts: drafts,\n    images: images,\n    winning_idea: input.winning_idea || '',\n    target_channels: input.target_channels || '',\n    content_calendar_sheet_id: contentCalendarSheetId,\n    content_calendar_sheet_name: contentCalendarSheetName,\n    blog_drafts_folder_id: blogDraftsFolderId,\n    // New fields for enhanced actions\n    row_number: input.row_number || null,\n    count: input.count || 10,\n    query_filter: input.query_filter || '',\n    new_status: input.new_status || ''\n  }\n}];"
+                }
+            },
+            {
+                "id": "route-action",
+                "name": "Route by Action",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    1200,
+                    300
+                ],
+                "parameters": {
+                    "rules": {
+                        "values": [
+                            {
+                                "outputKey": "update_tracker",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "update_tracker",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "outputKey": "save_blog",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "save_blog",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "outputKey": "both",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "both",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "outputKey": "read_recent",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "read_recent",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "outputKey": "update_row",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "update_row",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "outputKey": "query",
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.action }}",
+                                            "rightValue": "query",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                }
+            },
+            {
+                "id": "prepare-tracker-row",
+                "name": "Prepare Tracker Row",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    160
+                ],
+                "parameters": {
+                    "jsCode": "const context = $('Prepare Context').first().json;\n\n// Parse drafts and extract content properly\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\n// Try to parse winning_idea if it's a JSON string\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try {\n    winningIdea = JSON.parse(winningIdea);\n  } catch (e) {\n    // Keep as string if parsing fails\n  }\n}\n\n// Helper to extract actual content from draft object\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') {\n    // Content is nested in .content field\n    return draft.content || draft.text || '';\n  }\n  return '';\n}\n\n// Helper to format channel name to exact expected values\nfunction formatChannelName(channel) {\n  if (!channel) return '';\n  const names = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog post',\n    'instagram': 'Instagram'\n  };\n  return names[channel.toLowerCase()] || channel;\n}\n\n// Extract summary from winning idea - DO NOT TRUNCATE\nlet postSummary = 'New Content';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    // Structured winning idea from brainstormer - use full topic\n    postSummary = winningIdea.topic || winningIdea.title || winningIdea.subject || 'New Content';\n  } else if (typeof winningIdea === 'string') {\n    // Plain string - use the FULL string, no truncation\n    postSummary = winningIdea;\n  }\n}\n\n// Format date as M/D/YYYY\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Determine channels to write rows for\nlet channels = [];\nif (context.target_channels) {\n  if (typeof context.target_channels === 'string') {\n    channels = context.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n  } else if (Array.isArray(context.target_channels)) {\n    channels = context.target_channels.map(c => c.toLowerCase());\n  }\n}\nif (channels.length === 0) {\n  channels = Object.keys(drafts).filter(k => k !== 'error');\n}\n\n// Build notes with fact references\nconst sourcesUsed = context.sources_used || [];\nlet notesText = 'Auto-generated by Marketing Team';\nif (sourcesUsed.length > 0) {\n  notesText = 'Sources: ' + sourcesUsed.join('; ') + ' | Auto-generated by Marketing Team';\n}\n\n// Build rows - one per channel\n// Columns: Post Summary, Post Group, Type, Full Post Content, Owner, Status, Post date, File (If Blog), Post Image File, Notes\nconst rows = [];\nconst isMultiChannel = channels.length > 1;\nconst postGroup = isMultiChannel ? postSummary : '--';\n\nfor (const channel of channels) {\n  const draft = drafts[channel];\n  const content = extractContent(draft);  // FULL content, no truncation\n  const image = images[channel];\n\n  // Get image URL if available\n  let imageUrl = '';\n  if (image) {\n    imageUrl = image.file_url || image.url || '';\n  }\n\n  rows.push([\n    postSummary,                        // A: Post Summary (FULL, not truncated)\n    postGroup,                          // B: Post Group (-- for single, title for multi)\n    formatChannelName(channel),         // C: Type (LinkedIn, Facebook, Twitter/X, Blog post)\n    content,                            // D: Full Post Content (FULL, not truncated!)\n    'Alfred AI',                        // E: Owner\n    'Under review',                     // F: Status\n    postDate,                           // G: Post date\n    channel === 'blog' ? 'Pending' : '',// H: File (If Blog)\n    imageUrl,                           // I: Post Image File\n    notesText  // J: Notes\n  ]);\n}\n\n// If no valid rows, create a placeholder\nif (rows.length === 0) {\n  rows.push([\n    postSummary,\n    '--',\n    'Unknown',\n    'No content generated',\n    'Alfred AI',\n    'Under review',\n    postDate,\n    '',\n    '',\n    'Error: No content could be extracted from drafts'\n  ]);\n}\n\nreturn [{\n  json: {\n    row_values: JSON.stringify(rows),\n    slack_user_id: context.slack_user_id,\n    config: {\n      content_calendar_sheet_id: context.content_calendar_sheet_id,\n      content_calendar_sheet_name: context.content_calendar_sheet_name,\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "update-tracker",
+                "name": "Update Content Tracker",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1560,
+                    160
+                ],
+                "parameters": {
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "append_rows",
+                            "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+                            "range": "={{ $json.config.content_calendar_sheet_name }}!A:J",
+                            "values": "={{ $json.row_values }}"
+                        }
+                    },
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "tWgJgDHdIHBhCOr0"
+                    }
+                }
+            },
+            {
+                "id": "format-tracker-result",
+                "name": "Format Tracker Result",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1780,
+                    160
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst originalContext = $('Prepare Tracker Row').first().json.original_context;\n\nconst success = input.success === true;\n\nreturn [{\n  json: {\n    tracker_updated: success,\n    tracker_row_id: input.updated_range || null,\n    tracker_error: success ? null : (input.error || 'Failed to update tracker'),\n    original_context: originalContext\n  }\n}];"
+                }
+            },
+            {
+                "id": "prepare-blog-doc",
+                "name": "Prepare Blog Document",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    340
+                ],
+                "parameters": {
+                    "jsCode": "const context = $('Prepare Context').first().json;\n\n// Access drafts correctly (not final_drafts)\nconst drafts = context.drafts || {};\nconst blogDraft = drafts.blog;\n\nif (!blogDraft || (typeof blogDraft === 'object' && !blogDraft.content)) {\n  return [{\n    json: {\n      skip_blog: true,\n      reason: 'No blog content provided',\n      config: {\n        blog_drafts_folder_id: context.blog_drafts_folder_id\n      },\n      original_context: context\n    }\n  }];\n}\n\n// Extract content from blog draft\nconst content = typeof blogDraft === 'object' ? blogDraft.content : blogDraft;\n\n// Create document title from winning_idea\nconst winningIdea = context.winning_idea || '';\nconst title = winningIdea \n  ? `Blog Draft: ${winningIdea.substring(0, 50)}`\n  : `Blog Draft - ${new Date().toISOString().split('T')[0]}`;\n\nreturn [{\n  json: {\n    skip_blog: false,\n    title: title,\n    content: content,\n    slack_user_id: context.slack_user_id,\n    config: {\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "check-skip-blog",
+                "name": "Check Skip Blog",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    1560,
+                    340
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "skip-check",
+                                "leftValue": "={{ $json.skip_blog }}",
+                                "rightValue": false,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "create-blog-doc",
+                "name": "Create Blog Document",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1780,
+                    280
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "ZUMZ7oNUzDRDnFft"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "create_document",
+                            "title": "={{ $json.title }}",
+                            "content": "={{ $json.content }}",
+                            "folder_id": "={{ $json.config.blog_drafts_folder_id }}"
+                        }
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "format-blog-result",
+                "name": "Format Blog Result",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2000,
+                    280
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Blog Document').first().json;\n\nconst success = input.success === true;\n\nreturn [{\n  json: {\n    blog_created: success,\n    blog_document: success ? {\n      id: input.document_id,\n      url: input.document_url,\n      title: input.title || prepareData.title\n    } : null,\n    blog_error: success ? null : (input.error || 'Failed to create blog document'),\n    original_context: prepareData.original_context\n  }\n}];"
+                }
+            },
+            {
+                "id": "skip-blog-result",
+                "name": "Skip Blog Result",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    1780,
+                    420
+                ],
+                "parameters": {
+                    "mode": "manual",
+                    "assignments": {
+                        "assignments": [
+                            {
+                                "id": "blog_created",
+                                "name": "blog_created",
+                                "value": false,
+                                "type": "boolean"
+                            },
+                            {
+                                "id": "blog_document",
+                                "name": "blog_document",
+                                "value": null,
+                                "type": "string"
+                            },
+                            {
+                                "id": "blog_error",
+                                "name": "blog_error",
+                                "value": "={{ $json.reason }}",
+                                "type": "string"
+                            },
+                            {
+                                "id": "original_context",
+                                "name": "original_context",
+                                "value": "={{ $json.original_context }}",
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "both-prepare-tracker",
+                "name": "Both: Prepare Tracker",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    520
+                ],
+                "parameters": {
+                    "jsCode": "const context = $('Prepare Context').first().json;\n\n// Parse drafts and extract content properly\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\n// Try to parse winning_idea if it's a JSON string\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try {\n    winningIdea = JSON.parse(winningIdea);\n  } catch (e) {\n    // Keep as string if parsing fails\n  }\n}\n\n// Helper to extract actual content from draft object\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') {\n    // Content is nested in .content field\n    return draft.content || draft.text || '';\n  }\n  return '';\n}\n\n// Helper to format channel name to exact expected values\nfunction formatChannelName(channel) {\n  if (!channel) return '';\n  const names = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog post',\n    'instagram': 'Instagram'\n  };\n  return names[channel.toLowerCase()] || channel;\n}\n\n// Extract summary from winning idea - DO NOT TRUNCATE\nlet postSummary = 'New Content';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    // Structured winning idea from brainstormer - use full topic\n    postSummary = winningIdea.topic || winningIdea.title || winningIdea.subject || 'New Content';\n  } else if (typeof winningIdea === 'string') {\n    // Plain string - use the FULL string, no truncation\n    postSummary = winningIdea;\n  }\n}\n\n// Format date as M/D/YYYY\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Determine channels to write rows for\nlet channels = [];\nif (context.target_channels) {\n  if (typeof context.target_channels === 'string') {\n    channels = context.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n  } else if (Array.isArray(context.target_channels)) {\n    channels = context.target_channels.map(c => c.toLowerCase());\n  }\n}\nif (channels.length === 0) {\n  channels = Object.keys(drafts).filter(k => k !== 'error');\n}\n\n// Build rows - one per channel\n// Columns: Post Summary, Post Group, Type, Full Post Content, Owner, Status, Post date, File (If Blog), Post Image File, Notes\nconst rows = [];\nconst isMultiChannel = channels.length > 1;\nconst postGroup = isMultiChannel ? postSummary : '--';\n\nfor (const channel of channels) {\n  const draft = drafts[channel];\n  const content = extractContent(draft);  // FULL content, no truncation\n  const image = images[channel];\n\n  // Get image URL if available\n  let imageUrl = '';\n  if (image) {\n    imageUrl = image.file_url || image.url || '';\n  }\n\n  rows.push([\n    postSummary,                        // A: Post Summary (FULL, not truncated)\n    postGroup,                          // B: Post Group (-- for single, title for multi)\n    formatChannelName(channel),         // C: Type (LinkedIn, Facebook, Twitter/X, Blog post)\n    content,                            // D: Full Post Content (FULL, not truncated!)\n    'Alfred AI',                        // E: Owner\n    'Under review',                     // F: Status\n    postDate,                           // G: Post date\n    channel === 'blog' ? 'Pending' : '',// H: File (If Blog)\n    imageUrl,                           // I: Post Image File\n    'Auto-generated by Marketing Team'  // J: Notes\n  ]);\n}\n\n// If no valid rows, create a placeholder\nif (rows.length === 0) {\n  rows.push([\n    postSummary,\n    '--',\n    'Unknown',\n    'No content generated',\n    'Alfred AI',\n    'Under review',\n    postDate,\n    '',\n    '',\n    'Error: No content could be extracted from drafts'\n  ]);\n}\n\nreturn [{\n  json: {\n    row_values: JSON.stringify(rows),\n    slack_user_id: context.slack_user_id,\n    config: {\n      content_calendar_sheet_id: context.content_calendar_sheet_id,\n      content_calendar_sheet_name: context.content_calendar_sheet_name,\n      blog_drafts_folder_id: context.blog_drafts_folder_id\n    },\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "both-update-tracker",
+                "name": "Both: Update Tracker",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1560,
+                    520
+                ],
+                "parameters": {
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "append_rows",
+                            "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+                            "range": "={{ $json.config.content_calendar_sheet_name }}!A:J",
+                            "values": "={{ $json.row_values }}"
+                        }
+                    },
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "tWgJgDHdIHBhCOr0"
+                    }
+                }
+            },
+            {
+                "id": "both-prepare-blog",
+                "name": "Both: Prepare Blog",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1780,
+                    520
+                ],
+                "parameters": {
+                    "jsCode": "const trackerResult = $input.first().json;\nconst originalContext = $('Both: Prepare Tracker').first().json.original_context;\nconst config = $('Both: Prepare Tracker').first().json.config;\n\n// Extract blog draft - drafts.blog is a string (not {content: \"...\"})\nconst drafts = originalContext.drafts || {};\nconst blogDraft = drafts.blog;\n\nconst trackerSuccess = trackerResult.success === true;\n\nif (!blogDraft) {\n  return [{\n    json: {\n      skip_blog: true,\n      tracker_updated: trackerSuccess,\n      tracker_row_id: trackerResult.updated_range || null,\n      config: config,\n      original_context: originalContext\n    }\n  }];\n}\n\n// Extract content - handle both string and object formats\nconst content = typeof blogDraft === 'object' ? (blogDraft.content || blogDraft.text || JSON.stringify(blogDraft)) : blogDraft;\n\n// Extract topic from winning_idea\nlet topicText = null;\nconst winningIdea = originalContext.winning_idea;\nif (winningIdea) {\n  if (typeof winningIdea === 'string') {\n    try {\n      const parsed = JSON.parse(winningIdea);\n      topicText = parsed.topic;\n    } catch (e) {\n      topicText = winningIdea.substring(0, 50);\n    }\n  } else if (typeof winningIdea === 'object') {\n    topicText = winningIdea.topic;\n  }\n}\n\nconst title = topicText\n  ? `Blog Draft: ${topicText}`\n  : `Blog Draft - ${new Date().toISOString().split('T')[0]}`;\n\nreturn [{\n  json: {\n    skip_blog: false,\n    title: title,\n    content: content,\n    slack_user_id: originalContext.slack_user_id,\n    tracker_updated: trackerSuccess,\n    tracker_row_id: trackerResult.updated_range || null,\n    config: config,\n    original_context: originalContext\n  }\n}];"
+                }
+            },
+            {
+                "id": "both-check-skip",
+                "name": "Both: Check Skip Blog",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    2000,
+                    520
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "skip-check",
+                                "leftValue": "={{ $json.skip_blog }}",
+                                "rightValue": false,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "both-create-blog",
+                "name": "Both: Create Blog",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2220,
+                    460
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "ZUMZ7oNUzDRDnFft"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "create_document",
+                            "title": "={{ $json.title }}",
+                            "content": "={{ $json.content }}",
+                            "folder_id": "={{ $json.config.blog_drafts_folder_id }}"
+                        }
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "both-format-result",
+                "name": "Both: Format Result",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2440,
+                    520
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\n// Determine if we came from blog creation or skip path\nlet blogCreated = false;\nlet blogDocument = null;\nlet blogError = null;\nlet trackerUpdated = false;\nlet trackerRowId = null;\n\ntry {\n  // Try to get blog creation result\n  const blogPrepare = $('Both: Prepare Blog').first().json;\n  trackerUpdated = blogPrepare.tracker_updated;\n  trackerRowId = blogPrepare.tracker_row_id;\n  \n  if (blogPrepare.skip_blog) {\n    blogCreated = false;\n    blogError = 'No blog content provided';\n  } else {\n    // This is the blog creation result\n    blogCreated = input.success === true;\n    blogDocument = blogCreated ? {\n      id: input.document_id,\n      url: input.document_url,\n      title: input.title || blogPrepare.title\n    } : null;\n    blogError = blogCreated ? null : (input.error || 'Failed to create blog document');\n  }\n} catch (e) {\n  // Fallback parsing\n  trackerUpdated = input.tracker_updated || false;\n  trackerRowId = input.tracker_row_id || null;\n}\n\nconst artifacts = [];\nif (blogDocument) {\n  artifacts.push({\n    type: 'google_doc',\n    id: blogDocument.id,\n    url: blogDocument.url\n  });\n}\n\nreturn [{\n  json: {\n    success: trackerUpdated || blogCreated,\n    output: {\n      tracker_updated: trackerUpdated,\n      tracker_row_id: trackerRowId,\n      blog_created: blogCreated,\n      blog_document: blogDocument\n    },\n    output_type: 'data',\n    artifacts: artifacts,\n    error: (!trackerUpdated && !blogCreated) ? 'Both operations failed' : null\n  }\n}];"
+                }
+            },
+            {
+                "id": "both-skip-blog",
+                "name": "Both: Skip Blog Result",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2220,
+                    600
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.tracker_updated,\n    output: {\n      tracker_updated: input.tracker_updated,\n      tracker_row_id: input.tracker_row_id,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: input.tracker_updated ? null : 'Tracker update failed'\n  }\n}];"
+                }
+            },
+            {
+                "id": "format-tracker-only",
+                "name": "Format Tracker Only",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2000,
+                    160
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.tracker_updated,\n    output: {\n      tracker_updated: input.tracker_updated,\n      tracker_row_id: input.tracker_row_id,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: input.tracker_error\n  }\n}];"
+                }
+            },
+            {
+                "id": "format-blog-only",
+                "name": "Format Blog Only",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2220,
+                    340
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nconst artifacts = [];\nif (input.blog_created && input.blog_document) {\n  artifacts.push({\n    type: 'google_doc',\n    id: input.blog_document.id,\n    url: input.blog_document.url\n  });\n}\n\nreturn [{\n  json: {\n    success: input.blog_created,\n    output: {\n      tracker_updated: false,\n      tracker_row_id: null,\n      blog_created: input.blog_created,\n      blog_document: input.blog_document\n    },\n    output_type: 'data',\n    artifacts: artifacts,\n    error: input.blog_error\n  }\n}];"
+                }
+            },
+            {
+                "id": "invalid-action",
+                "name": "Invalid Action",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    680
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: {\n      tracker_updated: false,\n      tracker_row_id: null,\n      blog_created: false,\n      blog_document: null\n    },\n    output_type: 'data',\n    artifacts: [],\n    error: `Invalid action '${input.action}'. Valid actions: update_tracker, save_blog, both, read_recent, update_row, query`\n  }\n}];"
+                }
+            },
+            {
+                "id": "fetch-configs",
+                "name": "Fetch Calendar Configs",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    420,
+                    300
+                ],
+                "parameters": {
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "get_configs",
+                            "config_keys": "={{ JSON.stringify(['marketing.content_calendar_sheet_id', 'marketing.content_calendar_sheet_name', 'marketing.blog_drafts_folder_id']) }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "action",
+                                "type": "string",
+                                "displayName": "action"
+                            },
+                            {
+                                "id": "config_keys",
+                                "type": "string",
+                                "displayName": "config_keys"
+                            }
+                        ]
+                    },
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "YEsW3AOvJZpR1jJS"
+                    }
+                }
+            },
+            {
+                "id": "check-configs",
+                "name": "Config Valid?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    640,
+                    300
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "loose"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "leftValue": "={{ $json.success }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                },
+                                "id": "condition-1770317543073-tmex6dzf4"
+                            }
+                        ]
+                    },
+                    "looseTypeValidation": true
+                }
+            },
+            {
+                "id": "config-error",
+                "name": "Config Error",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    860,
+                    500
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nreturn [{\n  json: {\n    success: false,\n    error: input.error || 'Missing required calendar configs',\n    missing: input.missing || []\n  }\n}];"
+                }
+            },
+            {
+                "id": "prepare-read-recent",
+                "name": "Prepare Read Recent",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    820
+                ],
+                "parameters": {
+                    "jsCode": "const context = $input.first().json;\nconst count = context.count || 10;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\n// Read all rows and we'll limit after\nreturn [{\n  json: {\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    sheet_name: sheetName,\n    range: sheetName + '!A:J',\n    count: count,\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "execute-read-recent",
+                "name": "Execute Read Recent",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1560,
+                    820
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "tWgJgDHdIHBhCOr0"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "read_range",
+                            "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                            "range": "={{ $json.range }}"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "format-read-recent",
+                "name": "Format Read Recent",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1780,
+                    820
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Read Recent').first().json;\nconst count = prepareData.count || 10;\n\nif (!input.success) {\n  return [{\n    json: {\n      success: false,\n      output: { posts: [], count: 0 },\n      output_type: 'data',\n      error: input.error || 'Failed to read calendar'\n    }\n  }];\n}\n\nconst values = input.values || [];\nif (values.length === 0) {\n  return [{\n    json: {\n      success: true,\n      output: { posts: [], count: 0 },\n      output_type: 'data'\n    }\n  }];\n}\n\n// First row is headers\nconst headers = values[0] || [];\nconst dataRows = values.slice(1);\n\n// Get last N rows (most recent)\nconst recentRows = dataRows.slice(-count);\n\n// Convert to objects with headers\nconst posts = recentRows.map((row, index) => {\n  const post = { row_number: dataRows.length - count + index + 2 }; // +2 for 1-based and header row\n  headers.forEach((header, i) => {\n    post[header.toLowerCase().replace(/ /g, '_')] = row[i] || '';\n  });\n  return post;\n}).reverse(); // Most recent first\n\nreturn [{\n  json: {\n    success: true,\n    output: {\n      posts: posts,\n      count: posts.length,\n      headers: headers\n    },\n    output_type: 'data'\n  }\n}];"
+                }
+            },
+            {
+                "id": "prepare-update-row",
+                "name": "Prepare Update Row",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    960
+                ],
+                "parameters": {
+                    "jsCode": "const context = $input.first().json;\nconst rowNumber = context.row_number;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\nif (!rowNumber) {\n  return [{\n    json: {\n      error: 'row_number is required for update_row action',\n      skip: true\n    }\n  }];\n}\n\n// Parse drafts and images\nconst drafts = context.drafts || {};\nconst images = context.images || {};\nlet winningIdea = context.winning_idea || '';\n\nif (typeof winningIdea === 'string' && winningIdea.trim().startsWith('{')) {\n  try { winningIdea = JSON.parse(winningIdea); } catch (e) {}\n}\n\nfunction extractContent(draft) {\n  if (!draft) return '';\n  if (typeof draft === 'string') return draft;\n  if (typeof draft === 'object') return draft.content || draft.text || '';\n  return '';\n}\n\nfunction formatChannelName(channel) {\n  const names = {\n    'linkedin': 'LinkedIn', 'twitter': 'Twitter/X', 'facebook': 'Facebook',\n    'blog': 'Blog post', 'instagram': 'Instagram'\n  };\n  return names[(channel || '').toLowerCase()] || channel;\n}\n\n// Get the first channel's data (assuming single row update)\nconst channels = Object.keys(drafts).filter(k => k !== 'error');\nconst channel = channels[0] || '';\nconst draft = drafts[channel];\nconst content = extractContent(draft);\nconst image = images[channel];\nconst imageUrl = image ? (image.file_url || image.url || '') : '';\n\nlet postSummary = '';\nif (winningIdea) {\n  if (typeof winningIdea === 'object') {\n    postSummary = winningIdea.topic || winningIdea.title || '';\n  } else {\n    postSummary = winningIdea;\n  }\n}\n\nconst now = new Date();\nconst postDate = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();\n\n// Build the row values - can update specific columns or all\n// Columns: A: Post Summary, B: Post Group, C: Type, D: Full Post Content,\n//          E: Owner, F: Status, G: Post date, H: File, I: Post Image File, J: Notes\nconst rowValues = [\n  postSummary || '',                      // A: Post Summary\n  '--',                                    // B: Post Group\n  formatChannelName(channel),              // C: Type\n  content,                                 // D: Full Post Content\n  'Alfred AI',                             // E: Owner\n  context.new_status || 'Under review',    // F: Status\n  postDate,                                // G: Post date\n  channel === 'blog' ? 'Pending' : '',     // H: File\n  imageUrl,                                // I: Post Image File\n  'Updated by Marketing Team'              // J: Notes\n];\n\nreturn [{\n  json: {\n    skip: false,\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    range: sheetName + '!A' + rowNumber + ':J' + rowNumber,\n    values: JSON.stringify([rowValues]),\n    row_number: rowNumber,\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "check-update-row-skip",
+                "name": "Check Update Row Skip",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    1560,
+                    960
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "skip-check",
+                                "leftValue": "={{ $json.skip }}",
+                                "rightValue": false,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "execute-update-row",
+                "name": "Execute Update Row",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1780,
+                    900
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "tWgJgDHdIHBhCOr0"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "write_range",
+                            "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                            "range": "={{ $json.range }}",
+                            "values": "={{ $json.values }}"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "format-update-row",
+                "name": "Format Update Row",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2000,
+                    900
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Update Row').first().json;\n\nreturn [{\n  json: {\n    success: input.success === true,\n    output: {\n      row_updated: input.success === true,\n      row_number: prepareData.row_number,\n      updated_range: input.updated_range\n    },\n    output_type: 'data',\n    error: input.success ? null : (input.error || 'Failed to update row')\n  }\n}];"
+                }
+            },
+            {
+                "id": "update-row-skip",
+                "name": "Update Row Skip",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1780,
+                    1020
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nreturn [{\n  json: {\n    success: false,\n    output: { row_updated: false },\n    output_type: 'data',\n    error: input.error || 'Update row skipped - missing row_number'\n  }\n}];"
+                }
+            },
+            {
+                "id": "prepare-query",
+                "name": "Prepare Query",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1340,
+                    1140
+                ],
+                "parameters": {
+                    "jsCode": "const context = $input.first().json;\nconst sheetName = context.content_calendar_sheet_name || 'Content Tracker';\n\nreturn [{\n  json: {\n    slack_user_id: context.slack_user_id,\n    spreadsheet_id: context.content_calendar_sheet_id,\n    sheet_name: sheetName,\n    range: sheetName + '!A:J',\n    query_filter: context.query_filter || '',\n    original_context: context\n  }\n}];"
+                }
+            },
+            {
+                "id": "execute-query",
+                "name": "Execute Query",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1560,
+                    1140
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "tWgJgDHdIHBhCOr0"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "read_range",
+                            "spreadsheet_id": "={{ $json.spreadsheet_id }}",
+                            "range": "={{ $json.range }}"
+                        }
+                    }
+                }
+            },
+            {
+                "id": "format-query",
+                "name": "Format Query",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1780,
+                    1140
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst prepareData = $('Prepare Query').first().json;\nconst queryFilter = (prepareData.query_filter || '').toLowerCase();\n\nif (!input.success) {\n  return [{\n    json: {\n      success: false,\n      output: { posts: [], count: 0 },\n      output_type: 'data',\n      error: input.error || 'Failed to query calendar'\n    }\n  }];\n}\n\nconst values = input.values || [];\nif (values.length === 0) {\n  return [{\n    json: {\n      success: true,\n      output: { posts: [], count: 0, query: queryFilter },\n      output_type: 'data'\n    }\n  }];\n}\n\n// First row is headers\nconst headers = values[0] || [];\nconst dataRows = values.slice(1);\n\n// Convert to objects and filter\nlet posts = dataRows.map((row, index) => {\n  const post = { row_number: index + 2 }; // +2 for 1-based and header row\n  headers.forEach((header, i) => {\n    post[header.toLowerCase().replace(/ /g, '_')] = row[i] || '';\n  });\n  return post;\n});\n\n// Apply filter if provided\nif (queryFilter) {\n  posts = posts.filter(post => {\n    // Search across all text fields\n    const searchableText = Object.values(post)\n      .filter(v => typeof v === 'string')\n      .join(' ')\n      .toLowerCase();\n    return searchableText.includes(queryFilter);\n  });\n}\n\nreturn [{\n  json: {\n    success: true,\n    output: {\n      posts: posts,\n      count: posts.length,\n      query: queryFilter,\n      headers: headers\n    },\n    output_type: 'data'\n  }\n}];"
+                }
+            }
+        ],
+        "connections": {
+            "Prepare Context": {
+                "main": [
+                    [
+                        {
+                            "node": "Route by Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Route by Action": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Tracker Row",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Prepare Blog Document",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Both: Prepare Tracker",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Prepare Read Recent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Prepare Update Row",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Prepare Query",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Invalid Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Tracker Row": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Content Tracker",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Content Tracker": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Tracker Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Format Tracker Result": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Tracker Only",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Blog Document": {
+                "main": [
+                    [
+                        {
+                            "node": "Check Skip Blog",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Check Skip Blog": {
+                "main": [
+                    [
+                        {
+                            "node": "Create Blog Document",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Skip Blog Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Create Blog Document": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Blog Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Format Blog Result": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Blog Only",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Skip Blog Result": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Blog Only",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Both: Prepare Tracker": {
+                "main": [
+                    [
+                        {
+                            "node": "Both: Update Tracker",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Both: Update Tracker": {
+                "main": [
+                    [
+                        {
+                            "node": "Both: Prepare Blog",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Both: Prepare Blog": {
+                "main": [
+                    [
+                        {
+                            "node": "Both: Check Skip Blog",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Both: Check Skip Blog": {
+                "main": [
+                    [
+                        {
+                            "node": "Both: Create Blog",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Both: Skip Blog Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Both: Create Blog": {
+                "main": [
+                    [
+                        {
+                            "node": "Both: Format Result",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Workflow Input": {
+                "main": [
+                    [
+                        {
+                            "node": "Fetch Calendar Configs",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Fetch Calendar Configs": {
+                "main": [
+                    [
+                        {
+                            "node": "Config Valid?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Config Valid?": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Context",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Config Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Read Recent": {
+                "main": [
+                    [
+                        {
+                            "node": "Execute Read Recent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Execute Read Recent": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Read Recent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Update Row": {
+                "main": [
+                    [
+                        {
+                            "node": "Check Update Row Skip",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Check Update Row Skip": {
+                "main": [
+                    [
+                        {
+                            "node": "Execute Update Row",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Update Row Skip",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Execute Update Row": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Update Row",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Query": {
+                "main": [
+                    [
+                        {
+                            "node": "Execute Query",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Execute Query": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Query",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Spencer Marx",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-02-08T16:23:55.896Z",
+                "id": 525,
+                "workflowId": "ezvCaPeNM8P7gEWj",
+                "versionId": "ca7385e3-6a93-47a6-b947-7db56c25bf17",
+                "event": "activated",
+                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+            }
+        ]
+    }
+}

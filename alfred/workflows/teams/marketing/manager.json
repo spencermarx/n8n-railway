@@ -1,0 +1,2707 @@
+{
+    "updatedAt": "2026-02-10T12:58:55.762Z",
+    "createdAt": "2026-02-05T13:51:59.876Z",
+    "id": "WUNHfC0c2FRgIlye",
+    "name": "Team | Marketing Manager",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "task_prompt"
+                        },
+                        {
+                            "name": "additional_instructions"
+                        },
+                        {
+                            "name": "target_channels",
+                            "type": "array"
+                        },
+                        {
+                            "name": "user_context",
+                            "type": "object"
+                        },
+                        {
+                            "name": "slack_context",
+                            "type": "object"
+                        },
+                        {
+                            "name": "team_config",
+                            "type": "object"
+                        },
+                        {
+                            "name": "handoff_context",
+                            "type": "object"
+                        }
+                    ]
+                }
+            },
+            "id": "trigger",
+            "name": "Workflow Input",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                524
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\n// Extract inputs with defaults\nconst taskPrompt = input.task_prompt || '';\nconst additionalInstructions = input.additional_instructions || '';\n\n// Parse target_channels which could be:\n// - An array: [\"linkedin\"]\n// - A JSON string: \"[\\\"linkedin\\\"]\"\n// - A simple string: \"linkedin\"\n// - Comma-separated: \"linkedin, twitter\"\nlet targetChannels = ['linkedin', 'facebook', 'twitter', 'blog']; // default\nconst rawChannels = input.target_channels;\nif (rawChannels) {\n  if (Array.isArray(rawChannels)) {\n    targetChannels = rawChannels;\n  } else if (typeof rawChannels === 'string') {\n    if (rawChannels.startsWith('[')) {\n      try {\n        targetChannels = JSON.parse(rawChannels);\n      } catch (e) {\n        targetChannels = rawChannels.split(',').map(s => s.trim()).filter(Boolean);\n      }\n    } else {\n      targetChannels = rawChannels.split(',').map(s => s.trim()).filter(Boolean);\n    }\n  }\n}\n\n// Parse JSON strings if needed (inputs may come as stringified JSON)\nconst parseIfString = (val, fallback = {}) => {\n  if (!val) return fallback;\n  if (typeof val === 'string') {\n    try { return JSON.parse(val); } catch (e) { return fallback; }\n  }\n  return val;\n};\nconst userContext = parseIfString(input.user_context, {});\nconst slackContext = parseIfString(input.slack_context, {});\nconst teamConfig = parseIfString(input.team_config, {});\nconst handoffContext = input.handoff_context || null;\n\n// Determine max iterations\nconst DEFAULT_MAX_ITERATIONS = 3;\nconst HARD_CAP_ITERATIONS = 10;\n\nlet maxIterations = DEFAULT_MAX_ITERATIONS;\nif (teamConfig.user_iteration_override !== null && teamConfig.user_iteration_override !== undefined) {\n  maxIterations = Math.min(parseInt(teamConfig.user_iteration_override) || DEFAULT_MAX_ITERATIONS, HARD_CAP_ITERATIONS);\n} else if (teamConfig.max_iterations !== undefined) {\n  maxIterations = Math.min(parseInt(teamConfig.max_iterations) || DEFAULT_MAX_ITERATIONS, HARD_CAP_ITERATIONS);\n}\n\n// Initialize state\nconst state = {\n  iteration_count: 0,\n  max_iterations: maxIterations,\n  timeout_seconds: teamConfig.timeout_seconds || 300,\n  start_time: new Date().toISOString(),\n  workers_invoked: { brainstormer: 0, writer: 0, editor: 0, image_generator: 0, calendar_manager: 0 },\n  brainstorm_result: null,\n  drafts: {},\n  editor_feedback: null,\n  images: {},\n  content_tracked: null,\n  quality_approved: false,\n  artifacts_created: []\n};\n\nconst channelsList = targetChannels.join(', ');\n\nlet userRequest = taskPrompt;\nif (additionalInstructions) {\n  userRequest += `\\n\\nAdditional Instructions: ${additionalInstructions}`;\n}\nif (handoffContext) {\n  userRequest += `\\n\\nContext from Previous Team: ${JSON.stringify(handoffContext)}`;\n}\n\nreturn [{\n  json: {\n    task_prompt: taskPrompt,\n    additional_instructions: additionalInstructions,\n    target_channels: targetChannels,\n    target_channels_string: channelsList,\n    user_context: userContext,\n    slack_context: slackContext,\n    team_config: teamConfig,\n    handoff_context: handoffContext,\n    state: state,\n    user_request: userRequest,\n    slack_user_id: userContext.user?.slack_user_id || userContext.slack_user_id || slackContext.slack_user_id || '',\n    user_email: userContext.user?.email || userContext.email || '',\n    user_name: userContext.user?.slack_username || userContext.name || '',\n    user_timezone: userContext.user?.preferences?.timezone || userContext.timezone || 'America/Chicago',\n    requires_approval: Boolean(slackContext.thread_ts && slackContext.channel_id)\n  }\n}];"
+            },
+            "id": "init-state",
+            "name": "Initialize State",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                464,
+                524
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=SELECT\n  mc.user_id as user_id,\n  mc.config_value->>'google_doc_id' as brand_guide_id,\n  mc2.config_value->>'google_doc_id' as content_strategy_id,\n  mc3.config_value->>'google_sheet_id' as content_calendar_id,\n  mc4.config_value->>'google_doc_id' as marketing_playbook_id,\n  mc5.config_value->>'google_doc_id' as product_knowledge_id,\n  mc6.config_value->>'google_doc_id' as voice_reference_id\nFROM alfred.marketing_configs mc\nLEFT JOIN alfred.marketing_configs mc2 ON mc2.user_id = mc.user_id AND mc2.config_type = 'content_strategy'\nLEFT JOIN alfred.marketing_configs mc3 ON mc3.user_id = mc.user_id AND mc3.config_type = 'content_calendar'\nLEFT JOIN alfred.marketing_configs mc4 ON mc4.user_id = mc.user_id AND mc4.config_type = 'marketing_playbook'\nLEFT JOIN alfred.marketing_configs mc5 ON mc5.user_id = mc.user_id AND mc5.config_type = 'product_knowledge'\nLEFT JOIN alfred.marketing_configs mc6 ON mc6.user_id = mc.user_id AND mc6.config_type = 'voice_reference'\nWHERE mc.user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}')\n  AND mc.config_type = 'brand_guide'\n  AND mc.is_active = true;",
+                "options": {}
+            },
+            "id": "fetch-configs",
+            "name": "Fetch Marketing Configs",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                688,
+                524
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "loose"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.brand_guide_id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists"
+                            },
+                            "id": "condition-1770478177238-h57l74hpo"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "check-configs",
+            "name": "Config Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                912,
+                524
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "thVHb2crL3ML98gX"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $('Initialize State').item.json.slack_user_id }}",
+                        "brand_guide_id": "={{ $('Fetch Marketing Configs').first().json.brand_guide_id }}",
+                        "content_strategy_id": "={{ $('Fetch Marketing Configs').first().json.content_strategy_id }}",
+                        "content_calendar_id": "={{ $('Fetch Marketing Configs').first().json.content_calendar_id }}",
+                        "product_knowledge_id": "={{ $('Fetch Marketing Configs').first().json.product_knowledge_id }}",
+                        "voice_reference_id": "={{ $('Fetch Marketing Configs').first().json.voice_reference_id }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "brand_guide_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "brand_guide_id"
+                        },
+                        {
+                            "id": "content_strategy_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "content_strategy_id"
+                        },
+                        {
+                            "id": "content_calendar_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "content_calendar_id"
+                        },
+                        {
+                            "id": "product_knowledge_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "product_knowledge_id"
+                        },
+                        {
+                            "id": "voice_reference_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "voice_reference_id"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "fetch-context",
+            "name": "Fetch Marketing Context",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1136,
+                400
+            ],
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Combine Initialize State data with fetched marketing context\nconst initData = $('Initialize State').first().json;\nconst configData = $('Fetch Marketing Configs').first().json;\nconst contextResult = $input.first().json;\n\n// Check if context fetch was successful\nif (!contextResult || !contextResult.success) {\n  // Extract a clean error message\n  let errorMsg = 'Unknown error fetching marketing context';\n  if (contextResult?.error) {\n    errorMsg = typeof contextResult.error === 'string'\n      ? contextResult.error\n      : contextResult.error.message || contextResult.error.description || JSON.stringify(contextResult.error);\n  }\n\n  // Return error state \u2014 do NOT throw. Let downstream handle it.\n  return [{\n    json: {\n      ...initData,\n      context_success: false,\n      context_error: errorMsg,\n      brand_context: null,\n      config_ids: {\n        brand_guide_id: configData?.brand_guide_id,\n        content_strategy_id: configData?.content_strategy_id,\n        content_calendar_id: configData?.content_calendar_id,\n        marketing_playbook_id: configData?.marketing_playbook_id,\n        product_knowledge_id: configData?.product_knowledge_id,\n        voice_reference_id: configData?.voice_reference_id\n      }\n    }\n  }];\n}\n\n// Build brand_context object from the utility workflow output\nconst brandContext = {\n  brand_guide: contextResult.brand_guide || 'Not available',\n  content_strategy: contextResult.content_strategy || 'Not available',\n  recent_posts: contextResult.recent_posts || [],\n  marketing_playbook: contextResult.marketing_playbook || 'See system_config for full playbook',\n  product_knowledge: contextResult.product_knowledge || 'Not available',\n  voice_reference: contextResult.voice_reference || 'Not available'\n};\n\n\n// Revision detection from pending_action lookup\nlet isRevision = false;\nlet previousDrafts = {};\nlet revisionNumber = 0;\nlet previousPostSummary = '';\nlet previousActionId = null;\n\ntry {\n  const lookupResult = $('Lookup Previous Action').first().json;\n  if (lookupResult && lookupResult.id) {\n    isRevision = true;\n    previousActionId = lookupResult.id;\n    let payload = lookupResult.payload;\n    if (typeof payload === 'string') {\n      try { payload = JSON.parse(payload); } catch (e) { payload = {}; }\n    }\n    previousDrafts = payload.drafts || {};\n    revisionNumber = (payload.revision_number || 0) + 1;\n    previousPostSummary = payload.post_summary || '';\n  }\n} catch (e) {\n  // No previous action found - this is a new post\n}\n\nreturn [{\n  json: {\n    ...initData,\n    context_success: true,\n    context_error: null,\n    brand_context: brandContext,\n    is_revision: isRevision,\n    previous_drafts: previousDrafts,\n    revision_number: revisionNumber,\n    previous_post_summary: previousPostSummary,\n    previous_action_id: previousActionId,\n    config_ids: {\n      brand_guide_id: configData.brand_guide_id,\n      content_strategy_id: configData.content_strategy_id,\n      content_calendar_id: configData.content_calendar_id,\n      marketing_playbook_id: configData.marketing_playbook_id,\n      product_knowledge_id: configData.product_knowledge_id,\n      voice_reference_id: configData.voice_reference_id\n    }\n  }\n}];"
+            },
+            "id": "prepare-context",
+            "name": "Prepare Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1360,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst state = input.state;\nconst brandContext = input.brand_context;\nconst targetChannels = input.target_channels_string;\n\n// Build REVISE_POST section if revision mode\nlet revisePostSection = '';\nif (input.is_revision) {\n  revisePostSection = `\n##############################################\n# REVISION MODE (REVISE_POST PLAYBOOK)\n##############################################\n\n*** REVISION MODE ACTIVE ***\nThis is a REVISION of existing content, NOT a new post.\n\nPREVIOUS DRAFTS (from the last approval card):\n${JSON.stringify(input.previous_drafts, null, 2)}\n\nPrevious topic: ${input.previous_post_summary}\nRevision number: ${input.revision_number}\n\nUSER FEEDBACK (their latest message is the task prompt above).\n\nREVISED PIPELINE:\n1. Send progress: \"Revising content based on your feedback...\"\n2. SKIP brainstorming - the topic and angle are already decided\n3. Call content_writer with:\n   - The user's feedback as the primary task\n   - The PREVIOUS DRAFTS as context (pass as editor_feedback or content_brief)\n   - iteration_number = ${input.revision_number}\n   - max_iterations = ${state.max_iterations}\n   - Target channels: ${targetChannels}\n4. Send progress: \"Reviewing revised draft...\"\n5. Call reviewer_editor to validate the revision\n6. If approved: STOP and summarize (approval flow handles the rest)\n7. If not approved: One more revision cycle, then STOP\n\nCRITICAL RULES FOR REVISION:\n- Do NOT call content_brainstormer - the topic is decided\n- Do NOT generate new ideas - revise the EXISTING drafts\n- Focus the Writer on incorporating the user's specific feedback\n- Keep the same target channels as the original\n- The approval card will show \"Revision ${input.revision_number}\"\n`;\n}\n\n// Build playbook section from fetched marketing context\nconst playbookContent = (brandContext.marketing_playbook && !brandContext.marketing_playbook.includes('See system_config'))\n  ? brandContext.marketing_playbook\n  : '';\n\nconst systemPrompt = `You are the Marketing Team Manager coordinating content creation for organic social channels.\n\n##############################################\n# BRAND CONTEXT (PRE-FETCHED - DO NOT REFETCH)\n##############################################\n\nBRAND GUIDE SUMMARY:\n${brandContext.brand_guide || 'Not available'}\n\nCONTENT STRATEGY:\n${brandContext.content_strategy || 'Not available'}\n\nPRODUCT KNOWLEDGE:\n${brandContext.product_knowledge || 'Not available'}\n\nVOICE REFERENCE (Spencer Marx writing samples):\n${brandContext.voice_reference || 'Not available'}\n\nRECENT POSTS (to avoid repetition):\n${brandContext.recent_posts?.length > 0 ? brandContext.recent_posts.join('\\n') : 'No recent posts'}\n\n##############################################\n\n${playbookContent ? `\nMARKETING PLAYBOOK:\n${playbookContent}\n` : ''}\nYOUR TEAM:\n1. Content Brainstormer \u2014 Researches trends, generates ideas, and produces a CONTENT BRIEF (the contract between Writer and Editor)\n2. Content Writer \u2014 Writes channel-specific drafts AGAINST the Content Brief\n3. Reviewer/Editor \u2014 Evaluates drafts AGAINST the Content Brief (not generic standards)\n4. Image Generator \u2014 Creates AI images for approved content, saves to Google Drive\n5. Content Calendar Manager \u2014 Updates tracker, saves blog posts to Google Docs\n\n##############################################\n# THE BRIEF-DRIVEN PIPELINE                  #\n##############################################\n\nThis team operates on a brief-driven model. The Content Brief is the most important artifact \u2014 it defines what \"good\" looks like BEFORE writing begins, so Writer and Editor are aligned from the start.\n\nPHASE 1: STRATEGY\n  1. Send progress: \"\ud83e\udde0 Researching trends and building content brief...\"\n  2. Call content_brainstormer with:\n     - task_prompt: Include the FULL original task, target channels (explicitly name them), and all user context\n     - CRITICAL: The task_prompt MUST explicitly state which channels to target (e.g. \"Target channel: LinkedIn\")\n     - Include the user's specific angle/topic if provided \u2014 do NOT leave it open-ended\n  3. The brainstormer returns a CONTENT BRIEF containing:\n     - winning_idea (topic, angle, rationale)\n     - content_brief (key_message, channel_specs, content_requirements, success_criteria, research_guidance)\n  4. Extract the FULL content brief \u2014 you will pass it to Writer and Reviewer\n\nPHASE 2: CREATION\n  1. Send progress: \"\u270d\ufe0f Writing first draft: [winning_idea.topic]...\"\n  2. Call content_writer with:\n     - The content brief as content_brief (JSON string)\n     - The winning idea\n     - iteration_number=1\n     - All standard context\n  3. Check the response for pre_check results:\n     - If pre_check.passed=false: Writer auto-failed on word count or char limits\n       \u2192 Call Writer again with feedback about the specific failures (this is a FREE retry, not an editorial iteration)\n       \u2192 Only retry pre-check failure ONCE\n     - If pre_check.passed=true: Proceed to review\n\nPHASE 3: EDITORIAL REVIEW\n  1. Send progress: \"\ud83d\udcdd Reviewing draft (round 1/${state.max_iterations})...\"\n  2. Call reviewer_editor with:\n     - The drafts\n     - The content brief as content_brief (JSON string)\n     - iteration_number=1, max_iterations=${state.max_iterations}\n  3. The Reviewer evaluates against the Content Brief:\n     - brief_compliance: success_criteria PASS/FAIL, content_requirements MET/NOT_MET\n     - fact_check_results: claims verified/unverified/inaccurate\n     - editorial_feedback: required_fixes (deal-breakers), recommended_improvements, refinements\n  4. If requires_more_revisions=true AND iteration < ${state.max_iterations}:\n     - Send progress: \"\ud83d\udd04 Revising based on feedback (round X/${state.max_iterations})...\"\n     - Pass ONLY required_fixes and recommended_improvements to Writer (NOT refinements)\n     - Increment iteration_number\n     - Re-submit to Reviewer\n  5. Continue until approved OR max iterations reached\n\nPHASE 4: FINAL ITERATION HANDLING (iteration ${state.max_iterations})\n  - If requires_more_revisions=false: Content approved, proceed to Phase 5\n  - If requires_more_revisions=true with factual_errors_only=true:\n    \u2192 ONE emergency revision (iteration ${state.max_iterations + 1})\n    \u2192 Tell Writer: \"Fix ONLY these factual errors. No other changes.\"\n    \u2192 Proceed to Phase 5 WITHOUT another review\n  - If approved_with_reservations=true: Content approved with editor notes, proceed to Phase 5\n\nPHASE 5: PRODUCTION\n  1. Send progress: \"\ud83d\uddbc\ufe0f Generating images for approved content...\"\n  2. Call image_generator with the approved content\n  3. If image_generator returns success=false:\n     - Send progress: \"\u26a0\ufe0f Image generation failed \u2014 proceeding with calendar update...\"\n     - Continue to step 4 (images are optional, not blocking)\n  4. Send progress: \"\ud83d\udcc5 Updating content calendar...\"\n  5. Call calendar_manager with action=update_tracker\n     - IMPORTANT: Pass sources_used from the Writer's output to the calendar_manager\n  6. Compile final summary\n\n##############################################\n# PROGRESS UPDATES                           #\n##############################################\n\nSend progress updates BEFORE each major step (not after).\nKeep messages brief (under 100 chars). Be specific.\nDo NOT send duplicate progress updates when retrying a failed worker.\n\n##############################################\n# PRE-CHECK FAILURES (FREE RETRIES)          #\n##############################################\n\nWhen the Writer returns pre_check.passed=false, this means the draft failed automated validation (word count or character limits). This is NOT an editorial iteration \u2014 it's a mechanical fix.\n\n- Retry the Writer ONCE with specific feedback about what failed\n- Include the pre_check.failures array in your feedback\n- If the retry also fails pre-check, proceed to review anyway (the Editor will catch it)\n- Do NOT count pre-check retries against the editorial iteration budget\n\n##############################################\n# ERROR HANDLING - CIRCUIT BREAKER           #\n##############################################\n\nWhen a worker returns an error (\"There was an error:\"):\n1. Retry the SAME worker ONCE with same or adjusted inputs\n2. If the same worker fails TWICE, STOP retrying immediately\n3. Do NOT burn iterations on repeated failures\n4. If a critical worker fails twice, report the failure clearly and stop\n5. If Image Generator fails, proceed with calendar update and note the failure\n\nNEVER retry a worker more than once. Iteration budget is precious.\n\n##############################################\n# ABSOLUTE PROHIBITION: NO SELF-AUTHORING    #\n##############################################\n\nYou are a COORDINATOR. You delegate to workers and report results.\nYou NEVER write content yourself. Under NO circumstances should you:\n- Write a post, draft, or any publishable content directly\n- \"Fill in\" for a failed worker by doing the work yourself\n- Generate statistics, data points, or claims without web_search\n\nIf the Brainstormer fails: report the failure. Do NOT brainstorm yourself.\nIf the Writer fails: report the failure. Do NOT write the draft yourself.\n\nYour output is a SUMMARY of what your team produced, or a FAILURE REPORT\nexplaining what went wrong. Never content.\n\n##############################################\n# ITERATION BUDGET                           #\n##############################################\n\nMax tool calls available: 25\nBudget:\n- Progress updates: ~8 calls\n- Brainstormer: 1 call\n- Write/Review cycles: ~6-8 calls (${state.max_iterations} editorial rounds + possible emergency + possible pre-check retry)\n- Image Generator: 1 call\n- Calendar Manager: 1 call\n- Reserve at least 3 calls for post-approval steps\n\n##############################################\n# CRITICAL: AUTONOMOUS EXECUTION             #\n##############################################\n\nNEVER ask for user confirmation, selection, or approval.\nALWAYS proceed through the FULL pipeline automatically:\n  Brief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n\nThe brainstormer returns a Content Brief \u2014 USE IT and continue.\nDo NOT present options or ask \"Would you like me to proceed?\"\nThe user expects COMPLETED content, not concept options.\n\n##############################################\n\n${revisePostSection}\nREQUIRES_APPROVAL: ${input.requires_approval}\n\n##############################################\n# APPROVAL FLOW (ONE-OFF REQUESTS)           #\n##############################################\n\n${input.requires_approval ? `\n*** APPROVAL MODE ACTIVE ***\nThis is a one-off Slack request. After the review phase (Phase 3/4):\n- Do NOT call image_generator or calendar_manager\n- Simply STOP and summarize what was produced (the drafts and the winning idea)\n- The workflow will automatically send an approval card to Slack\n- The user will review the content and approve or request changes\n- Images and calendar are handled automatically after approval\n\nYour pipeline when requires_approval=true:\n  Brief \u2192 Write \u2192 Review \u2192 STOP (summarize drafts)\n` : `\nApproval mode is NOT active. Proceed with the FULL pipeline:\nBrief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n`}\n\n##############################################\n\nTARGET CHANNELS: ${targetChannels}\n\nUSER CONTEXT:\n- Slack User ID: ${input.slack_user_id || 'N/A'} (PASS THIS TO ALL WORKERS)\n- Email: ${input.user_email || 'N/A'}\n- Name: ${input.user_name || 'N/A'}\n- Timezone: ${input.user_timezone || 'America/Chicago'}\n\nITERATION CONFIG:\n- Maximum editorial iterations: ${state.max_iterations}\n- Emergency factual fix cap: ${state.max_iterations + 1}\n- Pre-check retries: Do NOT count against editorial budget\n\nIMPORTANT RULES:\n1. ALWAYS send progress updates before each major step\n2. ALWAYS pass slack_user_id to workers for credential resolution\n3. ALWAYS pass the content_brief (as JSON string) to both Writer and Reviewer\n4. The brand context is ALREADY available \u2014 do NOT ask workers to fetch it again\n5. Follow ERROR HANDLING rules when workers return errors\n6. NEVER ask for confirmation \u2014 proceed autonomously through all steps\n7. ALWAYS complete the full pipeline: Brief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n\nRESPONSE FORMAT:\nWhen all work is complete, your final message should summarize what was created.\nThe workflow will extract structured data from the tool outputs.`;\n\nreturn [{\n  json: {\n    ...input,\n    max_iterations: state.max_iterations,\n    system_prompt: systemPrompt\n  }\n}];\n"
+            },
+            "id": "build-context",
+            "name": "Build Agent Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1280,
+                524
+            ]
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.user_request }}",
+                "options": {
+                    "systemMessage": "={{ $json.system_prompt }}",
+                    "maxIterations": 25,
+                    "returnIntermediateSteps": true
+                }
+            },
+            "id": "manager-agent",
+            "name": "Marketing Manager Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                2120,
+                400
+            ],
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "claude-sonnet-4-5-20250929",
+                    "cachedResultName": "Claude Sonnet 4.5"
+                },
+                "options": {}
+            },
+            "id": "ai-model",
+            "name": "Claude Sonnet",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.3,
+            "position": [
+                1808,
+                624
+            ],
+            "credentials": {
+                "anthropicApi": {
+                    "id": "iKUsIHimnjBUibjJ",
+                    "name": "Anthropic account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "description": "Research trending topics, generate content ideas, and produce a CONTENT BRIEF with a winning idea, channel-specific specs, content requirements, and success criteria. The brief is the contract between Writer and Editor. Brand guide, content strategy, and recent posts are already provided - do NOT refetch.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "G0qNvT8YxYwH8XqV"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "subtask_prompt": "={{ $fromAI('subtask_prompt', 'The content creation task/topic to brainstorm ideas for', 'string', \"\") }}",
+                        "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                        "user_context": "={{ JSON.stringify({slack_user_id: $('Build Agent Context').item.json.slack_user_id, email: $('Build Agent Context').item.json.user_email}) }}",
+                        "context": "={{ JSON.stringify({target_channels: $('Build Agent Context').item.json.target_channels_string}) }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "subtask_prompt",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "subtask_prompt"
+                        },
+                        {
+                            "id": "brand_context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "brand_context"
+                        },
+                        {
+                            "id": "user_context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "user_context"
+                        },
+                        {
+                            "id": "context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "context"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-brainstormer",
+            "name": "Tool: Content Brainstormer",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                1936,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "description": "Write channel-specific content drafts based on the Content Brief. Pass the full content brief JSON, winning idea, target channels, and any editor feedback for revisions. Returns drafts with automated pre-check validation (word count, char limits). Brand context is provided automatically.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "U5C3B4S9SIyXNGtH"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "subtask_prompt": "={{ $fromAI('subtask_prompt', 'The content brief describing what to write', 'string', \"\") }}",
+                        "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                        "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}",
+                        "winning_idea": "={{ $fromAI('winning_idea', 'The winning idea/angle to write about', 'string', \"\") }}",
+                        "iteration_number": "={{ $fromAI('iteration_number', 'Current iteration number (1 for first draft)', 'number', \"\") }}",
+                        "max_iterations": "={{ $('Build Agent Context').item.json.state.max_iterations || 3 }}",
+                        "editor_feedback": "={{ $fromAI('editor_feedback', 'Feedback from editor for revisions, or empty string for first draft', 'string') }}",
+                        "user_context": "={{ JSON.stringify({slack_user_id: $('Build Agent Context').item.json.slack_user_id, email: $('Build Agent Context').item.json.user_email}) }}",
+                        "context": "={{ JSON.stringify({task_prompt: $('Build Agent Context').item.json.task_prompt}) }}",
+                        "content_brief": "={{ $fromAI('content_brief', 'The full content brief JSON from the brainstormer (stringified)', 'string', \"\") }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "subtask_prompt",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "subtask_prompt"
+                        },
+                        {
+                            "id": "brand_context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "brand_context"
+                        },
+                        {
+                            "id": "target_channels",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "target_channels"
+                        },
+                        {
+                            "id": "winning_idea",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "winning_idea"
+                        },
+                        {
+                            "id": "iteration_number",
+                            "type": "number",
+                            "display": true,
+                            "required": false,
+                            "displayName": "iteration_number"
+                        },
+                        {
+                            "id": "max_iterations",
+                            "type": "number",
+                            "display": true,
+                            "required": false,
+                            "displayName": "max_iterations"
+                        },
+                        {
+                            "id": "editor_feedback",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "editor_feedback"
+                        },
+                        {
+                            "id": "user_context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "user_context"
+                        },
+                        {
+                            "id": "context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "context"
+                        },
+                        {
+                            "id": "content_brief",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "content_brief"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-writer",
+            "name": "Tool: Content Writer",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                2064,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "description": "Review content drafts against the Content Brief. Pass drafts as JSON object with channel keys, the content brief, iteration info, and brand context. Returns brief compliance results, fact-check results, and editorial feedback categorized as required_fixes (deal-breakers), recommended_improvements, and refinements.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "vZmSJnGeCeegKi8X"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                        "drafts": "={{ $fromAI('drafts', 'JSON object with channel keys and draft content, e.g. {', 'string') }}",
+                        "original_task": "={{ $('Build Agent Context').item.json.task_prompt }}",
+                        "winning_idea": "={{ $fromAI('winning_idea', 'Brief summary of the winning idea/angle used for these drafts', 'string', \"\") }}",
+                        "iteration_number": "={{ $fromAI('iteration_number', 'Current iteration number starting from 1', 'number', \"\") }}",
+                        "max_iterations": "={{ $('Build Agent Context').item.json.state.max_iterations }}",
+                        "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                        "content_brief": "={{ $fromAI('content_brief', 'The content brief JSON to evaluate drafts against (stringified)', 'string', \"\") }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "drafts",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "drafts"
+                        },
+                        {
+                            "id": "original_task",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "original_task"
+                        },
+                        {
+                            "id": "winning_idea",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "winning_idea"
+                        },
+                        {
+                            "id": "iteration_number",
+                            "type": "number",
+                            "display": true,
+                            "required": true,
+                            "displayName": "iteration_number"
+                        },
+                        {
+                            "id": "max_iterations",
+                            "type": "number",
+                            "display": true,
+                            "required": true,
+                            "displayName": "max_iterations"
+                        },
+                        {
+                            "id": "brand_context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "brand_context"
+                        },
+                        {
+                            "id": "content_brief",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "content_brief"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-reviewer",
+            "name": "Tool: Reviewer/Editor",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                2192,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "description": "Generate AI images for approved content. Pass the drafts JSON and target channels. Optionally include style hints.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "Z4pTCAwWwz153K3C"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                        "drafts": "={{ $fromAI('drafts', 'JSON object with channel keys and approved draft content for image generation', 'string', \"\") }}",
+                        "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}",
+                        "image_style_hints": "={{ $fromAI('image_style_hints', 'Optional style hints for image generation (e.g. professional, minimalist, colorful)', 'string') }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "drafts",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "drafts"
+                        },
+                        {
+                            "id": "target_channels",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "target_channels"
+                        },
+                        {
+                            "id": "image_style_hints",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "image_style_hints"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-image-gen",
+            "name": "Tool: Image Generator",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                2320,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "description": "Update content calendar tracker with new posts, save blog documents, or query existing entries. VALID ACTIONS: update_tracker (add new post to tracker sheet), save_blog (create blog Google Doc), both (update tracker AND save blog), read_recent (get recent posts), update_row (update existing row status), query (search/read entries). For adding new content after approval, ALWAYS use action='update_tracker'.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "ezvCaPeNM8P7gEWj"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                        "action": "={{ $fromAI('action', 'Action: update_tracker (add new post), save_blog, both, read_recent, update_row, or query. Use update_tracker to add approved content.', 'string') }}",
+                        "drafts": "={{ $fromAI('drafts', 'JSON object with channel drafts to add to calendar', 'string', \"\") }}",
+                        "images": "={{ $fromAI('images', 'JSON object with generated image URLs per channel, or empty object {}', 'string') }}",
+                        "winning_idea": "={{ $fromAI('winning_idea', 'The winning idea/topic for this content', 'string', \"\") }}",
+                        "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "action",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "action"
+                        },
+                        {
+                            "id": "drafts",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "drafts"
+                        },
+                        {
+                            "id": "images",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "images"
+                        },
+                        {
+                            "id": "winning_idea",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "winning_idea"
+                        },
+                        {
+                            "id": "target_channels",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "target_channels"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-calendar",
+            "name": "Tool: Content Calendar Manager",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                2448,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "description": "Send a brief progress update to the user via Slack DM. Keep messages under 100 characters.",
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "AorvHVERbm2IxQMF"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "message": "={{ $fromAI('message', 'Brief progress update under 100 chars', 'string', \"\") }}",
+                        "slack_context": "={{ JSON.stringify($('Build Agent Context').item.json.slack_context) }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "message",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "message"
+                        },
+                        {
+                            "id": "slack_context",
+                            "type": "string",
+                            "display": true,
+                            "required": true,
+                            "displayName": "slack_context"
+                        }
+                    ]
+                }
+            },
+            "id": "tool-progress",
+            "name": "Tool: Send Progress",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                2576,
+                624
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst agentOutput = input.output;\nconst steps = input.intermediateSteps || [];\n\nlet brainstormResult = null;\nlet contentBrief = null;\nlet drafts = {};\nlet editorFeedback = null;\nlet images = {};\nlet calendarUpdate = null;\nlet sourcesUsed = [];\n\nfor (const step of steps) {\n  const toolName = step.action?.tool || '';\n  const toolResult = step.observation;\n\n  let parsedResult = null;\n  if (typeof toolResult === 'string') {\n    try {\n      const jsonMatch = toolResult.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        parsedResult = JSON.parse(jsonMatch[0]);\n      }\n    } catch (e) {\n      parsedResult = toolResult;\n    }\n  } else {\n    parsedResult = toolResult;\n  }\n\n  if (toolName.toLowerCase().includes('brainstorm')) {\n    brainstormResult = parsedResult;\n    if (parsedResult?.output?.content_brief) {\n      contentBrief = parsedResult.output.content_brief;\n    } else if (parsedResult?.content_brief) {\n      contentBrief = parsedResult.content_brief;\n    }\n  } else if (toolName.toLowerCase().includes('writer')) {\n    if (parsedResult?.output?.drafts) {\n      drafts = parsedResult.output.drafts;\n    } else if (parsedResult?.drafts) {\n      drafts = parsedResult.drafts;\n    }\n    // Extract sources_used from writer output \u2014 MERGE across iterations\n    const newSources = parsedResult?.output?.sources_used || parsedResult?.sources_used || [];\n    if (newSources.length) {\n      sourcesUsed = [...new Set([...sourcesUsed, ...newSources])];\n    }\n  } else if (toolName.toLowerCase().includes('review') || toolName.toLowerCase().includes('editor')) {\n    editorFeedback = parsedResult;\n  } else if (toolName.toLowerCase().includes('image')) {\n    if (parsedResult?.output?.images) {\n      images = parsedResult.output.images;\n    } else if (parsedResult?.images) {\n      images = parsedResult.images;\n    }\n  } else if (toolName.toLowerCase().includes('calendar')) {\n    calendarUpdate = parsedResult;\n  }\n}\n\n// Filter drafts to only target channels\nconst initState = $('Initialize State').first().json;\nconst targetChannelsList = initState.target_channels || [];\nif (Object.keys(drafts).length > 0 && targetChannelsList.length > 0) {\n  const filteredDrafts = {};\n  for (const channel of targetChannelsList) {\n    const key = channel.toLowerCase().trim();\n    if (drafts[key]) {\n      filteredDrafts[key] = drafts[key];\n    }\n  }\n  if (Object.keys(filteredDrafts).length > 0) {\n    drafts = filteredDrafts;\n  }\n}\n\n// Determine quality approval from editor feedback\nlet qualityApproved = false;\nlet overallAssessment = null;\nif (editorFeedback) {\n  if (typeof editorFeedback === 'object') {\n    overallAssessment = editorFeedback.output?.overall_assessment || editorFeedback.overall_assessment;\n    qualityApproved = overallAssessment === 'meets_brief' ||\n                      overallAssessment === 'approved_with_reservations' ||\n                      editorFeedback.output?.approved_with_reservations === true ||\n                      editorFeedback.approved_with_reservations === true ||\n                      editorFeedback.output?.requires_more_revisions === false ||\n                      editorFeedback.requires_more_revisions === false ||\n                      editorFeedback.output?.approved === true ||\n                      editorFeedback.approved === true ||\n                      editorFeedback.output?.requiresMoreRevisions === false ||\n                      editorFeedback.requiresMoreRevisions === false;\n  }\n}\n\nconst iterationsUsed = steps.filter(s =>\n  (s.action?.tool || '').toLowerCase().includes('writer')\n).length;\n\nreturn [{\n  json: {\n    success: true,\n    manager_summary: agentOutput,\n    winning_angle: brainstormResult?.output?.winning_idea || brainstormResult?.winning_idea || null,\n    content_brief: contentBrief,\n    drafts: drafts,\n    images: images,\n    calendar_update: calendarUpdate,\n    iterations_used: iterationsUsed,\n    quality_approved: qualityApproved,\n    overall_assessment: overallAssessment,\n    editor_feedback: editorFeedback,\n    sources_used: sourcesUsed,\n    raw_steps_count: steps.length\n  }\n}];"
+            },
+            "id": "process-outputs",
+            "name": "Process Outputs",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2784,
+                304
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst errorMessage = input.error?.message || input.error || 'Unknown agent error';\n\nreturn [{\n  json: {\n    success: false,\n    manager_summary: null,\n    winning_angle: null,\n    drafts: {},\n    images: {},\n    calendar_update: null,\n    iterations_used: 0,\n    quality_approved: false,\n    error: errorMessage,\n    error_type: 'agent_error'\n  }\n}];"
+            },
+            "id": "handle-error",
+            "name": "Handle Agent Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2784,
+                496
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];"
+            },
+            "id": "format-output",
+            "name": "Format Output",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3008,
+                496
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "return [{\n  json: {\n    success: false,\n    output: null,\n    metadata: {},\n    error: 'Marketing configuration not found. Please set up brand guide, content strategy, and content calendar first.'\n  }\n}];"
+            },
+            "id": "config-error",
+            "name": "Config Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2784,
+                716
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $('Initialize State').first().json.requires_approval }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true"
+                            }
+                        },
+                        {
+                            "leftValue": "={{ $('Process Outputs').first().json.success !== false }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true"
+                            }
+                        },
+                        {
+                            "leftValue": "={{ $json.result }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "check-approval-required",
+            "name": "Requires Approval?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                3024,
+                304
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Build the approval guard payload from the agent's outputs\nconst initState = $('Initialize State').first().json;\nconst processedOutput = $('Process Outputs').first().json;\nconst slackContext = initState.slack_context || {};\n\n// Extract drafts from the processed output (flat structure, NO .output wrapper)\nconst drafts = processedOutput.drafts || {};\nconst winningAngle = processedOutput.winning_angle;\n\n// Get revision info from Prepare Context\nconst preparedContext = $('Prepare Context').first().json;\nconst revisionNumber = preparedContext.revision_number || 0;\nconst previousActionId = preparedContext.previous_action_id || null;\nconst isRevision = preparedContext.is_revision || false;\n\n// Build post_summary: concise topic for Slack approval card\n// CRITICAL: Must be under 150 chars \u2014 Slack Block Kit has a 2001-char limit per field,\n// and this gets embedded in the approval card Topic field with formatting overhead.\nlet winningSummary;\n\nif (typeof winningAngle === 'object' && winningAngle !== null && winningAngle.topic) {\n  // NEW_POST path: brainstormer provides a clean topic\n  winningSummary = winningAngle.topic;\n} else if (isRevision) {\n  // REVISE_POST path: no brainstormer, build concise summary from draft channels\n  const channels = Object.keys(drafts).map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ') || 'Content';\n  winningSummary = `Revised ${channels} (Revision ${revisionNumber})`;\n} else if (typeof winningAngle === 'string' && winningAngle.length > 0 && winningAngle.length < 200) {\n  winningSummary = winningAngle;\n} else {\n  winningSummary = 'Content for review';\n}\n\n// Safety truncation for ALL paths\nif (winningSummary.length > 150) {\n  winningSummary = winningSummary.substring(0, 147) + '...';\n}\n\nconst sourcesUsed = processedOutput.sources_used || [];\nconst targetChannels = initState.target_channels_string || '';\n\n// Build payload for the approval guard\nconst payload = {\n  drafts: drafts,\n  post_summary: winningSummary,\n  target_channels: targetChannels,\n  sources_used: sourcesUsed,\n  content_type: (initState.target_channels || ['linkedin'])[0],\n  revision_number: revisionNumber,\n  previous_action_id: previousActionId\n};\n\nreturn [{\n  json: {\n    action_type: 'publish_content',\n    user_id: String($('Fetch Marketing Configs').first().json.user_id || 1),\n    slack_user_id: initState.slack_user_id || '',\n    slack_channel_id: slackContext.channel_id || '',\n    slack_thread_ts: slackContext.thread_ts || '',\n    payload: JSON.stringify(payload),\n    expiry_minutes: 120\n  }\n}];"
+            },
+            "id": "prepare-approval-payload",
+            "name": "Prepare Approval Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3264,
+                184
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "1S0dhI1K4X0528Dy"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action_type": "={{ $json.action_type }}",
+                        "user_id": "={{ $json.user_id }}",
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "slack_channel_id": "={{ $json.slack_channel_id }}",
+                        "slack_thread_ts": "={{ $json.slack_thread_ts }}",
+                        "payload": "={{ $json.payload }}",
+                        "expiry_minutes": "={{ $json.expiry_minutes }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "action_type",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "action_type"
+                        },
+                        {
+                            "id": "user_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "user_id"
+                        },
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "slack_channel_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "slack_channel_id"
+                        },
+                        {
+                            "id": "slack_thread_ts",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "slack_thread_ts"
+                        },
+                        {
+                            "id": "payload",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "payload"
+                        },
+                        {
+                            "id": "expiry_minutes",
+                            "type": "number",
+                            "required": false,
+                            "displayName": "expiry_minutes"
+                        }
+                    ]
+                }
+            },
+            "id": "call-approval-guard",
+            "name": "Call Approval Guard",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                3504,
+                184
+            ],
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Merge the process outputs with approval result\nconst processedOutput = $('Process Outputs').first().json;\nconst approvalResult = $input.first().json;\n\nreturn [{\n  json: {\n    success: approvalResult.success !== false,\n    output: {\n      manager_summary: processedOutput.manager_summary,\n      winning_angle: processedOutput.winning_angle,\n      drafts: processedOutput.drafts,\n      images: processedOutput.images,\n      calendar_update: processedOutput.calendar_update,\n      sources_used: processedOutput.sources_used,\n      approval_pending: true,\n      approval_message: approvalResult.message || 'Content sent for approval',\n      pending_action_id: approvalResult.pending_action_id || null\n    },\n    metadata: {\n      iterations_used: processedOutput.iterations_used,\n      quality_approved: processedOutput.quality_approved,\n      editor_feedback: processedOutput.editor_feedback,\n      steps_executed: processedOutput.raw_steps_count\n    },\n    error: approvalResult.success === false ? (approvalResult.error || 'Approval card failed to send') : null\n  }\n}];"
+            },
+            "id": "format-approval-output",
+            "name": "Format Approval Output",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3744,
+                184
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.context_success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "context-ready",
+            "name": "Context Ready?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1040,
+                524
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\nconst errorMsg = input.context_error || 'Unknown context error';\n\nreturn [{\n  json: {\n    success: false,\n    output: 'The marketing team could not load its context data: ' + errorMsg + '. Please try again or check the marketing configuration.',\n    error: errorMsg\n  }\n}];"
+            },
+            "id": "format-context-error",
+            "name": "Format Context Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1240,
+                724
+            ]
+        },
+        {
+            "id": "lookup-previous-action",
+            "name": "Lookup Previous Action",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1024,
+                280
+            ],
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT id, payload, status, created_at\nFROM alfred.pending_actions\nWHERE slack_thread_ts = $1\n  AND action_type = 'publish_content'\n  AND status = 'pending'\nORDER BY created_at DESC\nLIMIT 1",
+                "options": {
+                    "queryReplacement": "={{ $('Initialize State').first().json.slack_context.thread_ts || '' }}"
+                }
+            },
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            },
+            "onError": "continueRegularOutput",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "Rw7786cYTYOTQhH9"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "predicate": "Return TRUE if the agent produced NEW or REVISED content (such as draft posts, articles, or creative writing) that requires user review and approval before publishing. Return FALSE if the agent only performed operational tasks such as updating a calendar, scheduling, running analytics, answering a question, looking up information, or providing confirmations \u2014 or if no publishable content was created.",
+                        "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}"
+                    },
+                    "matchingColumns": [],
+                    "schema": [
+                        {
+                            "id": "predicate",
+                            "displayName": "predicate",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "context",
+                            "displayName": "context",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": true
+                },
+                "options": {}
+            },
+            "id": "evaluate-approval-predicate",
+            "name": "Evaluate Approval Predicate",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2904,
+                184
+            ]
+        }
+    ],
+    "connections": {
+        "Workflow Input": {
+            "main": [
+                [
+                    {
+                        "node": "Initialize State",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initialize State": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Marketing Configs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Marketing Configs": {
+            "main": [
+                [
+                    {
+                        "node": "Config Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Config Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Lookup Previous Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Config Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Marketing Context": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Context": {
+            "main": [
+                [
+                    {
+                        "node": "Context Ready?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Agent Context": {
+            "main": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Marketing Manager Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Process Outputs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Handle Agent Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Handle Agent Error": {
+            "main": [
+                [
+                    {
+                        "node": "Format Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Config Error": {
+            "main": [
+                [
+                    {
+                        "node": "Format Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Claude Sonnet": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Content Brainstormer": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Content Writer": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Reviewer/Editor": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Image Generator": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Content Calendar Manager": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tool: Send Progress": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Marketing Manager Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Process Outputs": {
+            "main": [
+                [
+                    {
+                        "node": "Evaluate Approval Predicate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Requires Approval?": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Approval Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Approval Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Call Approval Guard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Approval Guard": {
+            "main": [
+                [
+                    {
+                        "node": "Format Approval Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Context Ready?": {
+            "main": [
+                [
+                    {
+                        "node": "Build Agent Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format Context Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Context Error": {
+            "main": [
+                [
+                    {
+                        "node": "Format Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Lookup Previous Action": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Marketing Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Evaluate Approval Predicate": {
+            "main": [
+                [
+                    {
+                        "node": "Requires Approval?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {
+        "Workflow Input": [
+            {
+                "json": {
+                    "task_prompt": "Create a value-oriented LinkedIn post for Spencer Marx targeting trades businesses and marketers.\n\n**TOPIC OPTIONS:**\n1. Minimizing clicks in online booking experiences\n2. Another research-backed tip that provides genuine value to trades businesses/marketers\n\n**REQUIREMENTS:**\n- Research-backed insights with credible data\n- 150-200 words\n- Professional thought leadership tone\n- Actionable takeaway\n- Engaging hook\n- Minimal hashtags (3-5 max, relevant only)\n\n**TARGET AUDIENCE:**\n- Trades businesses (plumbing, HVAC, electrical, home services)\n- Marketers managing booking systems\n- Service business operators\n\n**USER CONTEXT:**\n- Spencer Marx, Aclarify\n- spencer@aclarify.com\n- Posting: February 7, 2026\n- Timezone: Europe/Madrid\n\n**EXECUTION:**\nSpencer has tried this request multiple times with system issues. Please execute efficiently:\n1. Choose the strongest angle (booking friction or alternative valuable insight)\n2. Create ONE polished draft\n3. Deliver final post\n\nFocus on providing genuine value that establishes Spencer as a thought leader in service business optimization.",
+                    "additional_instructions": null,
+                    "target_channels": "[\"linkedin\"]",
+                    "user_context": "{\"user\":{\"id\":1,\"slack_user_id\":\"U02TE7SKU3X\",\"slack_username\":\"spencermarx\",\"email\":\"spencer@aclarify.com\",\"role\":\"admin\",\"google_calendar_credential_id\":\"yBNZEWLXitD9cSiU\",\"gmail_credential_id\":\"v2wjW0tm9a1TxnZP\",\"google_docs_credential_id\":\"yBNZEWLXitD9cSiU\",\"google_sheets_credential_id\":null,\"google_drive_credential_id\":null,\"notion_credential_id\":null,\"calendar_ids\":[\"spencer@aclarify.com\",\"spencer.s.marx@gmail.com\"],\"preferences\":{\"timezone\":\"Europe/Madrid\",\"verbosity\":\"concise\",\"personality\":\"donna\",\"email_settings\":{\"tone_prompt\":null,\"tone_source\":null,\"approval_required\":true,\"tone_last_updated\":null,\"tone_emails_analyzed\":null,\"approval_expiry_minutes\":60},\"proactive_notifications\":true},\"effective_permissions\":{\"docs_read\":true,\"docs_write\":true,\"drive_read\":true,\"email_read\":true,\"email_send\":true,\"tasks_read\":true,\"docs_create\":true,\"drive_share\":true,\"drive_write\":true,\"sheets_read\":true,\"tasks_write\":true,\"email_delete\":true,\"research_web\":true,\"sheets_write\":true,\"calendar_read\":true,\"calendar_write\":true,\"workflows_view\":true,\"workflows_create\":true,\"workflows_delete\":true,\"admin_manage_users\":true,\"workflows_activate\":true,\"admin_view_all_data\":true}},\"personality_name\":\"Donna Paulsen (Suits)\"}",
+                    "slack_context": "{\"slack_user_id\":\"U02TE7SKU3X\",\"channel_id\":\"D0ACCAUC2P8\",\"thread_ts\":\"1770478276.534729\",\"response_type\":\"dm\"}",
+                    "team_config": "{\"max_iterations\":3,\"user_iteration_override\":null}",
+                    "handoff_context": null
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+    "activeVersionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+    "versionCounter": 223,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-05T13:51:59.876Z",
+            "createdAt": "2026-02-05T13:51:59.876Z",
+            "role": "workflow:owner",
+            "workflowId": "WUNHfC0c2FRgIlye",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "project": {
+                "updatedAt": "2026-02-02T12:27:52.037Z",
+                "createdAt": "2026-02-02T12:20:35.714Z",
+                "id": "Jd992SEPuokf8o5Z",
+                "name": "Spencer Marx <spencer@aclarify.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+                "projectRelations": [
+                    {
+                        "updatedAt": "2026-02-02T12:20:35.714Z",
+                        "createdAt": "2026-02-02T12:20:35.714Z",
+                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+                        "projectId": "Jd992SEPuokf8o5Z",
+                        "user": {
+                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "createdAt": "2026-02-02T12:20:29.217Z",
+                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
+                            "email": "spencer@aclarify.com",
+                            "firstName": "Spencer",
+                            "lastName": "Marx",
+                            "personalizationAnswers": {
+                                "version": "v4",
+                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                                "personalization_survey_n8n_version": "2.6.2",
+                                "companySize": "<20",
+                                "companyType": "saas",
+                                "role": "business-owner",
+                                "reportedSource": "friend"
+                            },
+                            "settings": {
+                                "userActivated": true,
+                                "easyAIWorkflowOnboarded": true,
+                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                                "userActivatedAt": 1770049275864,
+                                "npsSurvey": {
+                                    "responded": true,
+                                    "lastShownAt": 1770325854784
+                                }
+                            },
+                            "disabled": false,
+                            "mfaEnabled": false,
+                            "lastActiveAt": "2026-02-10",
+                            "isPending": false
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-02-10T12:58:55.764Z",
+        "createdAt": "2026-02-10T12:58:55.764Z",
+        "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+        "workflowId": "WUNHfC0c2FRgIlye",
+        "nodes": [
+            {
+                "parameters": {
+                    "workflowInputs": {
+                        "values": [
+                            {
+                                "name": "task_prompt"
+                            },
+                            {
+                                "name": "additional_instructions"
+                            },
+                            {
+                                "name": "target_channels",
+                                "type": "array"
+                            },
+                            {
+                                "name": "user_context",
+                                "type": "object"
+                            },
+                            {
+                                "name": "slack_context",
+                                "type": "object"
+                            },
+                            {
+                                "name": "team_config",
+                                "type": "object"
+                            },
+                            {
+                                "name": "handoff_context",
+                                "type": "object"
+                            }
+                        ]
+                    }
+                },
+                "id": "trigger",
+                "name": "Workflow Input",
+                "type": "n8n-nodes-base.executeWorkflowTrigger",
+                "typeVersion": 1.1,
+                "position": [
+                    240,
+                    524
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\n// Extract inputs with defaults\nconst taskPrompt = input.task_prompt || '';\nconst additionalInstructions = input.additional_instructions || '';\n\n// Parse target_channels which could be:\n// - An array: [\"linkedin\"]\n// - A JSON string: \"[\\\"linkedin\\\"]\"\n// - A simple string: \"linkedin\"\n// - Comma-separated: \"linkedin, twitter\"\nlet targetChannels = ['linkedin', 'facebook', 'twitter', 'blog']; // default\nconst rawChannels = input.target_channels;\nif (rawChannels) {\n  if (Array.isArray(rawChannels)) {\n    targetChannels = rawChannels;\n  } else if (typeof rawChannels === 'string') {\n    if (rawChannels.startsWith('[')) {\n      try {\n        targetChannels = JSON.parse(rawChannels);\n      } catch (e) {\n        targetChannels = rawChannels.split(',').map(s => s.trim()).filter(Boolean);\n      }\n    } else {\n      targetChannels = rawChannels.split(',').map(s => s.trim()).filter(Boolean);\n    }\n  }\n}\n\n// Parse JSON strings if needed (inputs may come as stringified JSON)\nconst parseIfString = (val, fallback = {}) => {\n  if (!val) return fallback;\n  if (typeof val === 'string') {\n    try { return JSON.parse(val); } catch (e) { return fallback; }\n  }\n  return val;\n};\nconst userContext = parseIfString(input.user_context, {});\nconst slackContext = parseIfString(input.slack_context, {});\nconst teamConfig = parseIfString(input.team_config, {});\nconst handoffContext = input.handoff_context || null;\n\n// Determine max iterations\nconst DEFAULT_MAX_ITERATIONS = 3;\nconst HARD_CAP_ITERATIONS = 10;\n\nlet maxIterations = DEFAULT_MAX_ITERATIONS;\nif (teamConfig.user_iteration_override !== null && teamConfig.user_iteration_override !== undefined) {\n  maxIterations = Math.min(parseInt(teamConfig.user_iteration_override) || DEFAULT_MAX_ITERATIONS, HARD_CAP_ITERATIONS);\n} else if (teamConfig.max_iterations !== undefined) {\n  maxIterations = Math.min(parseInt(teamConfig.max_iterations) || DEFAULT_MAX_ITERATIONS, HARD_CAP_ITERATIONS);\n}\n\n// Initialize state\nconst state = {\n  iteration_count: 0,\n  max_iterations: maxIterations,\n  timeout_seconds: teamConfig.timeout_seconds || 300,\n  start_time: new Date().toISOString(),\n  workers_invoked: { brainstormer: 0, writer: 0, editor: 0, image_generator: 0, calendar_manager: 0 },\n  brainstorm_result: null,\n  drafts: {},\n  editor_feedback: null,\n  images: {},\n  content_tracked: null,\n  quality_approved: false,\n  artifacts_created: []\n};\n\nconst channelsList = targetChannels.join(', ');\n\nlet userRequest = taskPrompt;\nif (additionalInstructions) {\n  userRequest += `\\n\\nAdditional Instructions: ${additionalInstructions}`;\n}\nif (handoffContext) {\n  userRequest += `\\n\\nContext from Previous Team: ${JSON.stringify(handoffContext)}`;\n}\n\nreturn [{\n  json: {\n    task_prompt: taskPrompt,\n    additional_instructions: additionalInstructions,\n    target_channels: targetChannels,\n    target_channels_string: channelsList,\n    user_context: userContext,\n    slack_context: slackContext,\n    team_config: teamConfig,\n    handoff_context: handoffContext,\n    state: state,\n    user_request: userRequest,\n    slack_user_id: userContext.user?.slack_user_id || userContext.slack_user_id || slackContext.slack_user_id || '',\n    user_email: userContext.user?.email || userContext.email || '',\n    user_name: userContext.user?.slack_username || userContext.name || '',\n    user_timezone: userContext.user?.preferences?.timezone || userContext.timezone || 'America/Chicago',\n    requires_approval: Boolean(slackContext.thread_ts && slackContext.channel_id)\n  }\n}];"
+                },
+                "id": "init-state",
+                "name": "Initialize State",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    464,
+                    524
+                ]
+            },
+            {
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "=SELECT\n  mc.user_id as user_id,\n  mc.config_value->>'google_doc_id' as brand_guide_id,\n  mc2.config_value->>'google_doc_id' as content_strategy_id,\n  mc3.config_value->>'google_sheet_id' as content_calendar_id,\n  mc4.config_value->>'google_doc_id' as marketing_playbook_id,\n  mc5.config_value->>'google_doc_id' as product_knowledge_id,\n  mc6.config_value->>'google_doc_id' as voice_reference_id\nFROM alfred.marketing_configs mc\nLEFT JOIN alfred.marketing_configs mc2 ON mc2.user_id = mc.user_id AND mc2.config_type = 'content_strategy'\nLEFT JOIN alfred.marketing_configs mc3 ON mc3.user_id = mc.user_id AND mc3.config_type = 'content_calendar'\nLEFT JOIN alfred.marketing_configs mc4 ON mc4.user_id = mc.user_id AND mc4.config_type = 'marketing_playbook'\nLEFT JOIN alfred.marketing_configs mc5 ON mc5.user_id = mc.user_id AND mc5.config_type = 'product_knowledge'\nLEFT JOIN alfred.marketing_configs mc6 ON mc6.user_id = mc.user_id AND mc6.config_type = 'voice_reference'\nWHERE mc.user_id = (SELECT id FROM alfred.users WHERE slack_user_id = '{{ $json.slack_user_id }}')\n  AND mc.config_type = 'brand_guide'\n  AND mc.is_active = true;",
+                    "options": {}
+                },
+                "id": "fetch-configs",
+                "name": "Fetch Marketing Configs",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.6,
+                "position": [
+                    688,
+                    524
+                ],
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "loose"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "leftValue": "={{ $json.brand_guide_id }}",
+                                "rightValue": "",
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "exists"
+                                },
+                                "id": "condition-1770478177238-h57l74hpo"
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "check-configs",
+                "name": "Config Valid?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    912,
+                    524
+                ]
+            },
+            {
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "thVHb2crL3ML98gX"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $('Initialize State').item.json.slack_user_id }}",
+                            "brand_guide_id": "={{ $('Fetch Marketing Configs').first().json.brand_guide_id }}",
+                            "content_strategy_id": "={{ $('Fetch Marketing Configs').first().json.content_strategy_id }}",
+                            "content_calendar_id": "={{ $('Fetch Marketing Configs').first().json.content_calendar_id }}",
+                            "product_knowledge_id": "={{ $('Fetch Marketing Configs').first().json.product_knowledge_id }}",
+                            "voice_reference_id": "={{ $('Fetch Marketing Configs').first().json.voice_reference_id }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "brand_guide_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "brand_guide_id"
+                            },
+                            {
+                                "id": "content_strategy_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "content_strategy_id"
+                            },
+                            {
+                                "id": "content_calendar_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "content_calendar_id"
+                            },
+                            {
+                                "id": "product_knowledge_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "product_knowledge_id"
+                            },
+                            {
+                                "id": "voice_reference_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "voice_reference_id"
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "fetch-context",
+                "name": "Fetch Marketing Context",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1136,
+                    400
+                ],
+                "onError": "continueRegularOutput"
+            },
+            {
+                "parameters": {
+                    "jsCode": "// Combine Initialize State data with fetched marketing context\nconst initData = $('Initialize State').first().json;\nconst configData = $('Fetch Marketing Configs').first().json;\nconst contextResult = $input.first().json;\n\n// Check if context fetch was successful\nif (!contextResult || !contextResult.success) {\n  // Extract a clean error message\n  let errorMsg = 'Unknown error fetching marketing context';\n  if (contextResult?.error) {\n    errorMsg = typeof contextResult.error === 'string'\n      ? contextResult.error\n      : contextResult.error.message || contextResult.error.description || JSON.stringify(contextResult.error);\n  }\n\n  // Return error state \u2014 do NOT throw. Let downstream handle it.\n  return [{\n    json: {\n      ...initData,\n      context_success: false,\n      context_error: errorMsg,\n      brand_context: null,\n      config_ids: {\n        brand_guide_id: configData?.brand_guide_id,\n        content_strategy_id: configData?.content_strategy_id,\n        content_calendar_id: configData?.content_calendar_id,\n        marketing_playbook_id: configData?.marketing_playbook_id,\n        product_knowledge_id: configData?.product_knowledge_id,\n        voice_reference_id: configData?.voice_reference_id\n      }\n    }\n  }];\n}\n\n// Build brand_context object from the utility workflow output\nconst brandContext = {\n  brand_guide: contextResult.brand_guide || 'Not available',\n  content_strategy: contextResult.content_strategy || 'Not available',\n  recent_posts: contextResult.recent_posts || [],\n  marketing_playbook: contextResult.marketing_playbook || 'See system_config for full playbook',\n  product_knowledge: contextResult.product_knowledge || 'Not available',\n  voice_reference: contextResult.voice_reference || 'Not available'\n};\n\n\n// Revision detection from pending_action lookup\nlet isRevision = false;\nlet previousDrafts = {};\nlet revisionNumber = 0;\nlet previousPostSummary = '';\nlet previousActionId = null;\n\ntry {\n  const lookupResult = $('Lookup Previous Action').first().json;\n  if (lookupResult && lookupResult.id) {\n    isRevision = true;\n    previousActionId = lookupResult.id;\n    let payload = lookupResult.payload;\n    if (typeof payload === 'string') {\n      try { payload = JSON.parse(payload); } catch (e) { payload = {}; }\n    }\n    previousDrafts = payload.drafts || {};\n    revisionNumber = (payload.revision_number || 0) + 1;\n    previousPostSummary = payload.post_summary || '';\n  }\n} catch (e) {\n  // No previous action found - this is a new post\n}\n\nreturn [{\n  json: {\n    ...initData,\n    context_success: true,\n    context_error: null,\n    brand_context: brandContext,\n    is_revision: isRevision,\n    previous_drafts: previousDrafts,\n    revision_number: revisionNumber,\n    previous_post_summary: previousPostSummary,\n    previous_action_id: previousActionId,\n    config_ids: {\n      brand_guide_id: configData.brand_guide_id,\n      content_strategy_id: configData.content_strategy_id,\n      content_calendar_id: configData.content_calendar_id,\n      marketing_playbook_id: configData.marketing_playbook_id,\n      product_knowledge_id: configData.product_knowledge_id,\n      voice_reference_id: configData.voice_reference_id\n    }\n  }\n}];"
+                },
+                "id": "prepare-context",
+                "name": "Prepare Context",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1360,
+                    400
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst state = input.state;\nconst brandContext = input.brand_context;\nconst targetChannels = input.target_channels_string;\n\n// Build REVISE_POST section if revision mode\nlet revisePostSection = '';\nif (input.is_revision) {\n  revisePostSection = `\n##############################################\n# REVISION MODE (REVISE_POST PLAYBOOK)\n##############################################\n\n*** REVISION MODE ACTIVE ***\nThis is a REVISION of existing content, NOT a new post.\n\nPREVIOUS DRAFTS (from the last approval card):\n${JSON.stringify(input.previous_drafts, null, 2)}\n\nPrevious topic: ${input.previous_post_summary}\nRevision number: ${input.revision_number}\n\nUSER FEEDBACK (their latest message is the task prompt above).\n\nREVISED PIPELINE:\n1. Send progress: \"Revising content based on your feedback...\"\n2. SKIP brainstorming - the topic and angle are already decided\n3. Call content_writer with:\n   - The user's feedback as the primary task\n   - The PREVIOUS DRAFTS as context (pass as editor_feedback or content_brief)\n   - iteration_number = ${input.revision_number}\n   - max_iterations = ${state.max_iterations}\n   - Target channels: ${targetChannels}\n4. Send progress: \"Reviewing revised draft...\"\n5. Call reviewer_editor to validate the revision\n6. If approved: STOP and summarize (approval flow handles the rest)\n7. If not approved: One more revision cycle, then STOP\n\nCRITICAL RULES FOR REVISION:\n- Do NOT call content_brainstormer - the topic is decided\n- Do NOT generate new ideas - revise the EXISTING drafts\n- Focus the Writer on incorporating the user's specific feedback\n- Keep the same target channels as the original\n- The approval card will show \"Revision ${input.revision_number}\"\n`;\n}\n\n// Build playbook section from fetched marketing context\nconst playbookContent = (brandContext.marketing_playbook && !brandContext.marketing_playbook.includes('See system_config'))\n  ? brandContext.marketing_playbook\n  : '';\n\nconst systemPrompt = `You are the Marketing Team Manager coordinating content creation for organic social channels.\n\n##############################################\n# BRAND CONTEXT (PRE-FETCHED - DO NOT REFETCH)\n##############################################\n\nBRAND GUIDE SUMMARY:\n${brandContext.brand_guide || 'Not available'}\n\nCONTENT STRATEGY:\n${brandContext.content_strategy || 'Not available'}\n\nPRODUCT KNOWLEDGE:\n${brandContext.product_knowledge || 'Not available'}\n\nVOICE REFERENCE (Spencer Marx writing samples):\n${brandContext.voice_reference || 'Not available'}\n\nRECENT POSTS (to avoid repetition):\n${brandContext.recent_posts?.length > 0 ? brandContext.recent_posts.join('\\n') : 'No recent posts'}\n\n##############################################\n\n${playbookContent ? `\nMARKETING PLAYBOOK:\n${playbookContent}\n` : ''}\nYOUR TEAM:\n1. Content Brainstormer \u2014 Researches trends, generates ideas, and produces a CONTENT BRIEF (the contract between Writer and Editor)\n2. Content Writer \u2014 Writes channel-specific drafts AGAINST the Content Brief\n3. Reviewer/Editor \u2014 Evaluates drafts AGAINST the Content Brief (not generic standards)\n4. Image Generator \u2014 Creates AI images for approved content, saves to Google Drive\n5. Content Calendar Manager \u2014 Updates tracker, saves blog posts to Google Docs\n\n##############################################\n# THE BRIEF-DRIVEN PIPELINE                  #\n##############################################\n\nThis team operates on a brief-driven model. The Content Brief is the most important artifact \u2014 it defines what \"good\" looks like BEFORE writing begins, so Writer and Editor are aligned from the start.\n\nPHASE 1: STRATEGY\n  1. Send progress: \"\ud83e\udde0 Researching trends and building content brief...\"\n  2. Call content_brainstormer with:\n     - task_prompt: Include the FULL original task, target channels (explicitly name them), and all user context\n     - CRITICAL: The task_prompt MUST explicitly state which channels to target (e.g. \"Target channel: LinkedIn\")\n     - Include the user's specific angle/topic if provided \u2014 do NOT leave it open-ended\n  3. The brainstormer returns a CONTENT BRIEF containing:\n     - winning_idea (topic, angle, rationale)\n     - content_brief (key_message, channel_specs, content_requirements, success_criteria, research_guidance)\n  4. Extract the FULL content brief \u2014 you will pass it to Writer and Reviewer\n\nPHASE 2: CREATION\n  1. Send progress: \"\u270d\ufe0f Writing first draft: [winning_idea.topic]...\"\n  2. Call content_writer with:\n     - The content brief as content_brief (JSON string)\n     - The winning idea\n     - iteration_number=1\n     - All standard context\n  3. Check the response for pre_check results:\n     - If pre_check.passed=false: Writer auto-failed on word count or char limits\n       \u2192 Call Writer again with feedback about the specific failures (this is a FREE retry, not an editorial iteration)\n       \u2192 Only retry pre-check failure ONCE\n     - If pre_check.passed=true: Proceed to review\n\nPHASE 3: EDITORIAL REVIEW\n  1. Send progress: \"\ud83d\udcdd Reviewing draft (round 1/${state.max_iterations})...\"\n  2. Call reviewer_editor with:\n     - The drafts\n     - The content brief as content_brief (JSON string)\n     - iteration_number=1, max_iterations=${state.max_iterations}\n  3. The Reviewer evaluates against the Content Brief:\n     - brief_compliance: success_criteria PASS/FAIL, content_requirements MET/NOT_MET\n     - fact_check_results: claims verified/unverified/inaccurate\n     - editorial_feedback: required_fixes (deal-breakers), recommended_improvements, refinements\n  4. If requires_more_revisions=true AND iteration < ${state.max_iterations}:\n     - Send progress: \"\ud83d\udd04 Revising based on feedback (round X/${state.max_iterations})...\"\n     - Pass ONLY required_fixes and recommended_improvements to Writer (NOT refinements)\n     - Increment iteration_number\n     - Re-submit to Reviewer\n  5. Continue until approved OR max iterations reached\n\nPHASE 4: FINAL ITERATION HANDLING (iteration ${state.max_iterations})\n  - If requires_more_revisions=false: Content approved, proceed to Phase 5\n  - If requires_more_revisions=true with factual_errors_only=true:\n    \u2192 ONE emergency revision (iteration ${state.max_iterations + 1})\n    \u2192 Tell Writer: \"Fix ONLY these factual errors. No other changes.\"\n    \u2192 Proceed to Phase 5 WITHOUT another review\n  - If approved_with_reservations=true: Content approved with editor notes, proceed to Phase 5\n\nPHASE 5: PRODUCTION\n  1. Send progress: \"\ud83d\uddbc\ufe0f Generating images for approved content...\"\n  2. Call image_generator with the approved content\n  3. If image_generator returns success=false:\n     - Send progress: \"\u26a0\ufe0f Image generation failed \u2014 proceeding with calendar update...\"\n     - Continue to step 4 (images are optional, not blocking)\n  4. Send progress: \"\ud83d\udcc5 Updating content calendar...\"\n  5. Call calendar_manager with action=update_tracker\n     - IMPORTANT: Pass sources_used from the Writer's output to the calendar_manager\n  6. Compile final summary\n\n##############################################\n# PROGRESS UPDATES                           #\n##############################################\n\nSend progress updates BEFORE each major step (not after).\nKeep messages brief (under 100 chars). Be specific.\nDo NOT send duplicate progress updates when retrying a failed worker.\n\n##############################################\n# PRE-CHECK FAILURES (FREE RETRIES)          #\n##############################################\n\nWhen the Writer returns pre_check.passed=false, this means the draft failed automated validation (word count or character limits). This is NOT an editorial iteration \u2014 it's a mechanical fix.\n\n- Retry the Writer ONCE with specific feedback about what failed\n- Include the pre_check.failures array in your feedback\n- If the retry also fails pre-check, proceed to review anyway (the Editor will catch it)\n- Do NOT count pre-check retries against the editorial iteration budget\n\n##############################################\n# ERROR HANDLING - CIRCUIT BREAKER           #\n##############################################\n\nWhen a worker returns an error (\"There was an error:\"):\n1. Retry the SAME worker ONCE with same or adjusted inputs\n2. If the same worker fails TWICE, STOP retrying immediately\n3. Do NOT burn iterations on repeated failures\n4. If a critical worker fails twice, report the failure clearly and stop\n5. If Image Generator fails, proceed with calendar update and note the failure\n\nNEVER retry a worker more than once. Iteration budget is precious.\n\n##############################################\n# ABSOLUTE PROHIBITION: NO SELF-AUTHORING    #\n##############################################\n\nYou are a COORDINATOR. You delegate to workers and report results.\nYou NEVER write content yourself. Under NO circumstances should you:\n- Write a post, draft, or any publishable content directly\n- \"Fill in\" for a failed worker by doing the work yourself\n- Generate statistics, data points, or claims without web_search\n\nIf the Brainstormer fails: report the failure. Do NOT brainstorm yourself.\nIf the Writer fails: report the failure. Do NOT write the draft yourself.\n\nYour output is a SUMMARY of what your team produced, or a FAILURE REPORT\nexplaining what went wrong. Never content.\n\n##############################################\n# ITERATION BUDGET                           #\n##############################################\n\nMax tool calls available: 25\nBudget:\n- Progress updates: ~8 calls\n- Brainstormer: 1 call\n- Write/Review cycles: ~6-8 calls (${state.max_iterations} editorial rounds + possible emergency + possible pre-check retry)\n- Image Generator: 1 call\n- Calendar Manager: 1 call\n- Reserve at least 3 calls for post-approval steps\n\n##############################################\n# CRITICAL: AUTONOMOUS EXECUTION             #\n##############################################\n\nNEVER ask for user confirmation, selection, or approval.\nALWAYS proceed through the FULL pipeline automatically:\n  Brief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n\nThe brainstormer returns a Content Brief \u2014 USE IT and continue.\nDo NOT present options or ask \"Would you like me to proceed?\"\nThe user expects COMPLETED content, not concept options.\n\n##############################################\n\n${revisePostSection}\nREQUIRES_APPROVAL: ${input.requires_approval}\n\n##############################################\n# APPROVAL FLOW (ONE-OFF REQUESTS)           #\n##############################################\n\n${input.requires_approval ? `\n*** APPROVAL MODE ACTIVE ***\nThis is a one-off Slack request. After the review phase (Phase 3/4):\n- Do NOT call image_generator or calendar_manager\n- Simply STOP and summarize what was produced (the drafts and the winning idea)\n- The workflow will automatically send an approval card to Slack\n- The user will review the content and approve or request changes\n- Images and calendar are handled automatically after approval\n\nYour pipeline when requires_approval=true:\n  Brief \u2192 Write \u2192 Review \u2192 STOP (summarize drafts)\n` : `\nApproval mode is NOT active. Proceed with the FULL pipeline:\nBrief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n`}\n\n##############################################\n\nTARGET CHANNELS: ${targetChannels}\n\nUSER CONTEXT:\n- Slack User ID: ${input.slack_user_id || 'N/A'} (PASS THIS TO ALL WORKERS)\n- Email: ${input.user_email || 'N/A'}\n- Name: ${input.user_name || 'N/A'}\n- Timezone: ${input.user_timezone || 'America/Chicago'}\n\nITERATION CONFIG:\n- Maximum editorial iterations: ${state.max_iterations}\n- Emergency factual fix cap: ${state.max_iterations + 1}\n- Pre-check retries: Do NOT count against editorial budget\n\nIMPORTANT RULES:\n1. ALWAYS send progress updates before each major step\n2. ALWAYS pass slack_user_id to workers for credential resolution\n3. ALWAYS pass the content_brief (as JSON string) to both Writer and Reviewer\n4. The brand context is ALREADY available \u2014 do NOT ask workers to fetch it again\n5. Follow ERROR HANDLING rules when workers return errors\n6. NEVER ask for confirmation \u2014 proceed autonomously through all steps\n7. ALWAYS complete the full pipeline: Brief \u2192 Write \u2192 Review \u2192 Images \u2192 Calendar\n\nRESPONSE FORMAT:\nWhen all work is complete, your final message should summarize what was created.\nThe workflow will extract structured data from the tool outputs.`;\n\nreturn [{\n  json: {\n    ...input,\n    max_iterations: state.max_iterations,\n    system_prompt: systemPrompt\n  }\n}];\n"
+                },
+                "id": "build-context",
+                "name": "Build Agent Context",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1280,
+                    524
+                ]
+            },
+            {
+                "parameters": {
+                    "promptType": "define",
+                    "text": "={{ $json.user_request }}",
+                    "options": {
+                        "systemMessage": "={{ $json.system_prompt }}",
+                        "maxIterations": 25,
+                        "returnIntermediateSteps": true
+                    }
+                },
+                "id": "manager-agent",
+                "name": "Marketing Manager Agent",
+                "type": "@n8n/n8n-nodes-langchain.agent",
+                "typeVersion": 3.1,
+                "position": [
+                    2120,
+                    400
+                ],
+                "onError": "continueErrorOutput"
+            },
+            {
+                "parameters": {
+                    "model": {
+                        "__rl": true,
+                        "mode": "list",
+                        "value": "claude-sonnet-4-5-20250929",
+                        "cachedResultName": "Claude Sonnet 4.5"
+                    },
+                    "options": {}
+                },
+                "id": "ai-model",
+                "name": "Claude Sonnet",
+                "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+                "typeVersion": 1.3,
+                "position": [
+                    1808,
+                    624
+                ],
+                "credentials": {
+                    "anthropicApi": {
+                        "id": "iKUsIHimnjBUibjJ",
+                        "name": "Anthropic account"
+                    }
+                }
+            },
+            {
+                "parameters": {
+                    "description": "Research trending topics, generate content ideas, and produce a CONTENT BRIEF with a winning idea, channel-specific specs, content requirements, and success criteria. The brief is the contract between Writer and Editor. Brand guide, content strategy, and recent posts are already provided - do NOT refetch.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "G0qNvT8YxYwH8XqV"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "subtask_prompt": "={{ $fromAI('subtask_prompt', 'The content creation task/topic to brainstorm ideas for', 'string', \"\") }}",
+                            "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                            "user_context": "={{ JSON.stringify({slack_user_id: $('Build Agent Context').item.json.slack_user_id, email: $('Build Agent Context').item.json.user_email}) }}",
+                            "context": "={{ JSON.stringify({target_channels: $('Build Agent Context').item.json.target_channels_string}) }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "subtask_prompt",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "subtask_prompt"
+                            },
+                            {
+                                "id": "brand_context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "brand_context"
+                            },
+                            {
+                                "id": "user_context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "user_context"
+                            },
+                            {
+                                "id": "context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "context"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-brainstormer",
+                "name": "Tool: Content Brainstormer",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    1936,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "description": "Write channel-specific content drafts based on the Content Brief. Pass the full content brief JSON, winning idea, target channels, and any editor feedback for revisions. Returns drafts with automated pre-check validation (word count, char limits). Brand context is provided automatically.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "U5C3B4S9SIyXNGtH"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "subtask_prompt": "={{ $fromAI('subtask_prompt', 'The content brief describing what to write', 'string', \"\") }}",
+                            "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                            "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}",
+                            "winning_idea": "={{ $fromAI('winning_idea', 'The winning idea/angle to write about', 'string', \"\") }}",
+                            "iteration_number": "={{ $fromAI('iteration_number', 'Current iteration number (1 for first draft)', 'number', \"\") }}",
+                            "max_iterations": "={{ $('Build Agent Context').item.json.state.max_iterations || 3 }}",
+                            "editor_feedback": "={{ $fromAI('editor_feedback', 'Feedback from editor for revisions, or empty string for first draft', 'string') }}",
+                            "user_context": "={{ JSON.stringify({slack_user_id: $('Build Agent Context').item.json.slack_user_id, email: $('Build Agent Context').item.json.user_email}) }}",
+                            "context": "={{ JSON.stringify({task_prompt: $('Build Agent Context').item.json.task_prompt}) }}",
+                            "content_brief": "={{ $fromAI('content_brief', 'The full content brief JSON from the brainstormer (stringified)', 'string', \"\") }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "subtask_prompt",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "subtask_prompt"
+                            },
+                            {
+                                "id": "brand_context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "brand_context"
+                            },
+                            {
+                                "id": "target_channels",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "target_channels"
+                            },
+                            {
+                                "id": "winning_idea",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "winning_idea"
+                            },
+                            {
+                                "id": "iteration_number",
+                                "type": "number",
+                                "display": true,
+                                "required": false,
+                                "displayName": "iteration_number"
+                            },
+                            {
+                                "id": "max_iterations",
+                                "type": "number",
+                                "display": true,
+                                "required": false,
+                                "displayName": "max_iterations"
+                            },
+                            {
+                                "id": "editor_feedback",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "editor_feedback"
+                            },
+                            {
+                                "id": "user_context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "user_context"
+                            },
+                            {
+                                "id": "context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "context"
+                            },
+                            {
+                                "id": "content_brief",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "content_brief"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-writer",
+                "name": "Tool: Content Writer",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    2064,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "description": "Review content drafts against the Content Brief. Pass drafts as JSON object with channel keys, the content brief, iteration info, and brand context. Returns brief compliance results, fact-check results, and editorial feedback categorized as required_fixes (deal-breakers), recommended_improvements, and refinements.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "vZmSJnGeCeegKi8X"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                            "drafts": "={{ $fromAI('drafts', 'JSON object with channel keys and draft content, e.g. {', 'string') }}",
+                            "original_task": "={{ $('Build Agent Context').item.json.task_prompt }}",
+                            "winning_idea": "={{ $fromAI('winning_idea', 'Brief summary of the winning idea/angle used for these drafts', 'string', \"\") }}",
+                            "iteration_number": "={{ $fromAI('iteration_number', 'Current iteration number starting from 1', 'number', \"\") }}",
+                            "max_iterations": "={{ $('Build Agent Context').item.json.state.max_iterations }}",
+                            "brand_context": "={{ JSON.stringify($('Build Agent Context').item.json.brand_context) }}",
+                            "content_brief": "={{ $fromAI('content_brief', 'The content brief JSON to evaluate drafts against (stringified)', 'string', \"\") }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "drafts",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "drafts"
+                            },
+                            {
+                                "id": "original_task",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "original_task"
+                            },
+                            {
+                                "id": "winning_idea",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "winning_idea"
+                            },
+                            {
+                                "id": "iteration_number",
+                                "type": "number",
+                                "display": true,
+                                "required": true,
+                                "displayName": "iteration_number"
+                            },
+                            {
+                                "id": "max_iterations",
+                                "type": "number",
+                                "display": true,
+                                "required": true,
+                                "displayName": "max_iterations"
+                            },
+                            {
+                                "id": "brand_context",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "brand_context"
+                            },
+                            {
+                                "id": "content_brief",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "content_brief"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-reviewer",
+                "name": "Tool: Reviewer/Editor",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    2192,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "description": "Generate AI images for approved content. Pass the drafts JSON and target channels. Optionally include style hints.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "Z4pTCAwWwz153K3C"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                            "drafts": "={{ $fromAI('drafts', 'JSON object with channel keys and approved draft content for image generation', 'string', \"\") }}",
+                            "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}",
+                            "image_style_hints": "={{ $fromAI('image_style_hints', 'Optional style hints for image generation (e.g. professional, minimalist, colorful)', 'string') }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "drafts",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "drafts"
+                            },
+                            {
+                                "id": "target_channels",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "target_channels"
+                            },
+                            {
+                                "id": "image_style_hints",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "image_style_hints"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-image-gen",
+                "name": "Tool: Image Generator",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    2320,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "description": "Update content calendar tracker with new posts, save blog documents, or query existing entries. VALID ACTIONS: update_tracker (add new post to tracker sheet), save_blog (create blog Google Doc), both (update tracker AND save blog), read_recent (get recent posts), update_row (update existing row status), query (search/read entries). For adding new content after approval, ALWAYS use action='update_tracker'.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "ezvCaPeNM8P7gEWj"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $('Build Agent Context').item.json.slack_user_id }}",
+                            "action": "={{ $fromAI('action', 'Action: update_tracker (add new post), save_blog, both, read_recent, update_row, or query. Use update_tracker to add approved content.', 'string') }}",
+                            "drafts": "={{ $fromAI('drafts', 'JSON object with channel drafts to add to calendar', 'string', \"\") }}",
+                            "images": "={{ $fromAI('images', 'JSON object with generated image URLs per channel, or empty object {}', 'string') }}",
+                            "winning_idea": "={{ $fromAI('winning_idea', 'The winning idea/topic for this content', 'string', \"\") }}",
+                            "target_channels": "={{ $('Build Agent Context').item.json.target_channels_string }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "action",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "action"
+                            },
+                            {
+                                "id": "drafts",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "drafts"
+                            },
+                            {
+                                "id": "images",
+                                "type": "string",
+                                "display": true,
+                                "required": false,
+                                "displayName": "images"
+                            },
+                            {
+                                "id": "winning_idea",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "winning_idea"
+                            },
+                            {
+                                "id": "target_channels",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "target_channels"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-calendar",
+                "name": "Tool: Content Calendar Manager",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    2448,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "description": "Send a brief progress update to the user via Slack DM. Keep messages under 100 characters.",
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "AorvHVERbm2IxQMF"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "message": "={{ $fromAI('message', 'Brief progress update under 100 chars', 'string', \"\") }}",
+                            "slack_context": "={{ JSON.stringify($('Build Agent Context').item.json.slack_context) }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "message",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "message"
+                            },
+                            {
+                                "id": "slack_context",
+                                "type": "string",
+                                "display": true,
+                                "required": true,
+                                "displayName": "slack_context"
+                            }
+                        ]
+                    }
+                },
+                "id": "tool-progress",
+                "name": "Tool: Send Progress",
+                "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+                "typeVersion": 2.2,
+                "position": [
+                    2576,
+                    624
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst agentOutput = input.output;\nconst steps = input.intermediateSteps || [];\n\nlet brainstormResult = null;\nlet contentBrief = null;\nlet drafts = {};\nlet editorFeedback = null;\nlet images = {};\nlet calendarUpdate = null;\nlet sourcesUsed = [];\n\nfor (const step of steps) {\n  const toolName = step.action?.tool || '';\n  const toolResult = step.observation;\n\n  let parsedResult = null;\n  if (typeof toolResult === 'string') {\n    try {\n      const jsonMatch = toolResult.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        parsedResult = JSON.parse(jsonMatch[0]);\n      }\n    } catch (e) {\n      parsedResult = toolResult;\n    }\n  } else {\n    parsedResult = toolResult;\n  }\n\n  if (toolName.toLowerCase().includes('brainstorm')) {\n    brainstormResult = parsedResult;\n    if (parsedResult?.output?.content_brief) {\n      contentBrief = parsedResult.output.content_brief;\n    } else if (parsedResult?.content_brief) {\n      contentBrief = parsedResult.content_brief;\n    }\n  } else if (toolName.toLowerCase().includes('writer')) {\n    if (parsedResult?.output?.drafts) {\n      drafts = parsedResult.output.drafts;\n    } else if (parsedResult?.drafts) {\n      drafts = parsedResult.drafts;\n    }\n    // Extract sources_used from writer output \u2014 MERGE across iterations\n    const newSources = parsedResult?.output?.sources_used || parsedResult?.sources_used || [];\n    if (newSources.length) {\n      sourcesUsed = [...new Set([...sourcesUsed, ...newSources])];\n    }\n  } else if (toolName.toLowerCase().includes('review') || toolName.toLowerCase().includes('editor')) {\n    editorFeedback = parsedResult;\n  } else if (toolName.toLowerCase().includes('image')) {\n    if (parsedResult?.output?.images) {\n      images = parsedResult.output.images;\n    } else if (parsedResult?.images) {\n      images = parsedResult.images;\n    }\n  } else if (toolName.toLowerCase().includes('calendar')) {\n    calendarUpdate = parsedResult;\n  }\n}\n\n// Filter drafts to only target channels\nconst initState = $('Initialize State').first().json;\nconst targetChannelsList = initState.target_channels || [];\nif (Object.keys(drafts).length > 0 && targetChannelsList.length > 0) {\n  const filteredDrafts = {};\n  for (const channel of targetChannelsList) {\n    const key = channel.toLowerCase().trim();\n    if (drafts[key]) {\n      filteredDrafts[key] = drafts[key];\n    }\n  }\n  if (Object.keys(filteredDrafts).length > 0) {\n    drafts = filteredDrafts;\n  }\n}\n\n// Determine quality approval from editor feedback\nlet qualityApproved = false;\nlet overallAssessment = null;\nif (editorFeedback) {\n  if (typeof editorFeedback === 'object') {\n    overallAssessment = editorFeedback.output?.overall_assessment || editorFeedback.overall_assessment;\n    qualityApproved = overallAssessment === 'meets_brief' ||\n                      overallAssessment === 'approved_with_reservations' ||\n                      editorFeedback.output?.approved_with_reservations === true ||\n                      editorFeedback.approved_with_reservations === true ||\n                      editorFeedback.output?.requires_more_revisions === false ||\n                      editorFeedback.requires_more_revisions === false ||\n                      editorFeedback.output?.approved === true ||\n                      editorFeedback.approved === true ||\n                      editorFeedback.output?.requiresMoreRevisions === false ||\n                      editorFeedback.requiresMoreRevisions === false;\n  }\n}\n\nconst iterationsUsed = steps.filter(s =>\n  (s.action?.tool || '').toLowerCase().includes('writer')\n).length;\n\nreturn [{\n  json: {\n    success: true,\n    manager_summary: agentOutput,\n    winning_angle: brainstormResult?.output?.winning_idea || brainstormResult?.winning_idea || null,\n    content_brief: contentBrief,\n    drafts: drafts,\n    images: images,\n    calendar_update: calendarUpdate,\n    iterations_used: iterationsUsed,\n    quality_approved: qualityApproved,\n    overall_assessment: overallAssessment,\n    editor_feedback: editorFeedback,\n    sources_used: sourcesUsed,\n    raw_steps_count: steps.length\n  }\n}];"
+                },
+                "id": "process-outputs",
+                "name": "Process Outputs",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2784,
+                    304
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst errorMessage = input.error?.message || input.error || 'Unknown agent error';\n\nreturn [{\n  json: {\n    success: false,\n    manager_summary: null,\n    winning_angle: null,\n    drafts: {},\n    images: {},\n    calendar_update: null,\n    iterations_used: 0,\n    quality_approved: false,\n    error: errorMessage,\n    error_type: 'agent_error'\n  }\n}];"
+                },
+                "id": "handle-error",
+                "name": "Handle Agent Error",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2784,
+                    496
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];"
+                },
+                "id": "format-output",
+                "name": "Format Output",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    3008,
+                    496
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "return [{\n  json: {\n    success: false,\n    output: null,\n    metadata: {},\n    error: 'Marketing configuration not found. Please set up brand guide, content strategy, and content calendar first.'\n  }\n}];"
+                },
+                "id": "config-error",
+                "name": "Config Error",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2784,
+                    716
+                ]
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "leftValue": "={{ $('Initialize State').first().json.requires_approval }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "true"
+                                }
+                            },
+                            {
+                                "leftValue": "={{ $('Process Outputs').first().json.success !== false }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "true"
+                                }
+                            },
+                            {
+                                "leftValue": "={{ $json.result }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "true"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "id": "check-approval-required",
+                "name": "Requires Approval?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    3024,
+                    304
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "// Build the approval guard payload from the agent's outputs\nconst initState = $('Initialize State').first().json;\nconst processedOutput = $('Process Outputs').first().json;\nconst slackContext = initState.slack_context || {};\n\n// Extract drafts from the processed output (flat structure, NO .output wrapper)\nconst drafts = processedOutput.drafts || {};\nconst winningAngle = processedOutput.winning_angle;\n\n// Get revision info from Prepare Context\nconst preparedContext = $('Prepare Context').first().json;\nconst revisionNumber = preparedContext.revision_number || 0;\nconst previousActionId = preparedContext.previous_action_id || null;\nconst isRevision = preparedContext.is_revision || false;\n\n// Build post_summary: concise topic for Slack approval card\n// CRITICAL: Must be under 150 chars \u2014 Slack Block Kit has a 2001-char limit per field,\n// and this gets embedded in the approval card Topic field with formatting overhead.\nlet winningSummary;\n\nif (typeof winningAngle === 'object' && winningAngle !== null && winningAngle.topic) {\n  // NEW_POST path: brainstormer provides a clean topic\n  winningSummary = winningAngle.topic;\n} else if (isRevision) {\n  // REVISE_POST path: no brainstormer, build concise summary from draft channels\n  const channels = Object.keys(drafts).map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ') || 'Content';\n  winningSummary = `Revised ${channels} (Revision ${revisionNumber})`;\n} else if (typeof winningAngle === 'string' && winningAngle.length > 0 && winningAngle.length < 200) {\n  winningSummary = winningAngle;\n} else {\n  winningSummary = 'Content for review';\n}\n\n// Safety truncation for ALL paths\nif (winningSummary.length > 150) {\n  winningSummary = winningSummary.substring(0, 147) + '...';\n}\n\nconst sourcesUsed = processedOutput.sources_used || [];\nconst targetChannels = initState.target_channels_string || '';\n\n// Build payload for the approval guard\nconst payload = {\n  drafts: drafts,\n  post_summary: winningSummary,\n  target_channels: targetChannels,\n  sources_used: sourcesUsed,\n  content_type: (initState.target_channels || ['linkedin'])[0],\n  revision_number: revisionNumber,\n  previous_action_id: previousActionId\n};\n\nreturn [{\n  json: {\n    action_type: 'publish_content',\n    user_id: String($('Fetch Marketing Configs').first().json.user_id || 1),\n    slack_user_id: initState.slack_user_id || '',\n    slack_channel_id: slackContext.channel_id || '',\n    slack_thread_ts: slackContext.thread_ts || '',\n    payload: JSON.stringify(payload),\n    expiry_minutes: 120\n  }\n}];"
+                },
+                "id": "prepare-approval-payload",
+                "name": "Prepare Approval Payload",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    3264,
+                    184
+                ]
+            },
+            {
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "1S0dhI1K4X0528Dy"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action_type": "={{ $json.action_type }}",
+                            "user_id": "={{ $json.user_id }}",
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "slack_channel_id": "={{ $json.slack_channel_id }}",
+                            "slack_thread_ts": "={{ $json.slack_thread_ts }}",
+                            "payload": "={{ $json.payload }}",
+                            "expiry_minutes": "={{ $json.expiry_minutes }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "action_type",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "action_type"
+                            },
+                            {
+                                "id": "user_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "user_id"
+                            },
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "slack_channel_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "slack_channel_id"
+                            },
+                            {
+                                "id": "slack_thread_ts",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "slack_thread_ts"
+                            },
+                            {
+                                "id": "payload",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "payload"
+                            },
+                            {
+                                "id": "expiry_minutes",
+                                "type": "number",
+                                "required": false,
+                                "displayName": "expiry_minutes"
+                            }
+                        ]
+                    }
+                },
+                "id": "call-approval-guard",
+                "name": "Call Approval Guard",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    3504,
+                    184
+                ],
+                "onError": "continueRegularOutput"
+            },
+            {
+                "parameters": {
+                    "jsCode": "// Merge the process outputs with approval result\nconst processedOutput = $('Process Outputs').first().json;\nconst approvalResult = $input.first().json;\n\nreturn [{\n  json: {\n    success: approvalResult.success !== false,\n    output: {\n      manager_summary: processedOutput.manager_summary,\n      winning_angle: processedOutput.winning_angle,\n      drafts: processedOutput.drafts,\n      images: processedOutput.images,\n      calendar_update: processedOutput.calendar_update,\n      sources_used: processedOutput.sources_used,\n      approval_pending: true,\n      approval_message: approvalResult.message || 'Content sent for approval',\n      pending_action_id: approvalResult.pending_action_id || null\n    },\n    metadata: {\n      iterations_used: processedOutput.iterations_used,\n      quality_approved: processedOutput.quality_approved,\n      editor_feedback: processedOutput.editor_feedback,\n      steps_executed: processedOutput.raw_steps_count\n    },\n    error: approvalResult.success === false ? (approvalResult.error || 'Approval card failed to send') : null\n  }\n}];"
+                },
+                "id": "format-approval-output",
+                "name": "Format Approval Output",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    3744,
+                    184
+                ]
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "leftValue": "={{ $json.context_success }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "true"
+                                }
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "context-ready",
+                "name": "Context Ready?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    1040,
+                    524
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\nconst errorMsg = input.context_error || 'Unknown context error';\n\nreturn [{\n  json: {\n    success: false,\n    output: 'The marketing team could not load its context data: ' + errorMsg + '. Please try again or check the marketing configuration.',\n    error: errorMsg\n  }\n}];"
+                },
+                "id": "format-context-error",
+                "name": "Format Context Error",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1240,
+                    724
+                ]
+            },
+            {
+                "id": "lookup-previous-action",
+                "name": "Lookup Previous Action",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    1024,
+                    280
+                ],
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "SELECT id, payload, status, created_at\nFROM alfred.pending_actions\nWHERE slack_thread_ts = $1\n  AND action_type = 'publish_content'\n  AND status = 'pending'\nORDER BY created_at DESC\nLIMIT 1",
+                    "options": {
+                        "queryReplacement": "={{ $('Initialize State').first().json.slack_context.thread_ts || '' }}"
+                    }
+                },
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                },
+                "onError": "continueRegularOutput",
+                "alwaysOutputData": true
+            },
+            {
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "Rw7786cYTYOTQhH9"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "predicate": "Return TRUE if the agent produced NEW or REVISED content (such as draft posts, articles, or creative writing) that requires user review and approval before publishing. Return FALSE if the agent only performed operational tasks such as updating a calendar, scheduling, running analytics, answering a question, looking up information, or providing confirmations \u2014 or if no publishable content was created.",
+                            "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}"
+                        },
+                        "matchingColumns": [],
+                        "schema": [
+                            {
+                                "id": "predicate",
+                                "displayName": "predicate",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "context",
+                                "displayName": "context",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            }
+                        ],
+                        "attemptToConvertTypes": false,
+                        "convertFieldsToString": true
+                    },
+                    "options": {}
+                },
+                "id": "evaluate-approval-predicate",
+                "name": "Evaluate Approval Predicate",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2904,
+                    184
+                ]
+            }
+        ],
+        "connections": {
+            "Workflow Input": {
+                "main": [
+                    [
+                        {
+                            "node": "Initialize State",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Initialize State": {
+                "main": [
+                    [
+                        {
+                            "node": "Fetch Marketing Configs",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Fetch Marketing Configs": {
+                "main": [
+                    [
+                        {
+                            "node": "Config Valid?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Config Valid?": {
+                "main": [
+                    [
+                        {
+                            "node": "Lookup Previous Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Config Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Fetch Marketing Context": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Context",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Context": {
+                "main": [
+                    [
+                        {
+                            "node": "Context Ready?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Build Agent Context": {
+                "main": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Marketing Manager Agent": {
+                "main": [
+                    [
+                        {
+                            "node": "Process Outputs",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Handle Agent Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Handle Agent Error": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Config Error": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Claude Sonnet": {
+                "ai_languageModel": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_languageModel",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Content Brainstormer": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Content Writer": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Reviewer/Editor": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Image Generator": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Content Calendar Manager": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Tool: Send Progress": {
+                "ai_tool": [
+                    [
+                        {
+                            "node": "Marketing Manager Agent",
+                            "type": "ai_tool",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Process Outputs": {
+                "main": [
+                    [
+                        {
+                            "node": "Evaluate Approval Predicate",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Requires Approval?": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Approval Payload",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Format Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Approval Payload": {
+                "main": [
+                    [
+                        {
+                            "node": "Call Approval Guard",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Call Approval Guard": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Approval Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Context Ready?": {
+                "main": [
+                    [
+                        {
+                            "node": "Build Agent Context",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Format Context Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Format Context Error": {
+                "main": [
+                    [
+                        {
+                            "node": "Format Output",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Lookup Previous Action": {
+                "main": [
+                    [
+                        {
+                            "node": "Fetch Marketing Context",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Evaluate Approval Predicate": {
+                "main": [
+                    [
+                        {
+                            "node": "Requires Approval?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Spencer Marx",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-02-10T12:58:56.084Z",
+                "id": 584,
+                "workflowId": "WUNHfC0c2FRgIlye",
+                "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+                "event": "activated",
+                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+            }
+        ]
+    }
+}

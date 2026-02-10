@@ -1,0 +1,1880 @@
+{
+  "updatedAt": "2026-02-10T11:15:26.481Z",
+  "createdAt": "2026-02-05T13:46:59.185Z",
+  "id": "G0qNvT8YxYwH8XqV",
+  "name": "Worker | Content Brainstormer",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "subtask_prompt"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "context",
+              "type": "object"
+            },
+            {
+              "name": "brand_context"
+            }
+          ]
+        }
+      },
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        1096
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst slackUserId = input.slack_user_id || input.user_context?.slack_user_id || input.user_context?.user?.slack_user_id || '';\nconst previousOutput = input.context?.previous_output || null;\nconst prompt = input.subtask_prompt || input.task_prompt || '';\n\n// Parse context JSON to extract target_channels\nlet targetChannels = [];\nif (input.context) {\n  try {\n    const ctx = typeof input.context === 'string' ? JSON.parse(input.context) : input.context;\n    if (ctx.target_channels) {\n      if (typeof ctx.target_channels === 'string') {\n        targetChannels = ctx.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n      } else if (Array.isArray(ctx.target_channels)) {\n        targetChannels = ctx.target_channels;\n      }\n    }\n  } catch (e) {\n    // context parsing failed, targetChannels stays empty\n  }\n}\n\nlet providedBrandContext = null;\nif (input.brand_context) {\n  try {\n    providedBrandContext = typeof input.brand_context === 'string'\n      ? JSON.parse(input.brand_context)\n      : input.brand_context;\n  } catch (e) {\n    providedBrandContext = null;\n  }\n}\n\n// CRITICAL: Use Boolean() to ensure we get true/false, not the string value\nconst hasProvidedContext = Boolean(\n  providedBrandContext !== null &&\n  providedBrandContext.brand_guide &&\n  providedBrandContext.content_strategy\n);\n\nreturn [{\n  json: {\n    subtask_prompt: prompt,\n    slack_user_id: slackUserId,\n    previous_output: previousOutput,\n    target_channels: targetChannels,\n    user_context: input.user_context || {},\n    has_provided_context: hasProvidedContext,\n    provided_brand_context: providedBrandContext\n  }\n}];\n"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        1096
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-context-check",
+              "leftValue": "={{ $json.has_provided_context }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "has-provided-context",
+      "name": "Has Provided Context?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        1096
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst brandContext = input.provided_brand_context;\n\nreturn [{\n  json: {\n    subtask_prompt: input.subtask_prompt,\n    target_channels: input.target_channels || [],\n    brand_guide: brandContext.brand_guide || '',\n    content_strategy: brandContext.content_strategy || '',\n    recent_posts: brandContext.recent_posts || [],\n    product_knowledge: brandContext.product_knowledge || '',\n    trend_research: 'Using pre-fetched context - trends not searched',\n    user_context: input.user_context,\n    context_validation: {\n      is_valid: true,\n      errors: [],\n      error_message: null\n    }\n  }\n}];\n"
+      },
+      "id": "use-provided-context",
+      "name": "Use Provided Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.brand_guide_doc_id"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-config-brand-guide",
+      "name": "Get Config: Brand Guide",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.content_strategy_doc_id"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-config-strategy",
+      "name": "Get Config: Content Strategy",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.content_calendar_sheet_id"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-config-calendar",
+      "name": "Get Config: Content Calendar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        1360
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "wait-for-configs",
+      "name": "Wait For Configs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1104,
+        472
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInputs = $input.all();\nconst preparedContext = $('Prepare Context').first().json;\n\nlet brandGuideDocId = '';\nlet contentStrategyDocId = '';\nlet contentCalendarSheetId = '';\n\nif (allInputs[0]) {\n  const data = allInputs[0].json;\n  if (data.success && data.value) {\n    brandGuideDocId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nif (allInputs[1]) {\n  const data = allInputs[1].json;\n  if (data.success && data.value) {\n    contentStrategyDocId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nif (allInputs[2]) {\n  const data = allInputs[2].json;\n  if (data.success && data.value) {\n    contentCalendarSheetId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nreturn [{\n  json: {\n    ...preparedContext,\n    config: {\n      brand_guide_doc_id: brandGuideDocId,\n      content_strategy_doc_id: contentStrategyDocId,\n      content_calendar_sheet_id: contentCalendarSheetId\n    }\n  }\n}];"
+      },
+      "id": "merge-configs",
+      "name": "Merge Configs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        472
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst config = input.config || {};\n\nconst missingConfigs = [];\n\nif (!config.brand_guide_doc_id || config.brand_guide_doc_id.trim() === '') {\n  missingConfigs.push('brand_guide_doc_id');\n}\n\nif (!config.content_strategy_doc_id || config.content_strategy_doc_id.trim() === '') {\n  missingConfigs.push('content_strategy_doc_id');\n}\n\nif (!config.content_calendar_sheet_id || config.content_calendar_sheet_id.trim() === '') {\n  missingConfigs.push('content_calendar_sheet_id');\n}\n\nconst isValid = missingConfigs.length === 0;\n\nreturn [{\n  json: {\n    ...input,\n    config_validation: {\n      is_valid: isValid,\n      missing_configs: missingConfigs,\n      error_message: isValid ? null : `Missing required config values: ${missingConfigs.join(', ')}. Please configure these in the database.`\n    }\n  }\n}];"
+      },
+      "id": "validate-configs",
+      "name": "Validate Config IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        472
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "config-valid",
+              "leftValue": "={{ $json.config_validation.is_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-config-valid",
+      "name": "Config Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        472
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: null,\n    output_type: 'error',\n    error: input.config_validation.error_message,\n    error_code: 'MISSING_CONFIG',\n    recoverable: false\n  }\n}];"
+      },
+      "id": "config-error",
+      "name": "Config Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $json.config.brand_guide_doc_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-brand-guide",
+      "name": "Fetch Brand Guide",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $json.config.content_strategy_doc_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-content-strategy",
+      "name": "Fetch Content Strategy",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tWgJgDHdIHBhCOr0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "read_range",
+            "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+            "range": "Content!A1:Z100"
+          }
+        },
+        "options": {}
+      },
+      "id": "fetch-content-calendar",
+      "name": "Fetch Content Calendar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "F0TUHVEzA79rroyS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ 'trending topics ' + ($json.subtask_prompt || 'content marketing 2026') }}",
+            "context": "Looking for current trending topics and content ideas"
+          }
+        },
+        "options": {}
+      },
+      "id": "web-search-trends",
+      "name": "Search Trends",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        880
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "wait-for-docs",
+      "name": "Wait For Docs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        2224,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInputs = $input.all();\nconst mergedConfigs = $('Validate Config IDs').first().json;\n\nlet brandGuide = null;\nlet brandGuideError = null;\nlet contentStrategy = null;\nlet contentStrategyError = null;\nlet contentCalendar = null;\nlet contentCalendarError = null;\nlet trendResearch = null;\n\nif (allInputs[0]) {\n  const data = allInputs[0].json;\n  if (data.success) {\n    brandGuide = data.text || data.content || '';\n  } else {\n    brandGuideError = data.error || 'Failed to fetch brand guide';\n  }\n}\n\nif (allInputs[1]) {\n  const data = allInputs[1].json;\n  if (data.success) {\n    contentStrategy = data.text || data.content || '';\n  } else {\n    contentStrategyError = data.error || 'Failed to fetch content strategy';\n  }\n}\n\nif (allInputs[2]) {\n  const data = allInputs[2].json;\n  if (data.success) {\n    contentCalendar = data.values || [];\n  } else {\n    contentCalendarError = data.error || 'Failed to fetch content calendar';\n  }\n}\n\nif (allInputs[3]) {\n  const data = allInputs[3].json;\n  if (data.success) {\n    trendResearch = data.result || data.raw_text || '';\n  }\n}\n\nconst criticalErrors = [];\nif (!brandGuide || brandGuide.trim() === '') {\n  criticalErrors.push(brandGuideError || 'Brand guide content is empty');\n}\nif (!contentStrategy || contentStrategy.trim() === '') {\n  criticalErrors.push(contentStrategyError || 'Content strategy content is empty');\n}\nif (!contentCalendar || contentCalendar.length === 0) {\n  criticalErrors.push(contentCalendarError || 'Content calendar is empty or not accessible');\n}\n\nconst isValid = criticalErrors.length === 0;\n\nconst brandGuideSummary = brandGuide \n  ? brandGuide.substring(0, 2000) + (brandGuide.length > 2000 ? '...' : '')\n  : null;\n\nconst recentPosts = contentCalendar && contentCalendar.length > 1 \n  ? contentCalendar.slice(-10).map(row => row.join(' | '))\n  : [];\n\nconst strategyPriorities = contentStrategy\n  ? contentStrategy.substring(0, 1500) + (contentStrategy.length > 1500 ? '...' : '')\n  : null;\n\nreturn [{\n  json: {\n    subtask_prompt: mergedConfigs.subtask_prompt,\n    target_channels: mergedConfigs.target_channels || [],\n    brand_guide: brandGuideSummary,\n    content_strategy: strategyPriorities,\n    recent_posts: recentPosts,\n    trend_research: trendResearch || 'Trend data not available',\n    user_context: mergedConfigs.user_context,\n    context_validation: {\n      is_valid: isValid,\n      errors: criticalErrors,\n      error_message: isValid ? null : `Failed to fetch critical documents: ${criticalErrors.join('; ')}`\n    }\n  }\n}];"
+      },
+      "id": "merge-context",
+      "name": "Merge All Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "docs-valid",
+              "leftValue": "={{ $json.context_validation.is_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-docs-valid",
+      "name": "Docs Fetched?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2672,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: null,\n    output_type: 'error',\n    error: input.context_validation.error_message,\n    error_code: 'FETCH_FAILED',\n    recoverable: false\n  }\n}];"
+      },
+      "id": "fetch-error",
+      "name": "Fetch Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $input.first().json;\nconst brandGuide = context.brand_guide || 'Not available';\nconst contentStrategy = context.content_strategy || 'Not available';\nconst recentPosts = context.recent_posts || [];\nconst targetChannels = context.target_channels || [];\nconst productKnowledge = context.product_knowledge || context.brand_context?.product_knowledge || 'Not available';\n\n// Build recent posts avoidance list\nconst recentPostsList = recentPosts.length > 0\n  ? recentPosts.map((p, i) => `  ${i + 1}. ${typeof p === 'string' ? p : JSON.stringify(p)}`).join('\\n')\n  : '  None available';\n\n// Channel spec reference table\nconst channelSpecDefaults = {\n  linkedin: {\n    word_count_range: [150, 200],\n    char_limit: 1500,\n    tone: \"Professional, data-backed, conversational\",\n    format: \"Hook (2 lines) \u2192 Insight with data \u2192 Practical takeaway \u2192 CTA\",\n    hashtag_count_range: [3, 5]\n  },\n  twitter: {\n    word_count_range: [20, 50],\n    char_limit: 280,\n    tone: \"Punchy, clever, conversational\",\n    format: \"Single impactful statement or thread opener\",\n    hashtag_count_range: [1, 2]\n  },\n  instagram: {\n    word_count_range: [100, 150],\n    char_limit: 2200,\n    tone: \"Relatable, visual-first, story-driven\",\n    format: \"Hook \u2192 Story/insight \u2192 CTA. Pair with strong visual concept\",\n    hashtag_count_range: [5, 15]\n  },\n  blog: {\n    word_count_range: [800, 1200],\n    char_limit: null,\n    tone: \"Authoritative yet accessible, SEO-aware\",\n    format: \"Title \u2192 Intro hook \u2192 Sections with subheadings \u2192 Key takeaways \u2192 CTA\",\n    hashtag_count_range: [0, 0]\n  },\n  facebook: {\n    word_count_range: [80, 150],\n    char_limit: 500,\n    tone: \"Conversational, community-focused\",\n    format: \"Hook \u2192 Value \u2192 Question or CTA to drive engagement\",\n    hashtag_count_range: [1, 3]\n  }\n};\n\n// Build channel specs section for requested channels\nlet channelSpecsText = '';\nfor (const ch of targetChannels) {\n  const key = ch.toLowerCase().trim();\n  const spec = channelSpecDefaults[key];\n  if (spec) {\n    channelSpecsText += `\\n### ${ch}\\n`;\n    channelSpecsText += `- Word count: ${spec.word_count_range[0]}-${spec.word_count_range[1]}\\n`;\n    if (spec.char_limit) channelSpecsText += `- Character limit: ${spec.char_limit}\\n`;\n    channelSpecsText += `- Tone: ${spec.tone}\\n`;\n    channelSpecsText += `- Format: ${spec.format}\\n`;\n    channelSpecsText += `- Hashtags: ${spec.hashtag_count_range[0]}-${spec.hashtag_count_range[1]}\\n`;\n  }\n}\n\nconst systemPrompt = `You are a Content Strategist for an organic social media team. Your job is to research trending topics, generate content ideas, and produce a COMPLETE Content Brief that will guide the Writer and Editor through the entire content creation process.\n\nThe Content Brief is the single most important artifact you produce. It is the CONTRACT between Writer and Editor \u2014 it defines what \"good\" looks like so the first draft is close to publishable.\n\n##############################################\n# BRAND CONTEXT (PRE-FETCHED - DO NOT REFETCH)\n##############################################\n\nBRAND GUIDE SUMMARY:\n${brandGuide}\n\nCONTENT STRATEGY:\n${contentStrategy}\n\nPRODUCT KNOWLEDGE (Wrkbelt Scheduler & Industry Context):\n${productKnowledge.substring(0, 3000)}\n\n##############################################\n# RECENT POSTS (MUST AVOID REPETITION)\n##############################################\n${recentPostsList}\n\nYou MUST NOT propose topics that overlap with these recent posts. Check each idea against this list.\n\n##############################################\n# TARGET CHANNELS & SPECS\n##############################################\n\nThe brief MUST include channel_specs for EXACTLY these channels: ${targetChannels.join(', ')}\n\nDefault specs per channel (customize based on your content strategy):\n${channelSpecsText}\n\n##############################################\n# YOUR PROCESS\n##############################################\n\n1. RESEARCH: Use web_search to find 2-3 trending topics, news, or conversations relevant to the brand's space. Look for angles that are timely and align with the brand guide.\n\n2. IDEATE: Generate 3-5 content ideas. For each, assess:\n   - Trend relevance (is this timely?)\n   - Brand alignment (does this fit the brand voice and strategy?)\n   - Differentiation (is this NOT covered in recent posts?)\n   - Audience value (will the target audience care?)\n\n3. SELECT: Pick the strongest idea as the winning_idea. Explain WHY it wins.\n\n4. BUILD THE BRIEF: Create a detailed content brief for the winning idea that includes:\n   - key_message: The ONE sentence takeaway readers should remember\n   - target_audience: Specific description of who this content is for\n   - content_type: One of \"value\", \"thought_leadership\", \"educational\", \"engagement\"\n   - channel_specs: For EACH target channel, specify word_count_range, char_limit, tone, format, cta, and hashtag_count_range. CUSTOMIZE these based on the specific content \u2014 don't just copy defaults.\n   - content_requirements: 3-5 specific things the content MUST include (data points, references, perspectives)\n   - what_to_avoid: Things the Writer should NOT do (based on recent posts, brand guidelines, common pitfalls)\n   - success_criteria: 3-5 binary PASS/FAIL criteria the Editor will check against. These should be specific and measurable, e.g., \"Includes at least one data point or statistic\" NOT \"Is well-written\"\n   - research_guidance: 2-3 specific search queries the Writer should use to find supporting data/examples\n\n##############################################\n# OUTPUT FORMAT\n##############################################\n\nYou MUST return a JSON object with this exact structure:\n\n{\n  \"winning_idea\": {\n    \"topic\": \"Clear topic title\",\n    \"angle\": \"Specific angle or hook\",\n    \"rationale\": \"Why this idea wins (2-3 sentences)\",\n    \"trend_score\": 8,\n    \"brand_alignment_score\": 8\n  },\n  \"content_brief\": {\n    \"key_message\": \"One sentence core takeaway\",\n    \"target_audience\": \"Specific audience description\",\n    \"content_type\": \"value|thought_leadership|educational|engagement\",\n    \"channel_specs\": {\n      \"channel_name\": {\n        \"word_count_range\": [150, 200],\n        \"char_limit\": 1500,\n        \"tone\": \"Specific tone guidance for this piece\",\n        \"format\": \"Specific structure for this piece\",\n        \"cta\": \"Specific call-to-action\",\n        \"hashtag_count_range\": [3, 5]\n      }\n    },\n    \"content_requirements\": [\n      \"Must include [specific thing]\",\n      \"Must reference [specific source/data]\"\n    ],\n    \"what_to_avoid\": [\n      \"Don't cover [topic from recent posts]\",\n      \"Avoid [brand guideline conflict]\"\n    ],\n    \"success_criteria\": [\n      \"Includes at least one data point or statistic (with source)\",\n      \"Hook is under 2 lines and creates curiosity\",\n      \"CTA is specific and actionable\"\n    ],\n    \"research_guidance\": [\n      \"Search: [specific query for Writer to use]\",\n      \"Search: [another specific query]\"\n    ]\n  },\n  \"runner_up_ideas\": [\n    {\n      \"topic\": \"string\",\n      \"angle\": \"string\",\n      \"rationale\": \"Why it didn't win\"\n    }\n  ]\n}\n\nIMPORTANT:\n- channel_specs MUST contain an entry for EACH target channel listed above\n- success_criteria must be BINARY (pass/fail), not subjective\n- content_requirements must be SPECIFIC, not generic\n- research_guidance should be actual search queries the Writer can use\n- Scores are 1-10 integers`;\n\nconst userPrompt = context.subtask_prompt || 'Research trends, generate content ideas, and produce a Content Brief for the target channels.';\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    target_channels: targetChannels\n  }\n}];\n"
+      },
+      "id": "build-system-prompt",
+      "name": "Build System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929",
+          "cachedResultName": "Claude Sonnet 4.5"
+        },
+        "options": {
+          "maxTokensToSample": 2000,
+          "temperature": 0.5
+        }
+      },
+      "id": "claude-model",
+      "name": "Claude Sonnet",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        3120,
+        528
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_prompt }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}",
+          "maxIterations": 10,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "ai-agent",
+      "name": "Content Brainstormer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3176,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $input.first().json;\n\nlet parsed = null;\nlet success = false;\nlet error = null;\n\ntry {\n  // The structured output parser should give us the object directly\n  if (agentOutput.output) {\n    parsed = typeof agentOutput.output === 'string'\n      ? JSON.parse(agentOutput.output)\n      : agentOutput.output;\n  } else if (agentOutput.winning_idea) {\n    // Direct output from parser\n    parsed = agentOutput;\n  }\n\n  // Validate required fields\n  if (parsed) {\n    if (!parsed.winning_idea) {\n      throw new Error('Missing winning_idea in brainstormer output');\n    }\n    if (!parsed.winning_idea.topic || !parsed.winning_idea.angle) {\n      throw new Error('winning_idea must have topic and angle');\n    }\n    if (!parsed.content_brief) {\n      throw new Error('Missing content_brief in brainstormer output \u2014 this is required for the pipeline');\n    }\n    if (!parsed.content_brief.channel_specs || Object.keys(parsed.content_brief.channel_specs).length === 0) {\n      throw new Error('content_brief.channel_specs must contain at least one channel');\n    }\n    if (!parsed.content_brief.success_criteria || parsed.content_brief.success_criteria.length === 0) {\n      throw new Error('content_brief.success_criteria must contain at least one criterion');\n    }\n    if (!parsed.content_brief.content_requirements || parsed.content_brief.content_requirements.length === 0) {\n      throw new Error('content_brief.content_requirements must contain at least one requirement');\n    }\n    success = true;\n  } else {\n    throw new Error('No parseable output from brainstormer agent');\n  }\n} catch (e) {\n  error = e.message;\n  success = false;\n  // Try to salvage winning_idea if content_brief is missing\n  if (parsed && parsed.winning_idea && !parsed.content_brief) {\n    // Return what we have but mark as failed so Manager can handle\n    return [{\n      json: {\n        success: false,\n        output: parsed,\n        output_type: 'brief',\n        error: 'Content brief missing - only winning_idea available. ' + error\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    success,\n    output: parsed,\n    output_type: 'brief',\n    error\n  }\n}];\n"
+      },
+      "id": "parse-output",
+      "name": "Parse Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3744,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"winning_idea\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}, \"trend_score\": {\"type\": \"number\"}, \"brand_alignment_score\": {\"type\": \"number\"}}, \"required\": [\"topic\", \"angle\", \"rationale\"]}, \"content_brief\": {\"type\": \"object\", \"properties\": {\"key_message\": {\"type\": \"string\"}, \"target_audience\": {\"type\": \"string\"}, \"content_type\": {\"type\": \"string\"}, \"channel_specs\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}, \"char_limit\": {\"type\": \"number\"}, \"tone\": {\"type\": \"string\"}, \"format\": {\"type\": \"string\"}, \"cta\": {\"type\": \"string\"}, \"hashtag_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}}}}, \"content_requirements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"what_to_avoid\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"success_criteria\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"research_guidance\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"key_message\", \"target_audience\", \"content_type\", \"channel_specs\", \"content_requirements\", \"success_criteria\"]}, \"runner_up_ideas\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}}}}}, \"required\": [\"winning_idea\", \"content_brief\"]}",
+        "autoFix": true
+      },
+      "id": "structured-output-parser",
+      "name": "Brainstormer Output Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3376,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Search the web to research trending topics, find data, and discover content opportunities. Use this to find compelling angles backed by real data.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "F0TUHVEzA79rroyS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI(\"query\", \"The search query to research or verify\", \"string\", \"\") }}",
+            "context": "={{ $fromAI(\"context\", \"Optional context about what you're researching\", \"string\", \"\") }}"
+          },
+          "schema": [
+            {
+              "id": "query",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "query"
+            },
+            {
+              "id": "context",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "context"
+            }
+          ]
+        }
+      },
+      "id": "tool-web-search",
+      "name": "Tool: Web Search",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3248,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-3-5-haiku-20241022",
+          "cachedResultName": "Claude 3.5 Haiku"
+        },
+        "options": {}
+      },
+      "id": "parser-llm",
+      "name": "Parser LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        3456,
+        736
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Has Provided Context?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Provided Context?": {
+      "main": [
+        [
+          {
+            "node": "Use Provided Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Config: Brand Guide",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Config: Content Strategy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Config: Content Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Provided Context": {
+      "main": [
+        [
+          {
+            "node": "Build System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Config: Brand Guide": {
+      "main": [
+        [
+          {
+            "node": "Wait For Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Config: Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Wait For Configs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Config: Content Calendar": {
+      "main": [
+        [
+          {
+            "node": "Wait For Configs",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Wait For Configs": {
+      "main": [
+        [
+          {
+            "node": "Merge Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Configs": {
+      "main": [
+        [
+          {
+            "node": "Validate Config IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Config IDs": {
+      "main": [
+        [
+          {
+            "node": "Config Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Valid?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Brand Guide",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Content Strategy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Content Calendar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Trends",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Config Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Brand Guide": {
+      "main": [
+        [
+          {
+            "node": "Wait For Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Wait For Docs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fetch Content Calendar": {
+      "main": [
+        [
+          {
+            "node": "Wait For Docs",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Search Trends": {
+      "main": [
+        [
+          {
+            "node": "Wait For Docs",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Wait For Docs": {
+      "main": [
+        [
+          {
+            "node": "Merge All Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Context": {
+      "main": [
+        [
+          {
+            "node": "Docs Fetched?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs Fetched?": {
+      "main": [
+        [
+          {
+            "node": "Build System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Content Brainstormer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content Brainstormer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Brainstormer Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brainstormer Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content Brainstormer Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Content Brainstormer Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Brainstormer Output Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+  "activeVersionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+  "versionCounter": 111,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-05T13:46:59.185Z",
+      "createdAt": "2026-02-05T13:46:59.185Z",
+      "role": "workflow:owner",
+      "workflowId": "G0qNvT8YxYwH8XqV",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-10T09:40:41.292Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770325854784
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-10",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-10T11:15:26.481Z",
+    "createdAt": "2026-02-10T11:15:26.481Z",
+    "versionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+    "workflowId": "G0qNvT8YxYwH8XqV",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "subtask_prompt"
+              },
+              {
+                "name": "user_context",
+                "type": "object"
+              },
+              {
+                "name": "context",
+                "type": "object"
+              },
+              {
+                "name": "brand_context"
+              }
+            ]
+          }
+        },
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          208,
+          1096
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nconst slackUserId = input.slack_user_id || input.user_context?.slack_user_id || input.user_context?.user?.slack_user_id || '';\nconst previousOutput = input.context?.previous_output || null;\nconst prompt = input.subtask_prompt || input.task_prompt || '';\n\n// Parse context JSON to extract target_channels\nlet targetChannels = [];\nif (input.context) {\n  try {\n    const ctx = typeof input.context === 'string' ? JSON.parse(input.context) : input.context;\n    if (ctx.target_channels) {\n      if (typeof ctx.target_channels === 'string') {\n        targetChannels = ctx.target_channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c);\n      } else if (Array.isArray(ctx.target_channels)) {\n        targetChannels = ctx.target_channels;\n      }\n    }\n  } catch (e) {\n    // context parsing failed, targetChannels stays empty\n  }\n}\n\nlet providedBrandContext = null;\nif (input.brand_context) {\n  try {\n    providedBrandContext = typeof input.brand_context === 'string'\n      ? JSON.parse(input.brand_context)\n      : input.brand_context;\n  } catch (e) {\n    providedBrandContext = null;\n  }\n}\n\n// CRITICAL: Use Boolean() to ensure we get true/false, not the string value\nconst hasProvidedContext = Boolean(\n  providedBrandContext !== null &&\n  providedBrandContext.brand_guide &&\n  providedBrandContext.content_strategy\n);\n\nreturn [{\n  json: {\n    subtask_prompt: prompt,\n    slack_user_id: slackUserId,\n    previous_output: previousOutput,\n    target_channels: targetChannels,\n    user_context: input.user_context || {},\n    has_provided_context: hasProvidedContext,\n    provided_brand_context: providedBrandContext\n  }\n}];\n"
+        },
+        "id": "prepare-context",
+        "name": "Prepare Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          432,
+          1096
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-context-check",
+                "leftValue": "={{ $json.has_provided_context }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "has-provided-context",
+        "name": "Has Provided Context?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          656,
+          1096
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst brandContext = input.provided_brand_context;\n\nreturn [{\n  json: {\n    subtask_prompt: input.subtask_prompt,\n    target_channels: input.target_channels || [],\n    brand_guide: brandContext.brand_guide || '',\n    content_strategy: brandContext.content_strategy || '',\n    recent_posts: brandContext.recent_posts || [],\n    product_knowledge: brandContext.product_knowledge || '',\n    trend_research: 'Using pre-fetched context - trends not searched',\n    user_context: input.user_context,\n    context_validation: {\n      is_valid: true,\n      errors: [],\n      error_message: null\n    }\n  }\n}];\n"
+        },
+        "id": "use-provided-context",
+        "name": "Use Provided Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2672,
+          1024
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.brand_guide_doc_id"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-config-brand-guide",
+        "name": "Get Config: Brand Guide",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          880,
+          688
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.content_strategy_doc_id"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-config-strategy",
+        "name": "Get Config: Content Strategy",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          880,
+          1168
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.content_calendar_sheet_id"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-config-calendar",
+        "name": "Get Config: Content Calendar",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          880,
+          1360
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "wait-for-configs",
+        "name": "Wait For Configs",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.1,
+        "position": [
+          1104,
+          472
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const allInputs = $input.all();\nconst preparedContext = $('Prepare Context').first().json;\n\nlet brandGuideDocId = '';\nlet contentStrategyDocId = '';\nlet contentCalendarSheetId = '';\n\nif (allInputs[0]) {\n  const data = allInputs[0].json;\n  if (data.success && data.value) {\n    brandGuideDocId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nif (allInputs[1]) {\n  const data = allInputs[1].json;\n  if (data.success && data.value) {\n    contentStrategyDocId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nif (allInputs[2]) {\n  const data = allInputs[2].json;\n  if (data.success && data.value) {\n    contentCalendarSheetId = typeof data.value === 'string' \n      ? data.value.replace(/^\"|\"$/g, '') \n      : JSON.stringify(data.value).replace(/^\"|\"$/g, '');\n  }\n}\n\nreturn [{\n  json: {\n    ...preparedContext,\n    config: {\n      brand_guide_doc_id: brandGuideDocId,\n      content_strategy_doc_id: contentStrategyDocId,\n      content_calendar_sheet_id: contentCalendarSheetId\n    }\n  }\n}];"
+        },
+        "id": "merge-configs",
+        "name": "Merge Configs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1328,
+          472
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst config = input.config || {};\n\nconst missingConfigs = [];\n\nif (!config.brand_guide_doc_id || config.brand_guide_doc_id.trim() === '') {\n  missingConfigs.push('brand_guide_doc_id');\n}\n\nif (!config.content_strategy_doc_id || config.content_strategy_doc_id.trim() === '') {\n  missingConfigs.push('content_strategy_doc_id');\n}\n\nif (!config.content_calendar_sheet_id || config.content_calendar_sheet_id.trim() === '') {\n  missingConfigs.push('content_calendar_sheet_id');\n}\n\nconst isValid = missingConfigs.length === 0;\n\nreturn [{\n  json: {\n    ...input,\n    config_validation: {\n      is_valid: isValid,\n      missing_configs: missingConfigs,\n      error_message: isValid ? null : `Missing required config values: ${missingConfigs.join(', ')}. Please configure these in the database.`\n    }\n  }\n}];"
+        },
+        "id": "validate-configs",
+        "name": "Validate Config IDs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1552,
+          472
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "config-valid",
+                "leftValue": "={{ $json.config_validation.is_valid }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "check-config-valid",
+        "name": "Config Valid?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1776,
+          472
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: null,\n    output_type: 'error',\n    error: input.config_validation.error_message,\n    error_code: 'MISSING_CONFIG',\n    recoverable: false\n  }\n}];"
+        },
+        "id": "config-error",
+        "name": "Config Error",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2000,
+          688
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $json.config.brand_guide_doc_id }}"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-brand-guide",
+        "name": "Fetch Brand Guide",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2000,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $json.config.content_strategy_doc_id }}"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-content-strategy",
+        "name": "Fetch Content Strategy",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2000,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "tWgJgDHdIHBhCOr0"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "read_range",
+              "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+              "range": "Content!A1:Z100"
+            }
+          },
+          "options": {}
+        },
+        "id": "fetch-content-calendar",
+        "name": "Fetch Content Calendar",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2000,
+          496
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "F0TUHVEzA79rroyS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "query": "={{ 'trending topics ' + ($json.subtask_prompt || 'content marketing 2026') }}",
+              "context": "Looking for current trending topics and content ideas"
+            }
+          },
+          "options": {}
+        },
+        "id": "web-search-trends",
+        "name": "Search Trends",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2000,
+          880
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "wait-for-docs",
+        "name": "Wait For Docs",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.1,
+        "position": [
+          2224,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const allInputs = $input.all();\nconst mergedConfigs = $('Validate Config IDs').first().json;\n\nlet brandGuide = null;\nlet brandGuideError = null;\nlet contentStrategy = null;\nlet contentStrategyError = null;\nlet contentCalendar = null;\nlet contentCalendarError = null;\nlet trendResearch = null;\n\nif (allInputs[0]) {\n  const data = allInputs[0].json;\n  if (data.success) {\n    brandGuide = data.text || data.content || '';\n  } else {\n    brandGuideError = data.error || 'Failed to fetch brand guide';\n  }\n}\n\nif (allInputs[1]) {\n  const data = allInputs[1].json;\n  if (data.success) {\n    contentStrategy = data.text || data.content || '';\n  } else {\n    contentStrategyError = data.error || 'Failed to fetch content strategy';\n  }\n}\n\nif (allInputs[2]) {\n  const data = allInputs[2].json;\n  if (data.success) {\n    contentCalendar = data.values || [];\n  } else {\n    contentCalendarError = data.error || 'Failed to fetch content calendar';\n  }\n}\n\nif (allInputs[3]) {\n  const data = allInputs[3].json;\n  if (data.success) {\n    trendResearch = data.result || data.raw_text || '';\n  }\n}\n\nconst criticalErrors = [];\nif (!brandGuide || brandGuide.trim() === '') {\n  criticalErrors.push(brandGuideError || 'Brand guide content is empty');\n}\nif (!contentStrategy || contentStrategy.trim() === '') {\n  criticalErrors.push(contentStrategyError || 'Content strategy content is empty');\n}\nif (!contentCalendar || contentCalendar.length === 0) {\n  criticalErrors.push(contentCalendarError || 'Content calendar is empty or not accessible');\n}\n\nconst isValid = criticalErrors.length === 0;\n\nconst brandGuideSummary = brandGuide \n  ? brandGuide.substring(0, 2000) + (brandGuide.length > 2000 ? '...' : '')\n  : null;\n\nconst recentPosts = contentCalendar && contentCalendar.length > 1 \n  ? contentCalendar.slice(-10).map(row => row.join(' | '))\n  : [];\n\nconst strategyPriorities = contentStrategy\n  ? contentStrategy.substring(0, 1500) + (contentStrategy.length > 1500 ? '...' : '')\n  : null;\n\nreturn [{\n  json: {\n    subtask_prompt: mergedConfigs.subtask_prompt,\n    target_channels: mergedConfigs.target_channels || [],\n    brand_guide: brandGuideSummary,\n    content_strategy: strategyPriorities,\n    recent_posts: recentPosts,\n    trend_research: trendResearch || 'Trend data not available',\n    user_context: mergedConfigs.user_context,\n    context_validation: {\n      is_valid: isValid,\n      errors: criticalErrors,\n      error_message: isValid ? null : `Failed to fetch critical documents: ${criticalErrors.join('; ')}`\n    }\n  }\n}];"
+        },
+        "id": "merge-context",
+        "name": "Merge All Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2448,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "docs-valid",
+                "leftValue": "={{ $json.context_validation.is_valid }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "check-docs-valid",
+        "name": "Docs Fetched?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2672,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    output: null,\n    output_type: 'error',\n    error: input.context_validation.error_message,\n    error_code: 'FETCH_FAILED',\n    recoverable: false\n  }\n}];"
+        },
+        "id": "fetch-error",
+        "name": "Fetch Error",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2896,
+          928
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const context = $input.first().json;\nconst brandGuide = context.brand_guide || 'Not available';\nconst contentStrategy = context.content_strategy || 'Not available';\nconst recentPosts = context.recent_posts || [];\nconst targetChannels = context.target_channels || [];\nconst productKnowledge = context.product_knowledge || context.brand_context?.product_knowledge || 'Not available';\n\n// Build recent posts avoidance list\nconst recentPostsList = recentPosts.length > 0\n  ? recentPosts.map((p, i) => `  ${i + 1}. ${typeof p === 'string' ? p : JSON.stringify(p)}`).join('\\n')\n  : '  None available';\n\n// Channel spec reference table\nconst channelSpecDefaults = {\n  linkedin: {\n    word_count_range: [150, 200],\n    char_limit: 1500,\n    tone: \"Professional, data-backed, conversational\",\n    format: \"Hook (2 lines) \u2192 Insight with data \u2192 Practical takeaway \u2192 CTA\",\n    hashtag_count_range: [3, 5]\n  },\n  twitter: {\n    word_count_range: [20, 50],\n    char_limit: 280,\n    tone: \"Punchy, clever, conversational\",\n    format: \"Single impactful statement or thread opener\",\n    hashtag_count_range: [1, 2]\n  },\n  instagram: {\n    word_count_range: [100, 150],\n    char_limit: 2200,\n    tone: \"Relatable, visual-first, story-driven\",\n    format: \"Hook \u2192 Story/insight \u2192 CTA. Pair with strong visual concept\",\n    hashtag_count_range: [5, 15]\n  },\n  blog: {\n    word_count_range: [800, 1200],\n    char_limit: null,\n    tone: \"Authoritative yet accessible, SEO-aware\",\n    format: \"Title \u2192 Intro hook \u2192 Sections with subheadings \u2192 Key takeaways \u2192 CTA\",\n    hashtag_count_range: [0, 0]\n  },\n  facebook: {\n    word_count_range: [80, 150],\n    char_limit: 500,\n    tone: \"Conversational, community-focused\",\n    format: \"Hook \u2192 Value \u2192 Question or CTA to drive engagement\",\n    hashtag_count_range: [1, 3]\n  }\n};\n\n// Build channel specs section for requested channels\nlet channelSpecsText = '';\nfor (const ch of targetChannels) {\n  const key = ch.toLowerCase().trim();\n  const spec = channelSpecDefaults[key];\n  if (spec) {\n    channelSpecsText += `\\n### ${ch}\\n`;\n    channelSpecsText += `- Word count: ${spec.word_count_range[0]}-${spec.word_count_range[1]}\\n`;\n    if (spec.char_limit) channelSpecsText += `- Character limit: ${spec.char_limit}\\n`;\n    channelSpecsText += `- Tone: ${spec.tone}\\n`;\n    channelSpecsText += `- Format: ${spec.format}\\n`;\n    channelSpecsText += `- Hashtags: ${spec.hashtag_count_range[0]}-${spec.hashtag_count_range[1]}\\n`;\n  }\n}\n\nconst systemPrompt = `You are a Content Strategist for an organic social media team. Your job is to research trending topics, generate content ideas, and produce a COMPLETE Content Brief that will guide the Writer and Editor through the entire content creation process.\n\nThe Content Brief is the single most important artifact you produce. It is the CONTRACT between Writer and Editor \u2014 it defines what \"good\" looks like so the first draft is close to publishable.\n\n##############################################\n# BRAND CONTEXT (PRE-FETCHED - DO NOT REFETCH)\n##############################################\n\nBRAND GUIDE SUMMARY:\n${brandGuide}\n\nCONTENT STRATEGY:\n${contentStrategy}\n\nPRODUCT KNOWLEDGE (Wrkbelt Scheduler & Industry Context):\n${productKnowledge.substring(0, 3000)}\n\n##############################################\n# RECENT POSTS (MUST AVOID REPETITION)\n##############################################\n${recentPostsList}\n\nYou MUST NOT propose topics that overlap with these recent posts. Check each idea against this list.\n\n##############################################\n# TARGET CHANNELS & SPECS\n##############################################\n\nThe brief MUST include channel_specs for EXACTLY these channels: ${targetChannels.join(', ')}\n\nDefault specs per channel (customize based on your content strategy):\n${channelSpecsText}\n\n##############################################\n# YOUR PROCESS\n##############################################\n\n1. RESEARCH: Use web_search to find 2-3 trending topics, news, or conversations relevant to the brand's space. Look for angles that are timely and align with the brand guide.\n\n2. IDEATE: Generate 3-5 content ideas. For each, assess:\n   - Trend relevance (is this timely?)\n   - Brand alignment (does this fit the brand voice and strategy?)\n   - Differentiation (is this NOT covered in recent posts?)\n   - Audience value (will the target audience care?)\n\n3. SELECT: Pick the strongest idea as the winning_idea. Explain WHY it wins.\n\n4. BUILD THE BRIEF: Create a detailed content brief for the winning idea that includes:\n   - key_message: The ONE sentence takeaway readers should remember\n   - target_audience: Specific description of who this content is for\n   - content_type: One of \"value\", \"thought_leadership\", \"educational\", \"engagement\"\n   - channel_specs: For EACH target channel, specify word_count_range, char_limit, tone, format, cta, and hashtag_count_range. CUSTOMIZE these based on the specific content \u2014 don't just copy defaults.\n   - content_requirements: 3-5 specific things the content MUST include (data points, references, perspectives)\n   - what_to_avoid: Things the Writer should NOT do (based on recent posts, brand guidelines, common pitfalls)\n   - success_criteria: 3-5 binary PASS/FAIL criteria the Editor will check against. These should be specific and measurable, e.g., \"Includes at least one data point or statistic\" NOT \"Is well-written\"\n   - research_guidance: 2-3 specific search queries the Writer should use to find supporting data/examples\n\n##############################################\n# OUTPUT FORMAT\n##############################################\n\nYou MUST return a JSON object with this exact structure:\n\n{\n  \"winning_idea\": {\n    \"topic\": \"Clear topic title\",\n    \"angle\": \"Specific angle or hook\",\n    \"rationale\": \"Why this idea wins (2-3 sentences)\",\n    \"trend_score\": 8,\n    \"brand_alignment_score\": 8\n  },\n  \"content_brief\": {\n    \"key_message\": \"One sentence core takeaway\",\n    \"target_audience\": \"Specific audience description\",\n    \"content_type\": \"value|thought_leadership|educational|engagement\",\n    \"channel_specs\": {\n      \"channel_name\": {\n        \"word_count_range\": [150, 200],\n        \"char_limit\": 1500,\n        \"tone\": \"Specific tone guidance for this piece\",\n        \"format\": \"Specific structure for this piece\",\n        \"cta\": \"Specific call-to-action\",\n        \"hashtag_count_range\": [3, 5]\n      }\n    },\n    \"content_requirements\": [\n      \"Must include [specific thing]\",\n      \"Must reference [specific source/data]\"\n    ],\n    \"what_to_avoid\": [\n      \"Don't cover [topic from recent posts]\",\n      \"Avoid [brand guideline conflict]\"\n    ],\n    \"success_criteria\": [\n      \"Includes at least one data point or statistic (with source)\",\n      \"Hook is under 2 lines and creates curiosity\",\n      \"CTA is specific and actionable\"\n    ],\n    \"research_guidance\": [\n      \"Search: [specific query for Writer to use]\",\n      \"Search: [another specific query]\"\n    ]\n  },\n  \"runner_up_ideas\": [\n    {\n      \"topic\": \"string\",\n      \"angle\": \"string\",\n      \"rationale\": \"Why it didn't win\"\n    }\n  ]\n}\n\nIMPORTANT:\n- channel_specs MUST contain an entry for EACH target channel listed above\n- success_criteria must be BINARY (pass/fail), not subjective\n- content_requirements must be SPECIFIC, not generic\n- research_guidance should be actual search queries the Writer can use\n- Scores are 1-10 integers`;\n\nconst userPrompt = context.subtask_prompt || 'Research trends, generate content ideas, and produce a Content Brief for the target channels.';\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    target_channels: targetChannels\n  }\n}];\n"
+        },
+        "id": "build-system-prompt",
+        "name": "Build System Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2896,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-sonnet-4-5-20250929",
+            "cachedResultName": "Claude Sonnet 4.5"
+          },
+          "options": {
+            "maxTokensToSample": 2000,
+            "temperature": 0.5
+          }
+        },
+        "id": "claude-model",
+        "name": "Claude Sonnet",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          3120,
+          528
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.user_prompt }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "={{ $json.system_prompt }}",
+            "maxIterations": 10,
+            "returnIntermediateSteps": true
+          }
+        },
+        "id": "ai-agent",
+        "name": "Content Brainstormer Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          3176,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const agentOutput = $input.first().json;\n\nlet parsed = null;\nlet success = false;\nlet error = null;\n\ntry {\n  // The structured output parser should give us the object directly\n  if (agentOutput.output) {\n    parsed = typeof agentOutput.output === 'string'\n      ? JSON.parse(agentOutput.output)\n      : agentOutput.output;\n  } else if (agentOutput.winning_idea) {\n    // Direct output from parser\n    parsed = agentOutput;\n  }\n\n  // Validate required fields\n  if (parsed) {\n    if (!parsed.winning_idea) {\n      throw new Error('Missing winning_idea in brainstormer output');\n    }\n    if (!parsed.winning_idea.topic || !parsed.winning_idea.angle) {\n      throw new Error('winning_idea must have topic and angle');\n    }\n    if (!parsed.content_brief) {\n      throw new Error('Missing content_brief in brainstormer output \u2014 this is required for the pipeline');\n    }\n    if (!parsed.content_brief.channel_specs || Object.keys(parsed.content_brief.channel_specs).length === 0) {\n      throw new Error('content_brief.channel_specs must contain at least one channel');\n    }\n    if (!parsed.content_brief.success_criteria || parsed.content_brief.success_criteria.length === 0) {\n      throw new Error('content_brief.success_criteria must contain at least one criterion');\n    }\n    if (!parsed.content_brief.content_requirements || parsed.content_brief.content_requirements.length === 0) {\n      throw new Error('content_brief.content_requirements must contain at least one requirement');\n    }\n    success = true;\n  } else {\n    throw new Error('No parseable output from brainstormer agent');\n  }\n} catch (e) {\n  error = e.message;\n  success = false;\n  // Try to salvage winning_idea if content_brief is missing\n  if (parsed && parsed.winning_idea && !parsed.content_brief) {\n    // Return what we have but mark as failed so Manager can handle\n    return [{\n      json: {\n        success: false,\n        output: parsed,\n        output_type: 'brief',\n        error: 'Content brief missing - only winning_idea available. ' + error\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    success,\n    output: parsed,\n    output_type: 'brief',\n    error\n  }\n}];\n"
+        },
+        "id": "parse-output",
+        "name": "Parse Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3744,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\"type\": \"object\", \"properties\": {\"winning_idea\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}, \"trend_score\": {\"type\": \"number\"}, \"brand_alignment_score\": {\"type\": \"number\"}}, \"required\": [\"topic\", \"angle\", \"rationale\"]}, \"content_brief\": {\"type\": \"object\", \"properties\": {\"key_message\": {\"type\": \"string\"}, \"target_audience\": {\"type\": \"string\"}, \"content_type\": {\"type\": \"string\"}, \"channel_specs\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}, \"char_limit\": {\"type\": \"number\"}, \"tone\": {\"type\": \"string\"}, \"format\": {\"type\": \"string\"}, \"cta\": {\"type\": \"string\"}, \"hashtag_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}}}}, \"content_requirements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"what_to_avoid\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"success_criteria\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"research_guidance\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"key_message\", \"target_audience\", \"content_type\", \"channel_specs\", \"content_requirements\", \"success_criteria\"]}, \"runner_up_ideas\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}}}}}, \"required\": [\"winning_idea\", \"content_brief\"]}",
+          "autoFix": true
+        },
+        "id": "structured-output-parser",
+        "name": "Brainstormer Output Schema",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          3376,
+          528
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Search the web to research trending topics, find data, and discover content opportunities. Use this to find compelling angles backed by real data.",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "F0TUHVEzA79rroyS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "query": "={{ $fromAI(\"query\", \"The search query to research or verify\", \"string\", \"\") }}",
+              "context": "={{ $fromAI(\"context\", \"Optional context about what you're researching\", \"string\", \"\") }}"
+            },
+            "schema": [
+              {
+                "id": "query",
+                "type": "string",
+                "display": true,
+                "required": true,
+                "displayName": "query"
+              },
+              {
+                "id": "context",
+                "type": "string",
+                "display": true,
+                "required": false,
+                "displayName": "context"
+              }
+            ]
+          }
+        },
+        "id": "tool-web-search",
+        "name": "Tool: Web Search",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          3248,
+          528
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-3-5-haiku-20241022",
+            "cachedResultName": "Claude 3.5 Haiku"
+          },
+          "options": {}
+        },
+        "id": "parser-llm",
+        "name": "Parser LLM",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          3456,
+          736
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Prepare Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Context": {
+        "main": [
+          [
+            {
+              "node": "Has Provided Context?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Provided Context?": {
+        "main": [
+          [
+            {
+              "node": "Use Provided Context",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Config: Brand Guide",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Get Config: Content Strategy",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Get Config: Content Calendar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Use Provided Context": {
+        "main": [
+          [
+            {
+              "node": "Build System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config: Brand Guide": {
+        "main": [
+          [
+            {
+              "node": "Wait For Configs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config: Content Strategy": {
+        "main": [
+          [
+            {
+              "node": "Wait For Configs",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Get Config: Content Calendar": {
+        "main": [
+          [
+            {
+              "node": "Wait For Configs",
+              "type": "main",
+              "index": 2
+            }
+          ]
+        ]
+      },
+      "Wait For Configs": {
+        "main": [
+          [
+            {
+              "node": "Merge Configs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Configs": {
+        "main": [
+          [
+            {
+              "node": "Validate Config IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validate Config IDs": {
+        "main": [
+          [
+            {
+              "node": "Config Valid?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config Valid?": {
+        "main": [
+          [
+            {
+              "node": "Fetch Brand Guide",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch Content Strategy",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch Content Calendar",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Search Trends",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Config Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Brand Guide": {
+        "main": [
+          [
+            {
+              "node": "Wait For Docs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Content Strategy": {
+        "main": [
+          [
+            {
+              "node": "Wait For Docs",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Fetch Content Calendar": {
+        "main": [
+          [
+            {
+              "node": "Wait For Docs",
+              "type": "main",
+              "index": 2
+            }
+          ]
+        ]
+      },
+      "Search Trends": {
+        "main": [
+          [
+            {
+              "node": "Wait For Docs",
+              "type": "main",
+              "index": 3
+            }
+          ]
+        ]
+      },
+      "Wait For Docs": {
+        "main": [
+          [
+            {
+              "node": "Merge All Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge All Context": {
+        "main": [
+          [
+            {
+              "node": "Docs Fetched?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Docs Fetched?": {
+        "main": [
+          [
+            {
+              "node": "Build System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Fetch Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build System Prompt": {
+        "main": [
+          [
+            {
+              "node": "Content Brainstormer Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Sonnet": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Content Brainstormer Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Content Brainstormer Agent": {
+        "main": [
+          [
+            {
+              "node": "Parse Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Brainstormer Output Schema": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Content Brainstormer Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Web Search": {
+        "ai_tool": [
+          [
+            {
+              "node": "Content Brainstormer Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parser LLM": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Brainstormer Output Schema",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-10T11:15:26.654Z",
+        "id": 579,
+        "workflowId": "G0qNvT8YxYwH8XqV",
+        "versionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

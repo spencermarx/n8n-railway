@@ -1,356 +1,846 @@
 {
-  "updatedAt": "2026-02-05T12:07:46.148Z",
-  "createdAt": "2026-02-04T09:41:12.597Z",
-  "id": "RUHxLZdoh1kNNXvs",
-  "name": "\ud83d\udd50 CRON | Unified Task Scheduler",
-  "description": null,
-  "active": true,
-  "isArchived": false,
-  "nodes": [
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes"
-            }
-          ]
-        }
-      },
-      "id": "schedule-trigger",
-      "name": "Every 5 Minutes",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.3,
-      "position": [
-        256,
-        304
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT * FROM alfred.get_due_scheduled_tasks();",
-        "options": {}
-      },
-      "id": "get-due-tasks",
-      "name": "Get Due Tasks",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        464,
-        304
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "version": 2,
-            "leftValue": "",
-            "caseSensitive": true,
-            "typeValidation": "loose"
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.task_id }}",
-              "rightValue": "",
-              "operator": {
-                "type": "number",
-                "operation": "exists"
-              },
-              "id": "condition-1770198420208-dsp774pvv"
-            }
-          ]
+    "updatedAt": "2026-02-10T11:21:04.828Z",
+    "createdAt": "2026-02-04T09:41:12.597Z",
+    "id": "RUHxLZdoh1kNNXvs",
+    "name": "\ud83d\udd50 CRON | Unified Task Scheduler",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes"
+                        }
+                    ]
+                }
+            },
+            "id": "schedule-trigger",
+            "name": "Every 5 Minutes",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.3,
+            "position": [
+                256,
+                416
+            ]
         },
-        "options": {}
-      },
-      "id": "check-tasks",
-      "name": "Any Tasks Due?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        656,
-        304
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "no-tasks",
-      "name": "No Tasks Due",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        864,
-        432
-      ]
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "id": "loop-tasks",
-      "name": "Loop Tasks",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        864,
-        240
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const task = $input.first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\nlet deliveryInstructions = '';\n\nif (channels.includes('slack')) {\n  deliveryInstructions += `\\n- Send via Slack DM to the user`;\n}\nif (channels.includes('email')) {\n  deliveryInstructions += `\\n- Send via email to ${task.email}`;\n}\n\n// Enhance the request with delivery instructions if not already specified\nlet fullRequest = task.request;\n\n// Only add delivery instructions if request doesn't already mention delivery\nif (!fullRequest.toLowerCase().includes('send via') && !fullRequest.toLowerCase().includes('deliver')) {\n  fullRequest += `\\n\\nDELIVERY: After completing the above, deliver the result using these channels:${deliveryInstructions}`;\n}\n\n// Add metadata context for event-based tasks (meeting reminders)\nconst metadata = task.metadata || {};\nconst notifiedEventIds = metadata.notified_event_ids || [];\n\n// If there are previously notified events, add context to the request\nif (notifiedEventIds.length > 0 && task.task_name.toLowerCase().includes('meeting') || task.task_name.toLowerCase().includes('reminder') || task.task_name.toLowerCase().includes('prep')) {\n  fullRequest += `\\n\\nNOTE: You have already notified about these event IDs today (do not notify again): ${notifiedEventIds.join(', ')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: metadata\n  }\n}];"
-      },
-      "id": "prepare-request",
-      "name": "Prepare Request",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1056,
-        240
-      ]
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "KJpZBr3isT66Rzoa"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "slack_user_id": "={{ $json.slack_user_id }}",
-            "message": "={{ $json.request }}",
-            "response_type": "dm"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "slack_user_id",
-              "displayName": "slack_user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT * FROM alfred.get_due_scheduled_tasks();",
+                "options": {}
             },
-            {
-              "id": "message",
-              "displayName": "message",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "channel_id",
-              "displayName": "channel_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "thread_ts",
-              "displayName": "thread_ts",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "response_type",
-              "displayName": "response_type",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
+            "id": "get-due-tasks",
+            "name": "Get Due Tasks",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                480,
+                416
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
             }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
         },
-        "options": {}
-      },
-      "id": "call-alfred",
-      "name": "Call Alfred Agent",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1264,
-        240
-      ],
-      "retryOnFail": false,
-      "maxTries": 1,
-      "waitBetweenTries": 10000
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT alfred.mark_task_run({{ $('Prepare Request').item.json.task_id }}, true, NULL);",
-        "options": {}
-      },
-      "id": "mark-complete",
-      "name": "Mark Task Complete",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        1456,
-        240
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "8nTSHxonyIBczkvN",
-          "name": "Postgres account"
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 3,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.task_id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "number",
+                                "operation": "exists"
+                            },
+                            "id": "condition-1770198420208-dsp774pvv"
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "check-tasks",
+            "name": "Any Tasks Due?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                704,
+                416
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "no-tasks",
+            "name": "No Tasks Due",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                928,
+                512
+            ]
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "loop-tasks",
+            "name": "Loop Tasks",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                928,
+                320
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const now = new Date();\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
+            },
+            "id": "prepare-request",
+            "name": "Prepare Request",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1152,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "KJpZBr3isT66Rzoa"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "message": "={{ $json.request }}",
+                        "response_type": "dm"
+                    },
+                    "matchingColumns": [],
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "displayName": "slack_user_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "message",
+                            "displayName": "message",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "channel_id",
+                            "displayName": "channel_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "thread_ts",
+                            "displayName": "thread_ts",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "response_type",
+                            "displayName": "response_type",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": true
+                },
+                "options": {}
+            },
+            "id": "call-alfred",
+            "name": "Call Alfred Agent",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.3,
+            "position": [
+                1376,
+                240
+            ],
+            "retryOnFail": false,
+            "maxTries": 1,
+            "waitBetweenTries": 10000
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=SELECT alfred.mark_task_run({{ $('Prepare Request').item.json.task_id }}, true, NULL);",
+                "options": {}
+            },
+            "id": "mark-complete",
+            "name": "Mark Task Complete",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                1600,
+                240
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Simply pass through to continue the loop\nreturn [{ json: { processed: true } }];"
+            },
+            "id": "loop-done",
+            "name": "Loop Done Check",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1824,
+                320
+            ]
+        },
+        {
+            "id": "fetch-notified-events",
+            "name": "Fetch Notified Events",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1040,
+                240
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            },
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT COALESCE(array_agg(event_id), ARRAY[]::text[]) as notified_ids\nFROM alfred.event_notifications\nWHERE user_id = {{ $json.user_id }}::integer\n  AND notification_date = CURRENT_DATE",
+                "options": {}
+            },
+            "alwaysOutputData": false,
+            "onError": "continueRegularOutput"
         }
-      }
+    ],
+    "connections": {
+        "Every 5 Minutes": {
+            "main": [
+                [
+                    {
+                        "node": "Get Due Tasks",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Due Tasks": {
+            "main": [
+                [
+                    {
+                        "node": "Any Tasks Due?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Any Tasks Due?": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Tasks",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "No Tasks Due",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Tasks": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "Fetch Notified Events",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Request": {
+            "main": [
+                [
+                    {
+                        "node": "Call Alfred Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Alfred Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Mark Task Complete",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark Task Complete": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Done Check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Done Check": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Tasks",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Notified Events": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
     },
-    {
-      "parameters": {
-        "jsCode": "// Simply pass through to continue the loop\nreturn [{ json: { processed: true } }];"
-      },
-      "id": "loop-done",
-      "name": "Loop Done Check",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1664,
-        240
-      ]
-    }
-  ],
-  "connections": {
-    "Every 5 Minutes": {
-      "main": [
-        [
-          {
-            "node": "Get Due Tasks",
-            "type": "main",
-            "index": 0
-          }
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": {
+        "node:Every 5 Minutes": {
+            "recurrenceRules": []
+        }
+    },
+    "meta": null,
+    "pinData": {
+        "Every 5 Minutes": [
+            {
+                "json": {
+                    "timestamp": "2026-02-07T09:33:58.565-05:00",
+                    "Readable date": "February 7th 2026, 9:33:58 am",
+                    "Readable time": "9:33:58 am",
+                    "Day of week": "Saturday",
+                    "Year": "2026",
+                    "Month": "February",
+                    "Day of month": "07",
+                    "Hour": "09",
+                    "Minute": "33",
+                    "Second": "58",
+                    "Timezone": "America/New_York (UTC-05:00)"
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
         ]
-      ]
     },
-    "Get Due Tasks": {
-      "main": [
-        [
-          {
-            "node": "Any Tasks Due?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Any Tasks Due?": {
-      "main": [
-        [
-          {
-            "node": "Loop Tasks",
-            "type": "main",
-            "index": 0
-          }
+    "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+    "activeVersionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+    "versionCounter": 54,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-02-04T09:41:12.597Z",
+            "createdAt": "2026-02-04T09:41:12.597Z",
+            "role": "workflow:owner",
+            "workflowId": "RUHxLZdoh1kNNXvs",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "project": {
+                "updatedAt": "2026-02-02T12:27:52.037Z",
+                "createdAt": "2026-02-02T12:20:35.714Z",
+                "id": "Jd992SEPuokf8o5Z",
+                "name": "Spencer Marx <spencer@aclarify.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+                "projectRelations": [
+                    {
+                        "updatedAt": "2026-02-02T12:20:35.714Z",
+                        "createdAt": "2026-02-02T12:20:35.714Z",
+                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+                        "projectId": "Jd992SEPuokf8o5Z",
+                        "user": {
+                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "createdAt": "2026-02-02T12:20:29.217Z",
+                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
+                            "email": "spencer@aclarify.com",
+                            "firstName": "Spencer",
+                            "lastName": "Marx",
+                            "personalizationAnswers": {
+                                "version": "v4",
+                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                                "personalization_survey_n8n_version": "2.6.2",
+                                "companySize": "<20",
+                                "companyType": "saas",
+                                "role": "business-owner",
+                                "reportedSource": "friend"
+                            },
+                            "settings": {
+                                "userActivated": true,
+                                "easyAIWorkflowOnboarded": true,
+                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                                "userActivatedAt": 1770049275864,
+                                "npsSurvey": {
+                                    "responded": true,
+                                    "lastShownAt": 1770325854784
+                                }
+                            },
+                            "disabled": false,
+                            "mfaEnabled": false,
+                            "lastActiveAt": "2026-02-10",
+                            "isPending": false
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "tags": [
+        {
+            "updatedAt": "2026-02-02T22:22:12.832Z",
+            "createdAt": "2026-02-02T22:22:12.832Z",
+            "id": "Mc3pfpEPBuqRAjiH",
+            "name": "CRON"
+        }
+    ],
+    "activeVersion": {
+        "updatedAt": "2026-02-10T11:21:04.829Z",
+        "createdAt": "2026-02-10T11:21:04.829Z",
+        "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+        "workflowId": "RUHxLZdoh1kNNXvs",
+        "nodes": [
+            {
+                "parameters": {
+                    "rule": {
+                        "interval": [
+                            {
+                                "field": "minutes"
+                            }
+                        ]
+                    }
+                },
+                "id": "schedule-trigger",
+                "name": "Every 5 Minutes",
+                "type": "n8n-nodes-base.scheduleTrigger",
+                "typeVersion": 1.3,
+                "position": [
+                    256,
+                    416
+                ]
+            },
+            {
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "SELECT * FROM alfred.get_due_scheduled_tasks();",
+                    "options": {}
+                },
+                "id": "get-due-tasks",
+                "name": "Get Due Tasks",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.6,
+                "position": [
+                    480,
+                    416
+                ],
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 3,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "conditions": [
+                            {
+                                "leftValue": "={{ $json.task_id }}",
+                                "rightValue": "",
+                                "operator": {
+                                    "type": "number",
+                                    "operation": "exists"
+                                },
+                                "id": "condition-1770198420208-dsp774pvv"
+                            }
+                        ],
+                        "combinator": "and"
+                    },
+                    "options": {}
+                },
+                "id": "check-tasks",
+                "name": "Any Tasks Due?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.3,
+                "position": [
+                    704,
+                    416
+                ]
+            },
+            {
+                "parameters": {},
+                "id": "no-tasks",
+                "name": "No Tasks Due",
+                "type": "n8n-nodes-base.noOp",
+                "typeVersion": 1,
+                "position": [
+                    928,
+                    512
+                ]
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "loop-tasks",
+                "name": "Loop Tasks",
+                "type": "n8n-nodes-base.splitInBatches",
+                "typeVersion": 3,
+                "position": [
+                    928,
+                    320
+                ]
+            },
+            {
+                "parameters": {
+                    "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const now = new Date();\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
+                },
+                "id": "prepare-request",
+                "name": "Prepare Request",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1152,
+                    240
+                ]
+            },
+            {
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "KJpZBr3isT66Rzoa"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "message": "={{ $json.request }}",
+                            "response_type": "dm"
+                        },
+                        "matchingColumns": [],
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "displayName": "slack_user_id",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "message",
+                                "displayName": "message",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "channel_id",
+                                "displayName": "channel_id",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "thread_ts",
+                                "displayName": "thread_ts",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "response_type",
+                                "displayName": "response_type",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            }
+                        ],
+                        "attemptToConvertTypes": false,
+                        "convertFieldsToString": true
+                    },
+                    "options": {}
+                },
+                "id": "call-alfred",
+                "name": "Call Alfred Agent",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.3,
+                "position": [
+                    1376,
+                    240
+                ],
+                "retryOnFail": false,
+                "maxTries": 1,
+                "waitBetweenTries": 10000
+            },
+            {
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "=SELECT alfred.mark_task_run({{ $('Prepare Request').item.json.task_id }}, true, NULL);",
+                    "options": {}
+                },
+                "id": "mark-complete",
+                "name": "Mark Task Complete",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.6,
+                "position": [
+                    1600,
+                    240
+                ],
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "parameters": {
+                    "jsCode": "// Simply pass through to continue the loop\nreturn [{ json: { processed: true } }];"
+                },
+                "id": "loop-done",
+                "name": "Loop Done Check",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1824,
+                    320
+                ]
+            },
+            {
+                "id": "fetch-notified-events",
+                "name": "Fetch Notified Events",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    1040,
+                    240
+                ],
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                },
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "SELECT COALESCE(array_agg(event_id), ARRAY[]::text[]) as notified_ids\nFROM alfred.event_notifications\nWHERE user_id = {{ $json.user_id }}::integer\n  AND notification_date = CURRENT_DATE",
+                    "options": {}
+                },
+                "alwaysOutputData": false,
+                "onError": "continueRegularOutput"
+            }
         ],
-        [
-          {
-            "node": "No Tasks Due",
-            "type": "main",
-            "index": 0
-          }
+        "connections": {
+            "Every 5 Minutes": {
+                "main": [
+                    [
+                        {
+                            "node": "Get Due Tasks",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Get Due Tasks": {
+                "main": [
+                    [
+                        {
+                            "node": "Any Tasks Due?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Any Tasks Due?": {
+                "main": [
+                    [
+                        {
+                            "node": "Loop Tasks",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "No Tasks Due",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Loop Tasks": {
+                "main": [
+                    [],
+                    [
+                        {
+                            "node": "Fetch Notified Events",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Request": {
+                "main": [
+                    [
+                        {
+                            "node": "Call Alfred Agent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Call Alfred Agent": {
+                "main": [
+                    [
+                        {
+                            "node": "Mark Task Complete",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Mark Task Complete": {
+                "main": [
+                    [
+                        {
+                            "node": "Loop Done Check",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Loop Done Check": {
+                "main": [
+                    [
+                        {
+                            "node": "Loop Tasks",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Fetch Notified Events": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Request",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Spencer Marx",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-02-10T11:21:04.951Z",
+                "id": 580,
+                "workflowId": "RUHxLZdoh1kNNXvs",
+                "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+                "event": "activated",
+                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+            }
         ]
-      ]
-    },
-    "Loop Tasks": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Prepare Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Request": {
-      "main": [
-        [
-          {
-            "node": "Call Alfred Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call Alfred Agent": {
-      "main": [
-        [
-          {
-            "node": "Mark Task Complete",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mark Task Complete": {
-      "main": [
-        [
-          {
-            "node": "Loop Done Check",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Done Check": {
-      "main": [
-        [
-          {
-            "node": "Loop Tasks",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
-  },
-  "staticData": {
-    "node:Every 5 Minutes": {
-      "recurrenceRules": []
-    }
-  },
-  "meta": null,
-  "pinData": {},
-  "versionId": "180f520f-541f-4ecb-9480-376b3eb3e876",
-  "activeVersionId": "180f520f-541f-4ecb-9480-376b3eb3e876",
-  "versionCounter": 31,
-  "triggerCount": 1,
-  "tags": [
-    {
-      "updatedAt": "2026-02-02T22:22:12.832Z",
-      "createdAt": "2026-02-02T22:22:12.832Z",
-      "id": "Mc3pfpEPBuqRAjiH",
-      "name": "CRON"
-    }
-  ]
 }

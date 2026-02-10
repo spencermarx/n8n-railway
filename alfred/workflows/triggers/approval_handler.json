@@ -1,1002 +1,2746 @@
 {
-  "updatedAt": "2026-02-04T15:42:07.665Z",
-  "createdAt": "2026-02-04T13:56:19.841Z",
-  "id": "iuU0eyfTN2We4uPR",
-  "name": "🔔 Trigger | Approval Handler",
-  "description": null,
-  "active": true,
-  "isArchived": false,
-  "nodes": [
-    {
-      "id": "webhook-trigger",
-      "name": "Slack Interaction Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [200, 300],
-      "webhookId": "approval-handler",
-      "parameters": {
-        "path": "approval-handler",
-        "httpMethod": "POST",
-        "responseMode": "responseNode",
-        "options": {}
-      }
-    },
-    {
-      "id": "parse-payload",
-      "name": "Parse Slack Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [420, 300],
-      "parameters": {
-        "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
-      }
-    },
-    {
-      "id": "lookup-pending-action",
-      "name": "Lookup Pending Action",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [640, 300],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
-        "options": { "queryReplacement": "={{ [$json.pending_action_id] }}" }
-      },
-      "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-      }
-    },
-    {
-      "id": "validate-action",
-      "name": "Validate Action",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [860, 300],
-      "parameters": {
-        "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    action_type: parsed.action_id,\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: action.payload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
-      }
-    },
-    {
-      "id": "check-valid",
-      "name": "Is Valid?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [1080, 300],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "version": 2,
-            "leftValue": "",
-            "caseSensitive": true,
-            "typeValidation": "strict"
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "valid-check",
-              "leftValue": "={{ $json.valid }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "route-action",
-      "name": "Route by Action",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [1300, 200],
-      "parameters": {
-        "mode": "rules",
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action_type }}",
-                    "rightValue": "approve_action",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "approve"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action_type }}",
-                    "rightValue": "reject_action",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "reject"
-            }
-          ]
-        },
-        "options": { "fallbackOutput": "extra" }
-      }
-    },
-    {
-      "id": "get-google-auth",
-      "name": "Get Google Auth",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [1520, 100],
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "S8GWoOTCaSqyc5bj"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "slack_user_id": "={{ $json.pending_action.slack_user_id }}",
-            "scopes": "https://www.googleapis.com/auth/gmail.send"
-          }
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "build-mime-email",
-      "name": "Build MIME Email",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1740, 100],
-      "parameters": {
-        "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
-      }
-    },
-    {
-      "id": "send-email-gmail",
-      "name": "Send Email via Gmail",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1960, 100],
-      "parameters": {
-        "method": "POST",
-        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.access_token }}"
-            },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "bodyParameters": {
-          "parameters": [{ "name": "raw", "value": "={{ $json.raw }}" }]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "update-db-approved",
-      "name": "Update DB - Approved",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [2180, 100],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
-        "options": {
-          "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, 'Email sent successfully. Gmail message ID: ' + $json.id, $('Validate Action').first().json.pending_action_id] }}"
-        }
-      },
-      "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-      }
-    },
-    {
-      "id": "update-slack-approved",
-      "name": "Update Slack Card - Approved",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2400, 100],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Validate Action').first().json.response_url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Sent\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Sent by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
-        "options": {}
-      }
-    },
-    {
-      "id": "update-db-rejected",
-      "name": "Update DB - Rejected",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [1520, 300],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
-        "options": {
-          "queryReplacement": "={{ [$json.clicking_user_id, $json.pending_action_id] }}"
-        }
-      },
-      "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-      }
-    },
-    {
-      "id": "update-slack-rejected",
-      "name": "Update Slack Card - Rejected",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1740, 300],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Validate Action').first().json.response_url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Cancelled\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Cancelled by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
-        "options": {}
-      }
-    },
-    {
-      "id": "send-error-response",
-      "name": "Send Error Response",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1300, 450],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $json.response_url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "body": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"text\": \"Error: {{ $json.error }}\"\n}",
-        "options": {}
-      }
-    },
-    {
-      "id": "respond-ok-approved",
-      "name": "Respond OK - Approved",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [2620, 100],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
-        "options": {}
-      }
-    },
-    {
-      "id": "respond-ok-rejected",
-      "name": "Respond OK - Rejected",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [1960, 300],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
-        "options": {}
-      }
-    },
-    {
-      "id": "respond-error",
-      "name": "Respond Error",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [1520, 450],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"ok\": false }",
-        "options": {}
-      }
-    },
-    {
-      "id": "feedback-approved",
-      "name": "Feedback - Email Sent",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [2620, 100],
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "xbFJVyUFvGfUbY4s"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "action": "post_thread",
-            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
-            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
-            "text": "={{ '✅ Email sent to ' + $('Validate Action').first().json.payload.to }}",
-            "blocks": "={{ [] }}"
-          }
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "feedback-rejected",
-      "name": "Feedback - Email Cancelled",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [1960, 300],
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "xbFJVyUFvGfUbY4s"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "action": "post_thread",
-            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
-            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
-            "text": "={{ '❌ Email to ' + $('Validate Action').first().json.payload.to + ' was cancelled.' }}",
-            "blocks": "={{ [] }}"
-          }
-        },
-        "options": {}
-      }
-    }
-  ],
-  "connections": {
-    "Slack Interaction Webhook": {
-      "main": [[{ "node": "Parse Slack Payload", "type": "main", "index": 0 }]]
-    },
-    "Parse Slack Payload": {
-      "main": [
-        [{ "node": "Lookup Pending Action", "type": "main", "index": 0 }]
-      ]
-    },
-    "Lookup Pending Action": {
-      "main": [[{ "node": "Validate Action", "type": "main", "index": 0 }]]
-    },
-    "Validate Action": {
-      "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
-    },
-    "Is Valid?": {
-      "main": [
-        [{ "node": "Route by Action", "type": "main", "index": 0 }],
-        [{ "node": "Send Error Response", "type": "main", "index": 0 }]
-      ]
-    },
-    "Route by Action": {
-      "main": [
-        [{ "node": "Get Google Auth", "type": "main", "index": 0 }],
-        [{ "node": "Update DB - Rejected", "type": "main", "index": 0 }]
-      ]
-    },
-    "Get Google Auth": {
-      "main": [[{ "node": "Build MIME Email", "type": "main", "index": 0 }]]
-    },
-    "Build MIME Email": {
-      "main": [[{ "node": "Send Email via Gmail", "type": "main", "index": 0 }]]
-    },
-    "Send Email via Gmail": {
-      "main": [[{ "node": "Update DB - Approved", "type": "main", "index": 0 }]]
-    },
-    "Update DB - Approved": {
-      "main": [
-        [{ "node": "Update Slack Card - Approved", "type": "main", "index": 0 }]
-      ]
-    },
-    "Update DB - Rejected": {
-      "main": [
-        [{ "node": "Update Slack Card - Rejected", "type": "main", "index": 0 }]
-      ]
-    },
-    "Send Error Response": {
-      "main": [[{ "node": "Respond Error", "type": "main", "index": 0 }]]
-    },
-    "Update Slack Card - Approved": {
-      "main": [
-        [{ "node": "Feedback - Email Sent", "type": "main", "index": 0 }]
-      ]
-    },
-    "Feedback - Email Sent": {
-      "main": [
-        [{ "node": "Respond OK - Approved", "type": "main", "index": 0 }]
-      ]
-    },
-    "Update Slack Card - Rejected": {
-      "main": [
-        [{ "node": "Feedback - Email Cancelled", "type": "main", "index": 0 }]
-      ]
-    },
-    "Feedback - Email Cancelled": {
-      "main": [
-        [{ "node": "Respond OK - Rejected", "type": "main", "index": 0 }]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
-  },
-  "staticData": null,
-  "meta": null,
-  "pinData": null,
-  "versionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
-  "activeVersionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
-  "versionCounter": 20,
-  "triggerCount": 1,
-  "shared": [
-    {
-      "updatedAt": "2026-02-04T13:56:19.841Z",
-      "createdAt": "2026-02-04T13:56:19.841Z",
-      "role": "workflow:owner",
-      "workflowId": "iuU0eyfTN2We4uPR",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
-  "tags": [],
-  "activeVersion": {
-    "updatedAt": "2026-02-04T15:42:07.666Z",
-    "createdAt": "2026-02-04T15:42:07.666Z",
-    "versionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
-    "workflowId": "iuU0eyfTN2We4uPR",
+    "updatedAt": "2026-02-10T10:47:28.701Z",
+    "createdAt": "2026-02-04T13:56:19.841Z",
+    "id": "iuU0eyfTN2We4uPR",
+    "name": "\ud83d\udd14 Trigger | Approval Handler",
+    "description": null,
+    "active": true,
+    "isArchived": false,
     "nodes": [
-      {
-        "id": "webhook-trigger",
-        "name": "Slack Interaction Webhook",
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2,
-        "position": [200, 300],
-        "webhookId": "approval-handler",
-        "parameters": {
-          "path": "approval-handler",
-          "httpMethod": "POST",
-          "responseMode": "responseNode",
-          "options": {}
-        }
-      },
-      {
-        "id": "parse-payload",
-        "name": "Parse Slack Payload",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [420, 300],
-        "parameters": {
-          "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
-        }
-      },
-      {
-        "id": "lookup-pending-action",
-        "name": "Lookup Pending Action",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [640, 300],
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
-          "options": { "queryReplacement": "={{ [$json.pending_action_id] }}" }
+        {
+            "id": "webhook-trigger",
+            "name": "Slack Interaction Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                200,
+                300
+            ],
+            "webhookId": "approval-handler",
+            "parameters": {
+                "path": "approval-handler",
+                "httpMethod": "POST",
+                "responseMode": "responseNode",
+                "options": {}
+            }
         },
-        "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-        }
-      },
-      {
-        "id": "validate-action",
-        "name": "Validate Action",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [860, 300],
-        "parameters": {
-          "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    action_type: parsed.action_id,\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: action.payload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
-        }
-      },
-      {
-        "id": "check-valid",
-        "name": "Is Valid?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [1080, 300],
-        "parameters": {
-          "conditions": {
-            "options": {
-              "version": 2,
-              "leftValue": "",
-              "caseSensitive": true,
-              "typeValidation": "strict"
+        {
+            "id": "parse-payload",
+            "name": "Parse Slack Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                420,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
+            }
+        },
+        {
+            "id": "lookup-pending-action",
+            "name": "Lookup Pending Action",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                640,
+                300
+            ],
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
+                "options": {
+                    "queryReplacement": "={{ [$json.pending_action_id] }}"
+                }
             },
-            "combinator": "and",
-            "conditions": [
-              {
-                "id": "valid-check",
-                "leftValue": "={{ $json.valid }}",
-                "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
-              }
-            ]
-          }
-        }
-      },
-      {
-        "id": "route-action",
-        "name": "Route by Action",
-        "type": "n8n-nodes-base.switch",
-        "typeVersion": 3.2,
-        "position": [1300, 200],
-        "parameters": {
-          "mode": "rules",
-          "rules": {
-            "values": [
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.action_type }}",
-                      "rightValue": "approve_action",
-                      "operator": { "type": "string", "operation": "equals" }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "approve"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "version": 2,
-                    "leftValue": "",
-                    "caseSensitive": true,
-                    "typeValidation": "strict"
-                  },
-                  "combinator": "and",
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.action_type }}",
-                      "rightValue": "reject_action",
-                      "operator": { "type": "string", "operation": "equals" }
-                    }
-                  ]
-                },
-                "renameOutput": true,
-                "outputKey": "reject"
-              }
-            ]
-          },
-          "options": { "fallbackOutput": "extra" }
-        }
-      },
-      {
-        "id": "get-google-auth",
-        "name": "Get Google Auth",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "typeVersion": 1.2,
-        "position": [1520, 100],
-        "parameters": {
-          "workflowId": {
-            "__rl": true,
-            "mode": "id",
-            "value": "S8GWoOTCaSqyc5bj"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "slack_user_id": "={{ $json.pending_action.slack_user_id }}",
-              "scopes": "https://www.googleapis.com/auth/gmail.send"
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
             }
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "build-mime-email",
-        "name": "Build MIME Email",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [1740, 100],
-        "parameters": {
-          "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
-        }
-      },
-      {
-        "id": "send-email-gmail",
-        "name": "Send Email via Gmail",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [1960, 100],
-        "parameters": {
-          "method": "POST",
-          "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $json.access_token }}"
-              },
-              { "name": "Content-Type", "value": "application/json" }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [{ "name": "raw", "value": "={{ $json.raw }}" }]
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "update-db-approved",
-        "name": "Update DB - Approved",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [2180, 100],
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
-          "options": {
-            "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, 'Email sent successfully. Gmail message ID: ' + $json.id, $('Validate Action').first().json.pending_action_id] }}"
-          }
         },
-        "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-        }
-      },
-      {
-        "id": "update-slack-approved",
-        "name": "Update Slack Card - Approved",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [2400, 100],
-        "parameters": {
-          "method": "POST",
-          "url": "={{ $('Validate Action').first().json.response_url }}",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              { "name": "Content-Type", "value": "application/json" }
-            ]
-          },
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Sent\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Sent by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
-          "options": {}
-        }
-      },
-      {
-        "id": "update-db-rejected",
-        "name": "Update DB - Rejected",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [1520, 300],
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
-          "options": {
-            "queryReplacement": "={{ [$json.clicking_user_id, $json.pending_action_id] }}"
-          }
+        {
+            "id": "validate-action",
+            "name": "Validate Action",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                860,
+                300
+            ],
+            "parameters": {
+                "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\n// Parse payload - may be stored as JSONB string due to double-serialization\nlet parsedPayload = action.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { /* keep as-is */ }\n}\n\nreturn [{\n  json: {\n    valid: true,\n    button_action: parsed.action_id,         // approve_action, reject_action, view_full_action\n    content_action_type: action.action_type,  // send_email, publish_content, etc.\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: parsedPayload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
+            }
         },
-        "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-        }
-      },
-      {
-        "id": "update-slack-rejected",
-        "name": "Update Slack Card - Rejected",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [1740, 300],
-        "parameters": {
-          "method": "POST",
-          "url": "={{ $('Validate Action').first().json.response_url }}",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              { "name": "Content-Type", "value": "application/json" }
-            ]
-          },
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Cancelled\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Cancelled by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
-          "options": {}
-        }
-      },
-      {
-        "id": "send-error-response",
-        "name": "Send Error Response",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [1300, 450],
-        "parameters": {
-          "method": "POST",
-          "url": "={{ $json.response_url }}",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              { "name": "Content-Type", "value": "application/json" }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "json",
-          "body": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"text\": \"Error: {{ $json.error }}\"\n}",
-          "options": {}
-        }
-      },
-      {
-        "id": "respond-ok-approved",
-        "name": "Respond OK - Approved",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [2620, 100],
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
-          "options": {}
-        }
-      },
-      {
-        "id": "respond-ok-rejected",
-        "name": "Respond OK - Rejected",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [1960, 300],
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
-          "options": {}
-        }
-      },
-      {
-        "id": "respond-error",
-        "name": "Respond Error",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [1520, 450],
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={ \"ok\": false }",
-          "options": {}
-        }
-      },
-      {
-        "id": "feedback-approved",
-        "name": "Feedback - Email Sent",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "typeVersion": 1.2,
-        "position": [2620, 100],
-        "parameters": {
-          "workflowId": {
-            "__rl": true,
-            "mode": "id",
-            "value": "xbFJVyUFvGfUbY4s"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "action": "post_thread",
-              "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
-              "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
-              "text": "={{ '✅ Email sent to ' + $('Validate Action').first().json.payload.to }}",
-              "blocks": "={{ [] }}"
+        {
+            "id": "check-valid",
+            "name": "Is Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1080,
+                300
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "valid-check",
+                            "leftValue": "={{ $json.valid }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
             }
-          },
-          "options": {}
-        }
-      },
-      {
-        "id": "feedback-rejected",
-        "name": "Feedback - Email Cancelled",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "typeVersion": 1.2,
-        "position": [1960, 300],
-        "parameters": {
-          "workflowId": {
-            "__rl": true,
-            "mode": "id",
-            "value": "xbFJVyUFvGfUbY4s"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "action": "post_thread",
-              "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
-              "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
-              "text": "={{ '❌ Email to ' + $('Validate Action').first().json.payload.to + ' was cancelled.' }}",
-              "blocks": "={{ [] }}"
+        },
+        {
+            "id": "route-action",
+            "name": "Route by Action",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                1300,
+                200
+            ],
+            "parameters": {
+                "mode": "rules",
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.button_action }}",
+                                        "rightValue": "approve_action",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "approve"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.button_action }}",
+                                        "rightValue": "reject_action",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "reject"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.button_action }}",
+                                        "rightValue": "view_full_action",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "view_full"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
             }
-          },
-          "options": {}
+        },
+        {
+            "id": "get-google-auth",
+            "name": "Get Google Auth",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1740,
+                100
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "S8GWoOTCaSqyc5bj"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.pending_action.slack_user_id }}",
+                        "scopes": "https://www.googleapis.com/auth/gmail.send"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "build-mime-email",
+            "name": "Build MIME Email",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1960,
+                100
+            ],
+            "parameters": {
+                "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
+            }
+        },
+        {
+            "id": "send-email-gmail",
+            "name": "Send Email via Gmail",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2180,
+                100
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $json.access_token }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "raw",
+                            "value": "={{ $json.raw }}"
+                        }
+                    ]
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "update-db-approved",
+            "name": "Update DB - Approved",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                2400,
+                100
+            ],
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
+                "options": {
+                    "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, 'Email sent successfully. Gmail message ID: ' + $json.id, $('Validate Action').first().json.pending_action_id] }}"
+                }
+            },
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "id": "update-slack-approved",
+            "name": "Update Slack Card - Approved",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2620,
+                100
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Validate Action').first().json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Sent\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Sent by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                "options": {}
+            }
+        },
+        {
+            "id": "update-db-rejected",
+            "name": "Update DB - Rejected",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1520,
+                300
+            ],
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
+                "options": {
+                    "queryReplacement": "={{ [$json.clicking_user_id, $json.pending_action_id] }}"
+                }
+            },
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "id": "update-slack-rejected",
+            "name": "Update Slack Card - Rejected",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1740,
+                300
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Validate Action').first().json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Cancelled\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Cancelled by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                "options": {}
+            }
+        },
+        {
+            "id": "send-error-response",
+            "name": "Send Error Response",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1300,
+                450
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "body": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"text\": \"Error: {{ $json.error }}\"\n}",
+                "options": {},
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ text: \"This action has already been processed or is no longer available.\", response_type: \"ephemeral\", replace_original: false }) }}"
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "respond-ok-approved",
+            "name": "Respond OK - Approved",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                2840,
+                100
+            ],
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
+                "options": {}
+            }
+        },
+        {
+            "id": "respond-ok-rejected",
+            "name": "Respond OK - Rejected",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1960,
+                300
+            ],
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
+                "options": {}
+            }
+        },
+        {
+            "id": "respond-error",
+            "name": "Respond Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1520,
+                450
+            ],
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": false }",
+                "options": {}
+            }
+        },
+        {
+            "id": "feedback-approved",
+            "name": "Feedback - Email Sent",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2840,
+                100
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "xbFJVyUFvGfUbY4s"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "post_thread",
+                        "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                        "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                        "text": "={{ '\u2705 Email sent to ' + $('Validate Action').first().json.payload.to }}",
+                        "blocks": "={{ [] }}"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "feedback-rejected",
+            "name": "Feedback - Email Cancelled",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1960,
+                300
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "xbFJVyUFvGfUbY4s"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "post_thread",
+                        "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                        "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                        "text": "={{ '\u274c Email to ' + $('Validate Action').first().json.payload.to + ' was cancelled.' }}",
+                        "blocks": "={{ [] }}"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "route-content-type",
+            "name": "Route by Content Type",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                1520,
+                100
+            ],
+            "parameters": {
+                "mode": "rules",
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.content_action_type }}",
+                                        "rightValue": "send_email",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "email"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.content_action_type }}",
+                                        "rightValue": "publish_content",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "content"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            }
+        },
+        {
+            "id": "update-calendar-approved",
+            "name": "Update Calendar - Ready",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2620,
+                -100
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "ezvCaPeNM8P7gEWj"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $json.slack_user_id }}",
+                        "action": "={{ $json.action }}",
+                        "drafts": "={{ $json.drafts }}",
+                        "images": "={{ $json.images }}",
+                        "winning_idea": "={{ $json.winning_idea || '' }}",
+                        "target_channels": "={{ $json.target_channels || '' }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "slack_user_id",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "slack_user_id"
+                        },
+                        {
+                            "id": "action",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "action"
+                        },
+                        {
+                            "id": "drafts",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "drafts"
+                        },
+                        {
+                            "id": "images",
+                            "type": "string",
+                            "required": true,
+                            "displayName": "images"
+                        },
+                        {
+                            "id": "winning_idea",
+                            "type": "string",
+                            "required": false,
+                            "displayName": "winning_idea"
+                        },
+                        {
+                            "id": "target_channels",
+                            "type": "string",
+                            "required": false,
+                            "displayName": "target_channels"
+                        }
+                    ]
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "update-db-content-approved",
+            "name": "Update DB - Content Approved",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1740,
+                -100
+            ],
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE alfred.pending_actions\nSET\n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Content approved for publishing'\nWHERE id = $2::uuid\nRETURNING *;",
+                "options": {
+                    "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, $('Validate Action').first().json.pending_action_id] }}"
+                }
+            },
+            "credentials": {
+                "postgres": {
+                    "id": "8nTSHxonyIBczkvN",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "id": "update-slack-content-approved",
+            "name": "Update Slack - Content Approved",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2840,
+                -100
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Validate Action').first().json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\ud83d\udcca Calendar updated to *Ready* \\u2022 {{ $('Prepare Calendar Data').first().json.image_gen_success ? '\\ud83d\\uddbc\\ufe0f Images generated' : '\\ud83d\\udcdd Text only' }} \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                "options": {}
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "feedback-content-approved",
+            "name": "Feedback - Content Approved",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                3060,
+                -100
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "xbFJVyUFvGfUbY4s"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "post_thread",
+                        "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                        "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                        "text": "={{ '\ud83c\udf89 Content approved! Calendar updated to Ready status.' }}",
+                        "blocks": "={{ [] }}"
+                    }
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "respond-ok-content",
+            "name": "Respond OK - Content",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1960,
+                -100
+            ],
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"action\": \"content_approved\" }",
+                "options": {}
+            }
+        },
+        {
+            "id": "view-full-handler",
+            "name": "View Full Content",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1520,
+                500
+            ],
+            "parameters": {
+                "jsCode": "const validated = $input.first().json;\nconst payload = validated.payload;\nconst drafts = payload.drafts || {};\n\n// Build full content message\nlet fullContent = '*Full Post Content:*\\n\\n';\nfor (const [channel, draft] of Object.entries(drafts)) {\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  fullContent += `*${channel.toUpperCase()}:*\\n${content}\\n\\n`;\n}\n\nreturn [{\n  json: {\n    full_content: fullContent,\n    response_url: validated.response_url,\n    validated: validated\n  }\n}];"
+            }
+        },
+        {
+            "id": "send-view-full",
+            "name": "Send View Full Response",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1740,
+                500
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": {{ JSON.stringify($json.full_content.substring(0, 2900)) }} }\n    }\n  ]\n}",
+                "options": {}
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "respond-ok-view-full",
+            "name": "Respond OK - View Full",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1960,
+                500
+            ],
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true }",
+                "options": {}
+            }
+        },
+        {
+            "parameters": {
+                "mode": "rules",
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Validate Action').first().json.content_action_type }}",
+                                        "rightValue": "publish_content",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "content"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Validate Action').first().json.content_action_type }}",
+                                        "rightValue": "send_email",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "email"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "route-rejection-type",
+            "name": "Route Rejection by Type",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                1340,
+                680
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Validate Action').first().json.response_url }}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\\u270f\\ufe0f Changes Requested\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'Content' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Status:*\\nRevisions Requested\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\\ud83d\\udcac Reply in this thread with your feedback \\u2022 Requested by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                "options": {}
+            },
+            "id": "update-slack-content-rejected",
+            "name": "Update Slack - Content Rejected",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1640,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "xbFJVyUFvGfUbY4s"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "post_thread",
+                        "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                        "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                        "text": "={{ '\\u270f\\ufe0f Changes requested! Please reply in this thread with your feedback and I\\'ll refine the content based on your input.' }}",
+                        "blocks": "={{ [] }}"
+                    }
+                },
+                "options": {}
+            },
+            "id": "feedback-content-rejected",
+            "name": "Feedback - Content Rejected",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                1880,
+                600
+            ],
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"action\": \"content_rejected\" }",
+                "options": {}
+            },
+            "id": "respond-ok-content-rejected",
+            "name": "Respond OK - Content Rejected",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                2120,
+                600
+            ]
+        },
+        {
+            "id": "generate-images",
+            "name": "Generate Images",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                2180,
+                -100
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "Z4pTCAwWwz153K3C"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "slack_user_id": "={{ $('Validate Action').first().json.pending_action.slack_user_id }}",
+                        "drafts": "={{ JSON.stringify($('Validate Action').first().json.payload.drafts || {}) }}",
+                        "target_channels": "={{ $('Validate Action').first().json.payload.target_channels || $('Validate Action').first().json.payload.content_type || 'linkedin' }}",
+                        "image_style_hints": ""
+                    }
+                },
+                "options": {}
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "id": "prepare-calendar-data",
+            "name": "Prepare Calendar Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2400,
+                -100
+            ],
+            "parameters": {
+                "jsCode": "const validated = $('Validate Action').first().json;\nconst imageResult = $input.first().json;\nconst payload = validated.payload;\n\n// Extract images from Image Generator output (handles success, error, and empty)\nlet images = {};\ntry {\n  if (imageResult?.output?.images) {\n    images = imageResult.output.images;\n  } else if (imageResult?.images) {\n    images = imageResult.images;\n  }\n} catch (e) {\n  // Image generation failed, continue without images\n}\n\nreturn [{\n  json: {\n    slack_user_id: validated.pending_action.slack_user_id,\n    action: 'update_tracker',\n    drafts: JSON.stringify(payload.drafts || {}),\n    images: JSON.stringify(images),\n    winning_idea: payload.post_summary || '',\n    target_channels: payload.target_channels || payload.content_type || '',\n    image_gen_success: Object.values(images).some(img => img && (img.file_url || img.url))\n  }\n}];"
+            },
+            "onError": "continueRegularOutput"
         }
-      }
     ],
     "connections": {
-      "Slack Interaction Webhook": {
-        "main": [
-          [{ "node": "Parse Slack Payload", "type": "main", "index": 0 }]
-        ]
-      },
-      "Parse Slack Payload": {
-        "main": [
-          [{ "node": "Lookup Pending Action", "type": "main", "index": 0 }]
-        ]
-      },
-      "Lookup Pending Action": {
-        "main": [[{ "node": "Validate Action", "type": "main", "index": 0 }]]
-      },
-      "Validate Action": {
-        "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
-      },
-      "Is Valid?": {
-        "main": [
-          [{ "node": "Route by Action", "type": "main", "index": 0 }],
-          [{ "node": "Send Error Response", "type": "main", "index": 0 }]
-        ]
-      },
-      "Route by Action": {
-        "main": [
-          [{ "node": "Get Google Auth", "type": "main", "index": 0 }],
-          [{ "node": "Update DB - Rejected", "type": "main", "index": 0 }]
-        ]
-      },
-      "Get Google Auth": {
-        "main": [[{ "node": "Build MIME Email", "type": "main", "index": 0 }]]
-      },
-      "Build MIME Email": {
-        "main": [
-          [{ "node": "Send Email via Gmail", "type": "main", "index": 0 }]
-        ]
-      },
-      "Send Email via Gmail": {
-        "main": [
-          [{ "node": "Update DB - Approved", "type": "main", "index": 0 }]
-        ]
-      },
-      "Update DB - Approved": {
-        "main": [
-          [
-            {
-              "node": "Update Slack Card - Approved",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Update DB - Rejected": {
-        "main": [
-          [
-            {
-              "node": "Update Slack Card - Rejected",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Send Error Response": {
-        "main": [[{ "node": "Respond Error", "type": "main", "index": 0 }]]
-      },
-      "Update Slack Card - Approved": {
-        "main": [
-          [{ "node": "Feedback - Email Sent", "type": "main", "index": 0 }]
-        ]
-      },
-      "Feedback - Email Sent": {
-        "main": [
-          [{ "node": "Respond OK - Approved", "type": "main", "index": 0 }]
-        ]
-      },
-      "Update Slack Card - Rejected": {
-        "main": [
-          [{ "node": "Feedback - Email Cancelled", "type": "main", "index": 0 }]
-        ]
-      },
-      "Feedback - Email Cancelled": {
-        "main": [
-          [{ "node": "Respond OK - Rejected", "type": "main", "index": 0 }]
-        ]
-      }
+        "Slack Interaction Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Slack Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Slack Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Lookup Pending Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Lookup Pending Action": {
+            "main": [
+                [
+                    {
+                        "node": "Validate Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validate Action": {
+            "main": [
+                [
+                    {
+                        "node": "Is Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Route by Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send Error Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Action": {
+            "main": [
+                [
+                    {
+                        "node": "Route by Content Type",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update DB - Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "View Full Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Google Auth": {
+            "main": [
+                [
+                    {
+                        "node": "Build MIME Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build MIME Email": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email via Gmail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Email via Gmail": {
+            "main": [
+                [
+                    {
+                        "node": "Update DB - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update DB - Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Update Slack Card - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update DB - Rejected": {
+            "main": [
+                [
+                    {
+                        "node": "Route Rejection by Type",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Error Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Slack Card - Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Feedback - Email Sent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Feedback - Email Sent": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Slack Card - Rejected": {
+            "main": [
+                [
+                    {
+                        "node": "Feedback - Email Cancelled",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Feedback - Email Cancelled": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Content Type": {
+            "main": [
+                [
+                    {
+                        "node": "Get Google Auth",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update DB - Content Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Calendar - Ready": {
+            "main": [
+                [
+                    {
+                        "node": "Update Slack - Content Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update DB - Content Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Slack - Content Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Feedback - Content Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "View Full Content": {
+            "main": [
+                [
+                    {
+                        "node": "Send View Full Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send View Full Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - View Full",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route Rejection by Type": {
+            "main": [
+                [
+                    {
+                        "node": "Update Slack - Content Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update Slack Card - Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update Slack Card - Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Slack - Content Rejected": {
+            "main": [
+                [
+                    {
+                        "node": "Feedback - Content Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Feedback - Content Rejected": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - Content Rejected",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Respond OK - Content": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Images",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Images": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Calendar Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Calendar Data": {
+            "main": [
+                [
+                    {
+                        "node": "Update Calendar - Ready",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
     },
-    "authors": "Spencer Marx",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "workflowPublishHistory": [
-      {
-        "createdAt": "2026-02-04T15:42:07.845Z",
-        "id": 247,
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
+    "activeVersionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
+    "versionCounter": 46,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-02-04T13:56:19.841Z",
+            "createdAt": "2026-02-04T13:56:19.841Z",
+            "role": "workflow:owner",
+            "workflowId": "iuU0eyfTN2We4uPR",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "project": {
+                "updatedAt": "2026-02-02T12:27:52.037Z",
+                "createdAt": "2026-02-02T12:20:35.714Z",
+                "id": "Jd992SEPuokf8o5Z",
+                "name": "Spencer Marx <spencer@aclarify.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+                "projectRelations": [
+                    {
+                        "updatedAt": "2026-02-02T12:20:35.714Z",
+                        "createdAt": "2026-02-02T12:20:35.714Z",
+                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+                        "projectId": "Jd992SEPuokf8o5Z",
+                        "user": {
+                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "createdAt": "2026-02-02T12:20:29.217Z",
+                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
+                            "email": "spencer@aclarify.com",
+                            "firstName": "Spencer",
+                            "lastName": "Marx",
+                            "personalizationAnswers": {
+                                "version": "v4",
+                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                                "personalization_survey_n8n_version": "2.6.2",
+                                "companySize": "<20",
+                                "companyType": "saas",
+                                "role": "business-owner",
+                                "reportedSource": "friend"
+                            },
+                            "settings": {
+                                "userActivated": true,
+                                "easyAIWorkflowOnboarded": true,
+                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                                "userActivatedAt": 1770049275864,
+                                "npsSurvey": {
+                                    "responded": true,
+                                    "lastShownAt": 1770325854784
+                                }
+                            },
+                            "disabled": false,
+                            "mfaEnabled": false,
+                            "lastActiveAt": "2026-02-10",
+                            "isPending": false
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-02-10T10:47:28.702Z",
+        "createdAt": "2026-02-10T10:47:28.702Z",
+        "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
         "workflowId": "iuU0eyfTN2We4uPR",
-        "versionId": "0ab3ee04-287a-4439-8f00-cc73fda130e0",
-        "event": "activated",
-        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
-      }
-    ]
-  }
+        "nodes": [
+            {
+                "id": "webhook-trigger",
+                "name": "Slack Interaction Webhook",
+                "type": "n8n-nodes-base.webhook",
+                "typeVersion": 2,
+                "position": [
+                    200,
+                    300
+                ],
+                "webhookId": "approval-handler",
+                "parameters": {
+                    "path": "approval-handler",
+                    "httpMethod": "POST",
+                    "responseMode": "responseNode",
+                    "options": {}
+                }
+            },
+            {
+                "id": "parse-payload",
+                "name": "Parse Slack Payload",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    420,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const body = $input.first().json.body;\n\nlet payload;\nif (typeof body === 'string') {\n  const decoded = decodeURIComponent(body.replace('payload=', ''));\n  payload = JSON.parse(decoded);\n} else if (body.payload) {\n  payload = typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload;\n} else {\n  payload = body;\n}\n\nconst action = payload.actions?.[0] || {};\nconst user = payload.user || {};\nconst container = payload.container || {};\n\nreturn [{\n  json: {\n    action_id: action.action_id,\n    pending_action_id: action.value,\n    clicking_user_id: user.id,\n    clicking_username: user.username,\n    channel_id: container.channel_id || payload.channel?.id,\n    message_ts: container.message_ts || payload.message?.ts,\n    response_url: payload.response_url,\n    trigger_id: payload.trigger_id,\n    raw_payload: payload\n  }\n}];"
+                }
+            },
+            {
+                "id": "lookup-pending-action",
+                "name": "Lookup Pending Action",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    640,
+                    300
+                ],
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "SELECT \n  pa.*,\n  u.slack_user_id as owner_slack_user_id,\n  u.email as user_email,\n  u.gmail_credential_id,\n  u.preferences\nFROM alfred.pending_actions pa\nJOIN alfred.users u ON pa.user_id = u.id\nWHERE pa.id = $1::uuid;",
+                    "options": {
+                        "queryReplacement": "={{ [$json.pending_action_id] }}"
+                    }
+                },
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "id": "validate-action",
+                "name": "Validate Action",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    860,
+                    300
+                ],
+                "parameters": {
+                    "jsCode": "const parsed = $('Parse Slack Payload').first().json;\nconst dbResults = $input.all();\n\nif (!dbResults.length || !dbResults[0].json.id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Pending action not found',\n      error_type: 'not_found',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst action = dbResults[0].json;\nconst clickingUserId = parsed.clicking_user_id;\n\nif (action.status !== 'pending') {\n  return [{\n    json: {\n      valid: false,\n      error: `This action has already been ${action.status}`,\n      error_type: 'already_resolved',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nconst expiresAt = new Date(action.expires_at);\nif (expiresAt < new Date()) {\n  return [{\n    json: {\n      valid: false,\n      error: 'This action has expired',\n      error_type: 'expired',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\nif (clickingUserId !== action.owner_slack_user_id) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Only the original requester can approve or cancel this action',\n      error_type: 'unauthorized',\n      response_url: parsed.response_url\n    }\n  }];\n}\n\n// Parse payload - may be stored as JSONB string due to double-serialization\nlet parsedPayload = action.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { /* keep as-is */ }\n}\n\nreturn [{\n  json: {\n    valid: true,\n    button_action: parsed.action_id,         // approve_action, reject_action, view_full_action\n    content_action_type: action.action_type,  // send_email, publish_content, etc.\n    pending_action_id: action.id,\n    pending_action: action,\n    payload: parsedPayload,\n    clicking_user_id: clickingUserId,\n    clicking_username: parsed.clicking_username,\n    response_url: parsed.response_url,\n    channel_id: parsed.channel_id,\n    message_ts: parsed.message_ts,\n    user_email: action.user_email,\n    gmail_credential_id: action.gmail_credential_id\n  }\n}];"
+                }
+            },
+            {
+                "id": "check-valid",
+                "name": "Is Valid?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    1080,
+                    300
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "valid-check",
+                                "leftValue": "={{ $json.valid }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "route-action",
+                "name": "Route by Action",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    1300,
+                    200
+                ],
+                "parameters": {
+                    "mode": "rules",
+                    "rules": {
+                        "values": [
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.button_action }}",
+                                            "rightValue": "approve_action",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "approve"
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.button_action }}",
+                                            "rightValue": "reject_action",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "reject"
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.button_action }}",
+                                            "rightValue": "view_full_action",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "view_full"
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                }
+            },
+            {
+                "id": "get-google-auth",
+                "name": "Get Google Auth",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1740,
+                    100
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "S8GWoOTCaSqyc5bj"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.pending_action.slack_user_id }}",
+                            "scopes": "https://www.googleapis.com/auth/gmail.send"
+                        }
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "build-mime-email",
+                "name": "Build MIME Email",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1960,
+                    100
+                ],
+                "parameters": {
+                    "jsCode": "const validated = $('Validate Action').first().json;\nconst authResult = $input.first().json;\n\nif (!authResult.success) {\n  return [{\n    json: {\n      success: false,\n      error: 'Google authentication failed: ' + (authResult.error || 'Unknown error'),\n      validated: validated\n    }\n  }];\n}\n\nconst payload = validated.payload;\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = `To: ${payload.to}\\n`;\nif (payload.cc) mimeMessage += `Cc: ${payload.cc}\\n`;\nif (payload.bcc) mimeMessage += `Bcc: ${payload.bcc}\\n`;\nmimeMessage += `Subject: ${payload.subject || '(No subject)'}\\n`;\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += `Content-Type: multipart/alternative; boundary=\"${boundary}\"\\n\\n`;\nmimeMessage += `--${boundary}\\n`;\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += (payload.body_plain || '') + '\\n\\n';\n\nif (payload.body_html) {\n  mimeMessage += `--${boundary}\\n`;\n  mimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\n  mimeMessage += payload.body_html + '\\n\\n';\n}\n\nmimeMessage += `--${boundary}--`;\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    success: true,\n    raw: encoded,\n    access_token: authResult.access_token,\n    validated: validated\n  }\n}];"
+                }
+            },
+            {
+                "id": "send-email-gmail",
+                "name": "Send Email via Gmail",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    2180,
+                    100
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Authorization",
+                                "value": "=Bearer {{ $json.access_token }}"
+                            },
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "contentType": "json",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "raw",
+                                "value": "={{ $json.raw }}"
+                            }
+                        ]
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "update-db-approved",
+                "name": "Update DB - Approved",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    2400,
+                    100
+                ],
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "UPDATE alfred.pending_actions\nSET \n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = $2\nWHERE id = $3::uuid\nRETURNING *;",
+                    "options": {
+                        "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, 'Email sent successfully. Gmail message ID: ' + $json.id, $('Validate Action').first().json.pending_action_id] }}"
+                    }
+                },
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "id": "update-slack-approved",
+                "name": "Update Slack Card - Approved",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    2620,
+                    100
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $('Validate Action').first().json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Sent\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Sent by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                    "options": {}
+                }
+            },
+            {
+                "id": "update-db-rejected",
+                "name": "Update DB - Rejected",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    1520,
+                    300
+                ],
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "UPDATE alfred.pending_actions\nSET \n  status = 'rejected',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Cancelled by user'\nWHERE id = $2::uuid\nRETURNING *;",
+                    "options": {
+                        "queryReplacement": "={{ [$json.clicking_user_id, $json.pending_action_id] }}"
+                    }
+                },
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "id": "update-slack-rejected",
+                "name": "Update Slack Card - Rejected",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1740,
+                    300
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $('Validate Action').first().json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"Email Cancelled\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*To:*\\n{{ $('Validate Action').first().json.payload.to }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Subject:*\\n{{ $('Validate Action').first().json.payload.subject }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"Cancelled by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                    "options": {}
+                }
+            },
+            {
+                "id": "send-error-response",
+                "name": "Send Error Response",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1300,
+                    450
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "body": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"text\": \"Error: {{ $json.error }}\"\n}",
+                    "options": {},
+                    "specifyBody": "json",
+                    "jsonBody": "={{ JSON.stringify({ text: \"This action has already been processed or is no longer available.\", response_type: \"ephemeral\", replace_original: false }) }}"
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "respond-ok-approved",
+                "name": "Respond OK - Approved",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    2840,
+                    100
+                ],
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": true, \"action\": \"approved\" }",
+                    "options": {}
+                }
+            },
+            {
+                "id": "respond-ok-rejected",
+                "name": "Respond OK - Rejected",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    1960,
+                    300
+                ],
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": true, \"action\": \"rejected\" }",
+                    "options": {}
+                }
+            },
+            {
+                "id": "respond-error",
+                "name": "Respond Error",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    1520,
+                    450
+                ],
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": false }",
+                    "options": {}
+                }
+            },
+            {
+                "id": "feedback-approved",
+                "name": "Feedback - Email Sent",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2840,
+                    100
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "xbFJVyUFvGfUbY4s"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "post_thread",
+                            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                            "text": "={{ '\u2705 Email sent to ' + $('Validate Action').first().json.payload.to }}",
+                            "blocks": "={{ [] }}"
+                        }
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "feedback-rejected",
+                "name": "Feedback - Email Cancelled",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1960,
+                    300
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "xbFJVyUFvGfUbY4s"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "post_thread",
+                            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                            "text": "={{ '\u274c Email to ' + $('Validate Action').first().json.payload.to + ' was cancelled.' }}",
+                            "blocks": "={{ [] }}"
+                        }
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "route-content-type",
+                "name": "Route by Content Type",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    1520,
+                    100
+                ],
+                "parameters": {
+                    "mode": "rules",
+                    "rules": {
+                        "values": [
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.content_action_type }}",
+                                            "rightValue": "send_email",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "email"
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $json.content_action_type }}",
+                                            "rightValue": "publish_content",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "content"
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                }
+            },
+            {
+                "id": "update-calendar-approved",
+                "name": "Update Calendar - Ready",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2620,
+                    -100
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "ezvCaPeNM8P7gEWj"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $json.slack_user_id }}",
+                            "action": "={{ $json.action }}",
+                            "drafts": "={{ $json.drafts }}",
+                            "images": "={{ $json.images }}",
+                            "winning_idea": "={{ $json.winning_idea || '' }}",
+                            "target_channels": "={{ $json.target_channels || '' }}"
+                        },
+                        "schema": [
+                            {
+                                "id": "slack_user_id",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "slack_user_id"
+                            },
+                            {
+                                "id": "action",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "action"
+                            },
+                            {
+                                "id": "drafts",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "drafts"
+                            },
+                            {
+                                "id": "images",
+                                "type": "string",
+                                "required": true,
+                                "displayName": "images"
+                            },
+                            {
+                                "id": "winning_idea",
+                                "type": "string",
+                                "required": false,
+                                "displayName": "winning_idea"
+                            },
+                            {
+                                "id": "target_channels",
+                                "type": "string",
+                                "required": false,
+                                "displayName": "target_channels"
+                            }
+                        ]
+                    }
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "update-db-content-approved",
+                "name": "Update DB - Content Approved",
+                "type": "n8n-nodes-base.postgres",
+                "typeVersion": 2.5,
+                "position": [
+                    1740,
+                    -100
+                ],
+                "parameters": {
+                    "operation": "executeQuery",
+                    "query": "UPDATE alfred.pending_actions\nSET\n  status = 'approved',\n  resolved_at = NOW(),\n  resolved_by_slack_user_id = $1,\n  resolution_note = 'Content approved for publishing'\nWHERE id = $2::uuid\nRETURNING *;",
+                    "options": {
+                        "queryReplacement": "={{ [$('Validate Action').first().json.clicking_user_id, $('Validate Action').first().json.pending_action_id] }}"
+                    }
+                },
+                "credentials": {
+                    "postgres": {
+                        "id": "8nTSHxonyIBczkvN",
+                        "name": "Postgres account"
+                    }
+                }
+            },
+            {
+                "id": "update-slack-content-approved",
+                "name": "Update Slack - Content Approved",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    2840,
+                    -100
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $('Validate Action').first().json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\ud83d\udcca Calendar updated to *Ready* \\u2022 {{ $('Prepare Calendar Data').first().json.image_gen_success ? '\\ud83d\\uddbc\\ufe0f Images generated' : '\\ud83d\\udcdd Text only' }} \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                    "options": {}
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "feedback-content-approved",
+                "name": "Feedback - Content Approved",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    3060,
+                    -100
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "xbFJVyUFvGfUbY4s"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "post_thread",
+                            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                            "text": "={{ '\ud83c\udf89 Content approved! Calendar updated to Ready status.' }}",
+                            "blocks": "={{ [] }}"
+                        }
+                    }
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "respond-ok-content",
+                "name": "Respond OK - Content",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    1960,
+                    -100
+                ],
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": true, \"action\": \"content_approved\" }",
+                    "options": {}
+                }
+            },
+            {
+                "id": "view-full-handler",
+                "name": "View Full Content",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    1520,
+                    500
+                ],
+                "parameters": {
+                    "jsCode": "const validated = $input.first().json;\nconst payload = validated.payload;\nconst drafts = payload.drafts || {};\n\n// Build full content message\nlet fullContent = '*Full Post Content:*\\n\\n';\nfor (const [channel, draft] of Object.entries(drafts)) {\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  fullContent += `*${channel.toUpperCase()}:*\\n${content}\\n\\n`;\n}\n\nreturn [{\n  json: {\n    full_content: fullContent,\n    response_url: validated.response_url,\n    validated: validated\n  }\n}];"
+                }
+            },
+            {
+                "id": "send-view-full",
+                "name": "Send View Full Response",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1740,
+                    500
+                ],
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"response_type\": \"ephemeral\",\n  \"replace_original\": false,\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": {{ JSON.stringify($json.full_content.substring(0, 2900)) }} }\n    }\n  ]\n}",
+                    "options": {}
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "respond-ok-view-full",
+                "name": "Respond OK - View Full",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    1960,
+                    500
+                ],
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": true }",
+                    "options": {}
+                }
+            },
+            {
+                "parameters": {
+                    "mode": "rules",
+                    "rules": {
+                        "values": [
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $('Validate Action').first().json.content_action_type }}",
+                                            "rightValue": "publish_content",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "content"
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "version": 2,
+                                        "leftValue": "",
+                                        "caseSensitive": true,
+                                        "typeValidation": "strict"
+                                    },
+                                    "combinator": "and",
+                                    "conditions": [
+                                        {
+                                            "leftValue": "={{ $('Validate Action').first().json.content_action_type }}",
+                                            "rightValue": "send_email",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "renameOutput": true,
+                                "outputKey": "email"
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                },
+                "id": "route-rejection-type",
+                "name": "Route Rejection by Type",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    1340,
+                    680
+                ]
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $('Validate Action').first().json.response_url }}",
+                    "sendHeaders": true,
+                    "headerParameters": {
+                        "parameters": [
+                            {
+                                "name": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ]
+                    },
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\\u270f\\ufe0f Changes Requested\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'Content' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Status:*\\nRevisions Requested\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\\ud83d\\udcac Reply in this thread with your feedback \\u2022 Requested by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                    "options": {}
+                },
+                "id": "update-slack-content-rejected",
+                "name": "Update Slack - Content Rejected",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1640,
+                    600
+                ]
+            },
+            {
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "xbFJVyUFvGfUbY4s"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "post_thread",
+                            "channel_id": "={{ $('Validate Action').first().json.channel_id }}",
+                            "thread_ts": "={{ $('Parse Slack Payload').first().json.raw_payload.container.thread_ts || $('Validate Action').first().json.pending_action.slack_thread_ts }}",
+                            "text": "={{ '\\u270f\\ufe0f Changes requested! Please reply in this thread with your feedback and I\\'ll refine the content based on your input.' }}",
+                            "blocks": "={{ [] }}"
+                        }
+                    },
+                    "options": {}
+                },
+                "id": "feedback-content-rejected",
+                "name": "Feedback - Content Rejected",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    1880,
+                    600
+                ],
+                "onError": "continueRegularOutput"
+            },
+            {
+                "parameters": {
+                    "respondWith": "json",
+                    "responseBody": "={ \"ok\": true, \"action\": \"content_rejected\" }",
+                    "options": {}
+                },
+                "id": "respond-ok-content-rejected",
+                "name": "Respond OK - Content Rejected",
+                "type": "n8n-nodes-base.respondToWebhook",
+                "typeVersion": 1.1,
+                "position": [
+                    2120,
+                    600
+                ]
+            },
+            {
+                "id": "generate-images",
+                "name": "Generate Images",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    2180,
+                    -100
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "Z4pTCAwWwz153K3C"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "slack_user_id": "={{ $('Validate Action').first().json.pending_action.slack_user_id }}",
+                            "drafts": "={{ JSON.stringify($('Validate Action').first().json.payload.drafts || {}) }}",
+                            "target_channels": "={{ $('Validate Action').first().json.payload.target_channels || $('Validate Action').first().json.payload.content_type || 'linkedin' }}",
+                            "image_style_hints": ""
+                        }
+                    },
+                    "options": {}
+                },
+                "onError": "continueRegularOutput"
+            },
+            {
+                "id": "prepare-calendar-data",
+                "name": "Prepare Calendar Data",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2400,
+                    -100
+                ],
+                "parameters": {
+                    "jsCode": "const validated = $('Validate Action').first().json;\nconst imageResult = $input.first().json;\nconst payload = validated.payload;\n\n// Extract images from Image Generator output (handles success, error, and empty)\nlet images = {};\ntry {\n  if (imageResult?.output?.images) {\n    images = imageResult.output.images;\n  } else if (imageResult?.images) {\n    images = imageResult.images;\n  }\n} catch (e) {\n  // Image generation failed, continue without images\n}\n\nreturn [{\n  json: {\n    slack_user_id: validated.pending_action.slack_user_id,\n    action: 'update_tracker',\n    drafts: JSON.stringify(payload.drafts || {}),\n    images: JSON.stringify(images),\n    winning_idea: payload.post_summary || '',\n    target_channels: payload.target_channels || payload.content_type || '',\n    image_gen_success: Object.values(images).some(img => img && (img.file_url || img.url))\n  }\n}];"
+                },
+                "onError": "continueRegularOutput"
+            }
+        ],
+        "connections": {
+            "Slack Interaction Webhook": {
+                "main": [
+                    [
+                        {
+                            "node": "Parse Slack Payload",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Parse Slack Payload": {
+                "main": [
+                    [
+                        {
+                            "node": "Lookup Pending Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Lookup Pending Action": {
+                "main": [
+                    [
+                        {
+                            "node": "Validate Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Validate Action": {
+                "main": [
+                    [
+                        {
+                            "node": "Is Valid?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Is Valid?": {
+                "main": [
+                    [
+                        {
+                            "node": "Route by Action",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Send Error Response",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Route by Action": {
+                "main": [
+                    [
+                        {
+                            "node": "Route by Content Type",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Update DB - Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "View Full Content",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Respond Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Get Google Auth": {
+                "main": [
+                    [
+                        {
+                            "node": "Build MIME Email",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Build MIME Email": {
+                "main": [
+                    [
+                        {
+                            "node": "Send Email via Gmail",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Send Email via Gmail": {
+                "main": [
+                    [
+                        {
+                            "node": "Update DB - Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update DB - Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Slack Card - Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update DB - Rejected": {
+                "main": [
+                    [
+                        {
+                            "node": "Route Rejection by Type",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Send Error Response": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Slack Card - Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Feedback - Email Sent",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Feedback - Email Sent": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Slack Card - Rejected": {
+                "main": [
+                    [
+                        {
+                            "node": "Feedback - Email Cancelled",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Feedback - Email Cancelled": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Route by Content Type": {
+                "main": [
+                    [
+                        {
+                            "node": "Get Google Auth",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Update DB - Content Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Respond Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Calendar - Ready": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Slack - Content Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update DB - Content Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - Content",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Slack - Content Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Feedback - Content Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "View Full Content": {
+                "main": [
+                    [
+                        {
+                            "node": "Send View Full Response",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Send View Full Response": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - View Full",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Route Rejection by Type": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Slack - Content Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Update Slack Card - Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Update Slack Card - Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Slack - Content Rejected": {
+                "main": [
+                    [
+                        {
+                            "node": "Feedback - Content Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Feedback - Content Rejected": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - Content Rejected",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Respond OK - Content": {
+                "main": [
+                    [
+                        {
+                            "node": "Generate Images",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Generate Images": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Calendar Data",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Prepare Calendar Data": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Calendar - Ready",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Spencer Marx",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-02-10T10:47:28.870Z",
+                "id": 566,
+                "workflowId": "iuU0eyfTN2We4uPR",
+                "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
+                "event": "activated",
+                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+            }
+        ]
+    }
 }

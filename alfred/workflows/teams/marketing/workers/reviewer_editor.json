@@ -1,0 +1,1560 @@
+{
+  "updatedAt": "2026-02-10T11:15:24.814Z",
+  "createdAt": "2026-02-05T13:48:07.219Z",
+  "id": "vZmSJnGeCeegKi8X",
+  "name": "Worker | Reviewer/Editor",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "drafts",
+              "type": "string"
+            },
+            {
+              "name": "original_task",
+              "type": "string"
+            },
+            {
+              "name": "winning_idea",
+              "type": "string"
+            },
+            {
+              "name": "iteration_number",
+              "type": "number"
+            },
+            {
+              "name": "max_iterations",
+              "type": "number"
+            },
+            {
+              "name": "brand_context",
+              "type": "string"
+            },
+            {
+              "name": "content_brief",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Parse drafts - could be string or object\nlet drafts = input.drafts || {};\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\nconst slackUserId = input.slack_user_id || '';\nconst originalTask = input.original_task || '';\nconst winningIdea = input.winning_idea || '';\nconst iterationNumber = input.iteration_number || 1;\nconst maxIterations = input.max_iterations || 3;\n\n// Parse content_brief - can be JSON string or object\nlet contentBrief = null;\nif (input.content_brief) {\n  try {\n    contentBrief = typeof input.content_brief === 'string'\n      ? JSON.parse(input.content_brief)\n      : input.content_brief;\n  } catch (e) {\n    contentBrief = null;\n  }\n}\n\n// Check if brand_context was provided\nlet hasProvidedContext = false;\nlet providedBrandContext = null;\nif (input.brand_context) {\n  try {\n    providedBrandContext = typeof input.brand_context === 'string'\n      ? JSON.parse(input.brand_context)\n      : input.brand_context;\n    hasProvidedContext = Boolean(providedBrandContext && providedBrandContext.brand_guide);\n  } catch (e) {\n    hasProvidedContext = false;\n  }\n}\n\nreturn [{\n  json: {\n    drafts: drafts,\n    original_task: originalTask,\n    winning_idea: winningIdea,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations,\n    content_brief: contentBrief,\n    slack_user_id: slackUserId,\n    has_provided_context: hasProvidedContext,\n    provided_brand_context: providedBrandContext\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "has-provided-context",
+      "name": "Has Provided Context?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        540,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-context-check",
+              "leftValue": "={{ $json.has_provided_context }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "use-provided-context",
+      "name": "Use Provided Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        140
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst brandContext = input.provided_brand_context;\n\nreturn [{\n  json: {\n    drafts: input.drafts,\n    original_task: input.original_task,\n    winning_idea: input.winning_idea,\n    iteration_number: input.iteration_number,\n    max_iterations: input.max_iterations,\n    content_brief: input.content_brief,\n    brand_guide: brandContext.brand_guide || '',\n    content_strategy: brandContext.content_strategy || '',\n    content_calendar: brandContext.recent_posts || [],\n    product_knowledge: brandContext.product_knowledge || '',\n    voice_reference: brandContext.voice_reference || ''\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "fetch-config-brand-guide",
+      "name": "Get Config: Brand Guide",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        420
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.brand_guide_doc_id"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-config-strategy",
+      "name": "Get Config: Content Strategy",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        560
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.content_strategy_doc_id"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-config-calendar",
+      "name": "Get Config: Content Calendar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        700
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YEsW3AOvJZpR1jJS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_config",
+            "config_key": "marketing.content_calendar_sheet_id"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-configs",
+      "name": "Merge Configs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const preparedContext = $('Prepare Context').first().json;\n\nlet brandGuideDocId = '';\nlet contentStrategyDocId = '';\nlet contentCalendarSheetId = '';\n\ntry {\n  const brandGuideConfig = $('Get Config: Brand Guide').first().json;\n  if (brandGuideConfig.success && brandGuideConfig.value) {\n    brandGuideDocId = typeof brandGuideConfig.value === 'string' ? brandGuideConfig.value : JSON.stringify(brandGuideConfig.value);\n    brandGuideDocId = brandGuideDocId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\ntry {\n  const strategyConfig = $('Get Config: Content Strategy').first().json;\n  if (strategyConfig.success && strategyConfig.value) {\n    contentStrategyDocId = typeof strategyConfig.value === 'string' ? strategyConfig.value : JSON.stringify(strategyConfig.value);\n    contentStrategyDocId = contentStrategyDocId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\ntry {\n  const calendarConfig = $('Get Config: Content Calendar').first().json;\n  if (calendarConfig.success && calendarConfig.value) {\n    contentCalendarSheetId = typeof calendarConfig.value === 'string' ? calendarConfig.value : JSON.stringify(calendarConfig.value);\n    contentCalendarSheetId = contentCalendarSheetId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\nreturn [{\n  json: {\n    ...preparedContext,\n    config: {\n      brand_guide_doc_id: brandGuideDocId,\n      content_strategy_doc_id: contentStrategyDocId,\n      content_calendar_sheet_id: contentCalendarSheetId\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "fetch-brand-guide",
+      "name": "Fetch Brand Guide",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        420
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $json.config.brand_guide_doc_id }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-content-strategy",
+      "name": "Fetch Content Strategy",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        560
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $json.config.content_strategy_doc_id }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-content-calendar",
+      "name": "Fetch Content Calendar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        700
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tWgJgDHdIHBhCOr0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "action": "read_range",
+            "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+            "range": "Content!A1:Z50"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-review-context",
+      "name": "Merge Review Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const mergedConfigs = $('Merge Configs').first().json;\nconst prepareContext = $('Prepare Context').first().json;\n\nlet brandGuide = null;\nlet contentStrategy = null;\nlet contentCalendar = null;\n\ntry {\n  const brandGuideResult = $('Fetch Brand Guide').first().json;\n  if (brandGuideResult.success) {\n    brandGuide = brandGuideResult.text || brandGuideResult.content || '';\n  }\n} catch (e) {}\n\ntry {\n  const strategyResult = $('Fetch Content Strategy').first().json;\n  if (strategyResult.success) {\n    contentStrategy = strategyResult.text || strategyResult.content || '';\n  }\n} catch (e) {}\n\ntry {\n  const calendarResult = $('Fetch Content Calendar').first().json;\n  if (calendarResult.success) {\n    contentCalendar = calendarResult.values || [];\n  }\n} catch (e) {}\n\nreturn [{\n  json: {\n    drafts: mergedConfigs.drafts,\n    original_task: mergedConfigs.original_task,\n    winning_idea: mergedConfigs.winning_idea,\n    iteration_number: mergedConfigs.iteration_number,\n    max_iterations: mergedConfigs.max_iterations,\n    content_brief: prepareContext.content_brief,\n    brand_guide: brandGuide || 'Brand guide not available',\n    content_strategy: contentStrategy || 'Content strategy not available',\n    content_calendar: contentCalendar || []\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "build-system-prompt",
+      "name": "Build System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const context = $input.first().json;\n\n// Format drafts for review\nconst draftsText = Object.entries(context.drafts).map(([channel, draft]) => {\n  const content = typeof draft === 'object' ? (draft.content || JSON.stringify(draft)) : String(draft);\n  const charCount = typeof draft === 'object' ? (draft.character_count || content.length) : content.length;\n  const hashtags = typeof draft === 'object' ? (draft.hashtags || []) : [];\n  return `### ${channel.toUpperCase()}\\nContent:\\n${content}\\nCharacter count: ${charCount}\\nHashtags: ${hashtags.join(', ') || 'None'}`;\n}).join('\\n\\n');\n\nconst brandGuide = context.brand_guide || '';\nconst productKnowledge = context.product_knowledge || context.brand_context?.product_knowledge || '';\nconst voiceReference = context.voice_reference || context.brand_context?.voice_reference || '';\nconst contentStrategy = context.content_strategy || '';\nconst iterationNumber = context.iteration_number || 1;\nconst maxIterations = context.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst brief = context.content_brief;\n\n// Build brief compliance section - enumerate each criterion explicitly\nlet briefSection = '';\nlet criteriaChecklist = '';\nif (brief) {\n  // Build an explicit numbered checklist the LLM must fill in\n  const criteria = brief.success_criteria || [];\n  const requirements = brief.content_requirements || [];\n\n  let checklistItems = [];\n  criteria.forEach((c, i) => {\n    checklistItems.push(`SC-${i+1}: \"${c}\" \u2192 PASS or FAIL?`);\n  });\n  requirements.forEach((r, i) => {\n    checklistItems.push(`CR-${i+1}: \"${r}\" \u2192 MET or NOT_MET?`);\n  });\n\n  criteriaChecklist = checklistItems.join('\\n');\n\n  briefSection = `## THE CONTENT BRIEF (YOUR EVALUATION RUBRIC)\n\nKEY MESSAGE: ${brief.key_message || 'Not specified'}\nTARGET AUDIENCE: ${brief.target_audience || 'Not specified'}\nCONTENT TYPE: ${brief.content_type || 'Not specified'}\n\n### Channel Specs:\n${brief.channel_specs ? Object.entries(brief.channel_specs).map(([ch, spec]) => {\n  return `${ch.toUpperCase()}: ${spec.word_count_range?.[0]}-${spec.word_count_range?.[1]} words, ${spec.char_limit} char limit, Tone: ${spec.tone || 'N/A'}, Hashtags: ${spec.hashtag_count_range?.[0]}-${spec.hashtag_count_range?.[1]}`;\n}).join('\\n') : 'None specified'}\n\n### What to Avoid:\n${brief.what_to_avoid?.map(a => '- ' + a).join('\\n') || 'None specified'}\n`;\n}\n\nconst iterationContext = isFinalIteration\n  ? `## FINAL ITERATION (${iterationNumber} of ${maxIterations})\nThis is the final standard review. Give your HONEST assessment.\nPRIORITIES: (1) Factual accuracy is paramount - fact-check aggressively. (2) Style/length concerns should be noted but understand they will be treated as editor's notes. (3) The workflow handles the approval decision based on whether factual errors exist.`\n  : `## ITERATION ${iterationNumber} of ${maxIterations}\nYou can push for improvements. Don't settle for \"good enough\" yet.`;\n\nconst systemPrompt = `You are a Content Editor. You review drafts against a Content Brief \u2014 checking EACH specific criterion, not a generic rubric.\n\n${briefSection}\n\n##############################################\n# STEP 1: BRIEF COMPLIANCE (MANDATORY)      #\n##############################################\n\n${brief ? `You MUST evaluate EACH of the following criteria individually. Do not skip any. Do not substitute your own criteria. Check these EXACT items:\n\n${criteriaChecklist}\n\nFor each criterion, provide a clear PASS/FAIL or MET/NOT_MET with a brief explanation.\n\nIn your output, success_criteria_results MUST use the EXACT criterion text as the key, and content_requirements_results MUST use the EXACT requirement text as the key.\n\nExample:\n\"success_criteria_results\": {\n  \"Hook is 2 lines or less and includes a specific statistic\": \"FAIL - Hook is 2 lines but does not include the 4-10% statistic\"\n}\n\nDO NOT make up your own criteria. Only evaluate the ones listed above.` : `No brief provided. Evaluate based on general content quality standards.`}\n\n### Channel Spec Compliance (mechanical check):\nFor each channel, count words and characters. Compare against the spec above. Report exact numbers.\n\n##############################################\n# STEP 2: AUTHENTICITY CHECK (MANDATORY)    #\n##############################################\n\nCheck for AI-generated content tells. This is as important as fact-checking.\n\n### Parenthetical Citations\n- Flag ANY instance of \"(Source Name)\" style citations as a REQUIRED FIX\n- LinkedIn posts, tweets, and social content should NEVER have academic-style parenthetical citations\n- Sources should be woven naturally (\"Formstack found that...\") or omitted entirely\n- If you find parenthetical citations, mark authenticity_check as FAIL\n\n### Voice & Personality\n- Does the content use first-person (\"I\", \"we\", \"our\")?\n- Does it sound like a real person with opinions, or a neutral information compiler?\n- Is there any personal framing, anecdote, or experiential language?\n- If it reads like a research summary rather than a person sharing insights: flag it\n\n### Structural Patterns\n- Does it follow a predictable template (hook \u2192 data \u2192 data \u2192 data \u2192 fix \u2192 closing)?\n- Are all list items the same grammatical structure?\n- Is every paragraph the same length?\n- Variety is good. Mechanical uniformity is an AI tell.\n\n### Sentence Variation (Burstiness)\n- Are there dramatic sentence length variations? (3-word punches mixed with 20+ word sentences)\n- Are there fragments, asides, or rule-breaking sentences?\n- Or is every sentence 10-15 words in the same cadence?\n\nReport authenticity as: PASS (reads human), NEEDS_WORK (some AI tells), or FAIL (clearly AI-generated).\n\n##############################################\n# STEP 3: FACT-CHECK (ALWAYS REQUIRED)      #\n##############################################\n\nUse web_search to verify EVERY specific claim, statistic, or data point.\nFactual errors ALWAYS block publication regardless of iteration.\n\n##############################################\n# STEP 4: EDITORIAL JUDGMENT (The Three R's)#\n##############################################\n\nFor anything the brief does NOT explicitly cover:\n- REQUIRED: Deal-breakers that would embarrass the brand (factual errors, wrong company name, offensive content, AI-obvious tells)\n- RECOMMENDED: Meaningful improvements to engagement (stronger hook, better CTA)\n- REFINEMENT: Nice-to-haves a reasonable editor might disagree on (word choice, style)\n\nREQUIRED issues and brief criterion FAILURES block publication.\nParenthetical citations are a REQUIRED fix (AI tell).\nRECOMMENDED and REFINEMENT issues are noted but do NOT block.\n\n${iterationContext}\n\n## YOUR DEFAULT STANCE: \"Does this meet the brief AND sound human?\"\nYou are a fair judge. If the brief criteria are met, facts are accurate, and the content sounds authentically human, approve it.\nBias toward acceptance. Push back on: brief failures, factual errors, and AI tells.\n\nAPPROVAL THRESHOLD \u2014 be pragmatic:\n- Perfect content is rare. If 80%+ of criteria pass and there are zero factual errors, approve with reservations.\n- Minor stylistic misses or word count being 5-10% off are NOT blockers \u2014 note them as recommended_improvements.\n- Only block on: factual errors, critical brief failures (wrong topic, wrong audience), or obvious AI tells (parenthetical citations).\n- Remember: the user will review the content themselves via the approval card. Your job is to catch real problems, not polish to perfection.\n\n## BRAND GUIDELINES (for editorial judgment, not scoring)\n${brandGuide.substring(0, 1500)}\n\n## CONTENT STRATEGY\n${contentStrategy.substring(0, 1000)}\n\n## PRODUCT KNOWLEDGE (Wrkbelt Scheduler & Industry Context)\nUse this to fact-check any claims about scheduling software, trade industry practices, or Wrkbelt product capabilities:\n${productKnowledge.substring(0, 2000)}\n\n## VOICE REFERENCE (Spencer Marx Writing Samples)\nUse these as the GOLD STANDARD for voice, tone, and style. The draft should read like these examples:\n${voiceReference.substring(0, 2000)}\n\n## DRAFTS TO REVIEW\n${draftsText}\n\n## AVAILABLE TOOLS\nweb_search for fact-checking claims\n\n## OUTPUT FORMAT\n{\n  \"overall_assessment\": \"meets_brief|needs_work|approved_with_reservations|major_issues\",\n  \"requires_more_revisions\": false,\n  \"approved_with_reservations\": false,\n  \"reviewer_confidence\": \"high|medium|low\",\n  \"brief_compliance\": {\n    \"success_criteria_results\": {\n      \"<exact criterion text from brief>\": \"PASS|FAIL - explanation\"\n    },\n    \"content_requirements_results\": {\n      \"<exact requirement text from brief>\": \"MET|NOT_MET - explanation\"\n    },\n    \"channel_spec_compliance\": {\n      \"channel_name\": {\n        \"word_count\": 185,\n        \"word_count_pass\": true,\n        \"char_count\": 1230,\n        \"char_count_pass\": true\n      }\n    }\n  },\n  \"authenticity_check\": {\n    \"overall\": \"PASS|NEEDS_WORK|FAIL\",\n    \"parenthetical_citations_found\": false,\n    \"personal_voice_present\": true,\n    \"structural_variety\": true,\n    \"sentence_variation\": true,\n    \"ai_tells\": [\"List any specific AI tells found\"]\n  },\n  \"fact_check_results\": {\n    \"claims_verified\": [\"Claim - Source: URL\"],\n    \"claims_unverified\": [\"Claim that could not be verified\"],\n    \"claims_inaccurate\": [\"Claim that is incorrect - correction: X\"]\n  },\n  \"editorial_feedback\": {\n    \"required_fixes\": [\"Deal-breaker issues only \u2014 including AI tells\"],\n    \"recommended_improvements\": [\"Meaningful engagement improvements\"],\n    \"refinements\": [\"Nice-to-haves\"]\n  },\n  \"revision_priority\": [\"Most important fix first\"]\n}\n\n## DECISION FRAMEWORK\n${brief ? `- All success_criteria PASS + authenticity PASS + no required_fixes + no claims_inaccurate \u2192 overall_assessment: \"meets_brief\", requires_more_revisions: false\n- Most success_criteria PASS + no factual errors + authenticity PASS/NEEDS_WORK + only 1-2 minor criterion shortfalls \u2192 overall_assessment: \"approved_with_reservations\", approved_with_reservations: true, requires_more_revisions: false (note shortfalls in recommended_improvements)\n- Multiple success_criteria FAIL or factual errors or authenticity FAIL \u2192 requires_more_revisions: true\n- authenticity_check FAIL (e.g. parenthetical citations) \u2192 requires_more_revisions: true\n- Any claims_inaccurate \u2192 requires_more_revisions: true\n- Only recommended/refinement issues \u2192 requires_more_revisions: false (note them)\n- authenticity_check NEEDS_WORK \u2192 add to recommended_improvements, do NOT block` : `- Content is well-written, factually accurate, sounds human \u2192 requires_more_revisions: false\n- Factual errors, AI-obvious content, or major structural issues \u2192 requires_more_revisions: true\n- Minor style issues only \u2192 requires_more_revisions: false (note them)`}\n\nIMPORTANT: Use web_search to verify factual claims before finalizing your review.`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: `Review these drafts${brief ? ' against the content brief' : ''}. This is iteration ${iterationNumber} of ${maxIterations}.\n\nYOUR CHECKLIST:\n1. Check EACH success criterion from the brief individually (use exact criterion text as keys)\n2. Check EACH content requirement individually (use exact requirement text as keys)\n3. Check channel spec compliance (word count, char count)\n4. Run the authenticity check \u2014 look for parenthetical citations, AI tells, missing personal voice\n5. Fact-check every specific claim via web_search\n6. Apply editorial judgment (Three R's)\n\n${brief ? 'The brief has ' + (brief.success_criteria?.length || 0) + ' success criteria and ' + (brief.content_requirements?.length || 0) + ' content requirements. Your output MUST have results for ALL of them.' : ''}\n\nOriginal task: ${context.original_task}. Winning idea: ${context.winning_idea}`,\n    drafts: context.drafts,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations,\n    is_final_iteration: isFinalIteration,\n    content_brief: context.content_brief\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "claude-model",
+      "name": "Claude Sonnet",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1740,
+        480
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929"
+        },
+        "options": {
+          "maxTokensToSample": 3000,
+          "temperature": 0.3
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "id": "ai-agent",
+      "name": "Reviewer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1740,
+        300
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_prompt }}",
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}",
+          "maxIterations": 10,
+          "returnIntermediateSteps": true
+        },
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "parse-review",
+      "name": "Parse Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Parse Review - receives structured data from Output Parser\nconst input = $input.first().json;\n\nlet parsed = null;\nlet success = true;\nlet error = null;\n\ntry {\n  // Check for structured output\n  if (input.output && typeof input.output === 'object') {\n    parsed = input.output;\n  } else if (input.requires_more_revisions !== undefined || input.overall_score !== undefined) {\n    parsed = input;\n  } else if (input.text) {\n    // Fallback: try to extract JSON\n    const response = input.text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsed = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('No JSON object found');\n    }\n  } else {\n    throw new Error('Unexpected output format');\n  }\n\n} catch (e) {\n  success = false;\n  error = `Failed to parse AI response: ${e.message}`;\n  parsed = {\n    requires_more_revisions: true,\n    overall_score: 5,\n    per_channel_feedback: {},\n    critical_issues: ['Review parsing failed - manual review required'],\n    minor_suggestions: []\n  };\n}\n\nreturn [{\n  json: {\n    success: success,\n    output: parsed,\n    output_type: 'review',\n    error: error\n  }\n}];"
+      }
+    },
+    {
+      "id": "evaluate-revision-needed",
+      "name": "Evaluate Revision Needed",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2180,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Rw7786cYTYOTQhH9"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "predicate": "The content requires more revisions. Return TRUE if: the overall_assessment is 'needs_work' or 'major_issues', the editorial_feedback.required_fixes array is non-empty, the fact_check_results.claims_inaccurate array is non-empty, the authenticity_check.overall is 'FAIL', or requires_more_revisions is explicitly true.",
+            "context": "={{ JSON.stringify($json.output) }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-output",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const parseResult = $('Parse Review').first().json;\nconst predicateResult = $input.first().json;\nconst buildPromptData = $('Build System Prompt').first().json;\n\nconst reviewResult = parseResult.output;\n\n// Iteration context\nconst iterationNumber = buildPromptData.iteration_number || 1;\nconst maxIterations = buildPromptData.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst isBeyondMax = iterationNumber > maxIterations;\n\n// PRIMARY: Use the objective predicate evaluator result\nlet requiresMoreRevisions = predicateResult.result === true;\n\n// Check for factual accuracy issues\nconst factCheckResults = reviewResult.fact_check_results || {};\nconst claimsInaccurate = factCheckResults.claims_inaccurate || [];\nconst hasFactualErrors = claimsInaccurate.length > 0;\nlet factualErrorsOnly = false;\nlet approvedWithReservations = false;\n\n// Extract authenticity check\nconst authenticityCheck = reviewResult.authenticity_check || { overall: 'PASS', parenthetical_citations_found: false, personal_voice_present: true, structural_variety: true, sentence_variation: true, ai_tells: [] };\n\n// Extract editorial feedback\nconst editorialFeedback = reviewResult.editorial_feedback || { required_fixes: [], recommended_improvements: [], refinements: [] };\nconst requiredFixes = editorialFeedback.required_fixes || [];\n\nif (isBeyondMax) {\n  console.log(`Iteration ${iterationNumber} exceeds max ${maxIterations} - forcing approval (absolute cap)`);\n  requiresMoreRevisions = false;\n  approvedWithReservations = true;\n  requiredFixes.push('[ABSOLUTE CAP] Content approved after exceeding maximum iterations.');\n} else if (isFinalIteration) {\n  if (hasFactualErrors) {\n    console.log(`Final iteration but factual errors found (${claimsInaccurate.length}) - requesting factual-only revision`);\n    requiresMoreRevisions = true;\n    factualErrorsOnly = true;\n    requiredFixes.push(`[FINAL ITERATION - FACTUAL ERRORS] ${claimsInaccurate.length} factual inaccuracies must be corrected. One emergency revision authorized for factual fixes ONLY.`);\n  } else {\n    console.log('Final iteration, no factual errors - approving with reservations');\n    requiresMoreRevisions = false;\n    approvedWithReservations = true;\n  }\n}\n\nreturn [{\n  json: {\n    success: parseResult.success,\n    output: {\n      requires_more_revisions: requiresMoreRevisions,\n      factual_errors_only: factualErrorsOnly,\n      approved_with_reservations: approvedWithReservations,\n      overall_assessment: reviewResult.overall_assessment || 'needs_work',\n      authenticity_check: authenticityCheck,\n      brief_compliance: reviewResult.brief_compliance || {},\n      editorial_feedback: {\n        required_fixes: requiredFixes,\n        recommended_improvements: editorialFeedback.recommended_improvements || [],\n        refinements: editorialFeedback.refinements || []\n      },\n      fact_check_results: factCheckResults,\n      revision_priority: reviewResult.revision_priority || []\n    },\n    output_type: 'review',\n    error: parseResult.error,\n    is_final_iteration: isFinalIteration,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "tool-web-search",
+      "name": "Tool: Web Search",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        480
+      ],
+      "parameters": {
+        "name": "web_search",
+        "description": "Search the web to fact-check claims, verify statistics, and find supporting sources. Use this to verify any factual claims in the content before approving.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "F0TUHVEzA79rroyS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI(\"query\", \"The search query to fact-check a claim or find information\", \"string\", \"\") }}",
+            "context": "={{ $fromAI(\"context\", \"Optional context about what youre trying to verify\", \"string\", \"\") }}"
+          },
+          "schema": [
+            {
+              "id": "query",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "query"
+            },
+            {
+              "id": "context",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "context"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reviewer-output-parser",
+      "name": "Reviewer Output Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1740,
+        480
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"overall_assessment\": {\"type\": \"string\", \"enum\": [\"meets_brief\", \"needs_work\", \"major_issues\"], \"description\": \"High-level assessment of brief compliance\"}, \"requires_more_revisions\": {\"type\": \"boolean\", \"description\": \"Whether content needs revisions - only true for required fixes or brief failures\"}, \"reviewer_confidence\": {\"type\": \"string\", \"enum\": [\"high\", \"medium\", \"low\"]}, \"brief_compliance\": {\"type\": \"object\", \"description\": \"Results of checking brief criteria\", \"properties\": {\"success_criteria_results\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"string\"}, \"description\": \"Each success criterion with PASS/FAIL result\"}, \"content_requirements_results\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"string\"}, \"description\": \"Each content requirement with MET/NOT_MET result\"}, \"channel_spec_compliance\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count\": {\"type\": \"number\"}, \"word_count_pass\": {\"type\": \"boolean\"}, \"char_count\": {\"type\": \"number\"}, \"char_count_pass\": {\"type\": \"boolean\"}}}, \"description\": \"Channel-level compliance checks\"}}}, \"fact_check_results\": {\"type\": \"object\", \"properties\": {\"claims_verified\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"claims_unverified\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"claims_inaccurate\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}, \"editorial_feedback\": {\"type\": \"object\", \"properties\": {\"required_fixes\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Deal-breaker issues that block publication\"}, \"recommended_improvements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Meaningful improvements to engagement\"}, \"refinements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Nice-to-have suggestions\"}}, \"required\": [\"required_fixes\", \"recommended_improvements\", \"refinements\"]}, \"revision_priority\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"authenticity_check\": {\"type\": \"object\", \"description\": \"Assessment of content authenticity and human-sounding quality\", \"properties\": {\"overall\": {\"type\": \"string\", \"enum\": [\"PASS\", \"NEEDS_WORK\", \"FAIL\"]}, \"parenthetical_citations_found\": {\"type\": \"boolean\"}, \"personal_voice_present\": {\"type\": \"boolean\"}, \"structural_variety\": {\"type\": \"boolean\"}, \"sentence_variation\": {\"type\": \"boolean\"}, \"ai_tells\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}}, \"required\": [\"overall_assessment\", \"requires_more_revisions\", \"brief_compliance\", \"fact_check_results\", \"editorial_feedback\", \"authenticity_check\"]}",
+        "autoFix": true
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-3-5-haiku-20241022",
+          "cachedResultName": "Claude 3.5 Haiku"
+        },
+        "options": {}
+      },
+      "id": "parser-llm",
+      "name": "Parser LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1540,
+        580
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Has Provided Context?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Provided Context?": {
+      "main": [
+        [
+          {
+            "node": "Use Provided Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Config: Brand Guide",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Config: Content Strategy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Config: Content Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Provided Context": {
+      "main": [
+        [
+          {
+            "node": "Build System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Config: Brand Guide": {
+      "main": [
+        [
+          {
+            "node": "Merge Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Config: Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Merge Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Config: Content Calendar": {
+      "main": [
+        [
+          {
+            "node": "Merge Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Configs": {
+      "main": [
+        [
+          {
+            "node": "Fetch Brand Guide",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Content Strategy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Content Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Brand Guide": {
+      "main": [
+        [
+          {
+            "node": "Merge Review Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Merge Review Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content Calendar": {
+      "main": [
+        [
+          {
+            "node": "Merge Review Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Review Context": {
+      "main": [
+        [
+          {
+            "node": "Build System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Reviewer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reviewer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Review": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Revision Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Revision Needed": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reviewer Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Reviewer Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reviewer Output Schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "a5416f1c-4991-4b45-b16c-d5b73f515b2d",
+  "activeVersionId": "a5416f1c-4991-4b45-b16c-d5b73f515b2d",
+  "versionCounter": 86,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-05T13:48:07.219Z",
+      "createdAt": "2026-02-05T13:48:07.219Z",
+      "role": "workflow:owner",
+      "workflowId": "vZmSJnGeCeegKi8X",
+      "projectId": "Jd992SEPuokf8o5Z",
+      "project": {
+        "updatedAt": "2026-02-02T12:27:52.037Z",
+        "createdAt": "2026-02-02T12:20:35.714Z",
+        "id": "Jd992SEPuokf8o5Z",
+        "name": "Spencer Marx <spencer@aclarify.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-02T12:20:35.714Z",
+            "createdAt": "2026-02-02T12:20:35.714Z",
+            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
+            "projectId": "Jd992SEPuokf8o5Z",
+            "user": {
+              "updatedAt": "2026-02-10T09:40:41.292Z",
+              "createdAt": "2026-02-02T12:20:29.217Z",
+              "id": "e498ff06-ba9d-4721-8454-492195be8229",
+              "email": "spencer@aclarify.com",
+              "firstName": "Spencer",
+              "lastName": "Marx",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
+                "personalization_survey_n8n_version": "2.6.2",
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "business-owner",
+                "reportedSource": "friend"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
+                "userActivatedAt": 1770049275864,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770325854784
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-10",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-10T11:15:24.813Z",
+    "createdAt": "2026-02-10T11:15:24.813Z",
+    "versionId": "a5416f1c-4991-4b45-b16c-d5b73f515b2d",
+    "workflowId": "vZmSJnGeCeegKi8X",
+    "nodes": [
+      {
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          200,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "drafts",
+                "type": "string"
+              },
+              {
+                "name": "original_task",
+                "type": "string"
+              },
+              {
+                "name": "winning_idea",
+                "type": "string"
+              },
+              {
+                "name": "iteration_number",
+                "type": "number"
+              },
+              {
+                "name": "max_iterations",
+                "type": "number"
+              },
+              {
+                "name": "brand_context",
+                "type": "string"
+              },
+              {
+                "name": "content_brief",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "prepare-context",
+        "name": "Prepare Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          420,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\n// Parse drafts - could be string or object\nlet drafts = input.drafts || {};\nif (typeof drafts === 'string') {\n  try { drafts = JSON.parse(drafts); } catch (e) { drafts = {}; }\n}\n\nconst slackUserId = input.slack_user_id || '';\nconst originalTask = input.original_task || '';\nconst winningIdea = input.winning_idea || '';\nconst iterationNumber = input.iteration_number || 1;\nconst maxIterations = input.max_iterations || 3;\n\n// Parse content_brief - can be JSON string or object\nlet contentBrief = null;\nif (input.content_brief) {\n  try {\n    contentBrief = typeof input.content_brief === 'string'\n      ? JSON.parse(input.content_brief)\n      : input.content_brief;\n  } catch (e) {\n    contentBrief = null;\n  }\n}\n\n// Check if brand_context was provided\nlet hasProvidedContext = false;\nlet providedBrandContext = null;\nif (input.brand_context) {\n  try {\n    providedBrandContext = typeof input.brand_context === 'string'\n      ? JSON.parse(input.brand_context)\n      : input.brand_context;\n    hasProvidedContext = Boolean(providedBrandContext && providedBrandContext.brand_guide);\n  } catch (e) {\n    hasProvidedContext = false;\n  }\n}\n\nreturn [{\n  json: {\n    drafts: drafts,\n    original_task: originalTask,\n    winning_idea: winningIdea,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations,\n    content_brief: contentBrief,\n    slack_user_id: slackUserId,\n    has_provided_context: hasProvidedContext,\n    provided_brand_context: providedBrandContext\n  }\n}];\n"
+        }
+      },
+      {
+        "id": "has-provided-context",
+        "name": "Has Provided Context?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          540,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-context-check",
+                "leftValue": "={{ $json.has_provided_context }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "use-provided-context",
+        "name": "Use Provided Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          740,
+          140
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst brandContext = input.provided_brand_context;\n\nreturn [{\n  json: {\n    drafts: input.drafts,\n    original_task: input.original_task,\n    winning_idea: input.winning_idea,\n    iteration_number: input.iteration_number,\n    max_iterations: input.max_iterations,\n    content_brief: input.content_brief,\n    brand_guide: brandContext.brand_guide || '',\n    content_strategy: brandContext.content_strategy || '',\n    content_calendar: brandContext.recent_posts || [],\n    product_knowledge: brandContext.product_knowledge || '',\n    voice_reference: brandContext.voice_reference || ''\n  }\n}];\n"
+        }
+      },
+      {
+        "id": "fetch-config-brand-guide",
+        "name": "Get Config: Brand Guide",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          640,
+          420
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.brand_guide_doc_id"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "fetch-config-strategy",
+        "name": "Get Config: Content Strategy",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          640,
+          560
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.content_strategy_doc_id"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "fetch-config-calendar",
+        "name": "Get Config: Content Calendar",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          640,
+          700
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YEsW3AOvJZpR1jJS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "get_config",
+              "config_key": "marketing.content_calendar_sheet_id"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "merge-configs",
+        "name": "Merge Configs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          860,
+          560
+        ],
+        "parameters": {
+          "jsCode": "const preparedContext = $('Prepare Context').first().json;\n\nlet brandGuideDocId = '';\nlet contentStrategyDocId = '';\nlet contentCalendarSheetId = '';\n\ntry {\n  const brandGuideConfig = $('Get Config: Brand Guide').first().json;\n  if (brandGuideConfig.success && brandGuideConfig.value) {\n    brandGuideDocId = typeof brandGuideConfig.value === 'string' ? brandGuideConfig.value : JSON.stringify(brandGuideConfig.value);\n    brandGuideDocId = brandGuideDocId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\ntry {\n  const strategyConfig = $('Get Config: Content Strategy').first().json;\n  if (strategyConfig.success && strategyConfig.value) {\n    contentStrategyDocId = typeof strategyConfig.value === 'string' ? strategyConfig.value : JSON.stringify(strategyConfig.value);\n    contentStrategyDocId = contentStrategyDocId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\ntry {\n  const calendarConfig = $('Get Config: Content Calendar').first().json;\n  if (calendarConfig.success && calendarConfig.value) {\n    contentCalendarSheetId = typeof calendarConfig.value === 'string' ? calendarConfig.value : JSON.stringify(calendarConfig.value);\n    contentCalendarSheetId = contentCalendarSheetId.replace(/^\"|\"$/g, '');\n  }\n} catch (e) {}\n\nreturn [{\n  json: {\n    ...preparedContext,\n    config: {\n      brand_guide_doc_id: brandGuideDocId,\n      content_strategy_doc_id: contentStrategyDocId,\n      content_calendar_sheet_id: contentCalendarSheetId\n    }\n  }\n}];"
+        }
+      },
+      {
+        "id": "fetch-brand-guide",
+        "name": "Fetch Brand Guide",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1080,
+          420
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $json.config.brand_guide_doc_id }}"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "fetch-content-strategy",
+        "name": "Fetch Content Strategy",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1080,
+          560
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $json.config.content_strategy_doc_id }}"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "fetch-content-calendar",
+        "name": "Fetch Content Calendar",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1080,
+          700
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "tWgJgDHdIHBhCOr0"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "action": "read_range",
+              "spreadsheet_id": "={{ $json.config.content_calendar_sheet_id }}",
+              "range": "Content!A1:Z50"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "merge-review-context",
+        "name": "Merge Review Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1300,
+          560
+        ],
+        "parameters": {
+          "jsCode": "const mergedConfigs = $('Merge Configs').first().json;\nconst prepareContext = $('Prepare Context').first().json;\n\nlet brandGuide = null;\nlet contentStrategy = null;\nlet contentCalendar = null;\n\ntry {\n  const brandGuideResult = $('Fetch Brand Guide').first().json;\n  if (brandGuideResult.success) {\n    brandGuide = brandGuideResult.text || brandGuideResult.content || '';\n  }\n} catch (e) {}\n\ntry {\n  const strategyResult = $('Fetch Content Strategy').first().json;\n  if (strategyResult.success) {\n    contentStrategy = strategyResult.text || strategyResult.content || '';\n  }\n} catch (e) {}\n\ntry {\n  const calendarResult = $('Fetch Content Calendar').first().json;\n  if (calendarResult.success) {\n    contentCalendar = calendarResult.values || [];\n  }\n} catch (e) {}\n\nreturn [{\n  json: {\n    drafts: mergedConfigs.drafts,\n    original_task: mergedConfigs.original_task,\n    winning_idea: mergedConfigs.winning_idea,\n    iteration_number: mergedConfigs.iteration_number,\n    max_iterations: mergedConfigs.max_iterations,\n    content_brief: prepareContext.content_brief,\n    brand_guide: brandGuide || 'Brand guide not available',\n    content_strategy: contentStrategy || 'Content strategy not available',\n    content_calendar: contentCalendar || []\n  }\n}];\n"
+        }
+      },
+      {
+        "id": "build-system-prompt",
+        "name": "Build System Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const context = $input.first().json;\n\n// Format drafts for review\nconst draftsText = Object.entries(context.drafts).map(([channel, draft]) => {\n  const content = typeof draft === 'object' ? (draft.content || JSON.stringify(draft)) : String(draft);\n  const charCount = typeof draft === 'object' ? (draft.character_count || content.length) : content.length;\n  const hashtags = typeof draft === 'object' ? (draft.hashtags || []) : [];\n  return `### ${channel.toUpperCase()}\\nContent:\\n${content}\\nCharacter count: ${charCount}\\nHashtags: ${hashtags.join(', ') || 'None'}`;\n}).join('\\n\\n');\n\nconst brandGuide = context.brand_guide || '';\nconst productKnowledge = context.product_knowledge || context.brand_context?.product_knowledge || '';\nconst voiceReference = context.voice_reference || context.brand_context?.voice_reference || '';\nconst contentStrategy = context.content_strategy || '';\nconst iterationNumber = context.iteration_number || 1;\nconst maxIterations = context.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst brief = context.content_brief;\n\n// Build brief compliance section - enumerate each criterion explicitly\nlet briefSection = '';\nlet criteriaChecklist = '';\nif (brief) {\n  // Build an explicit numbered checklist the LLM must fill in\n  const criteria = brief.success_criteria || [];\n  const requirements = brief.content_requirements || [];\n\n  let checklistItems = [];\n  criteria.forEach((c, i) => {\n    checklistItems.push(`SC-${i+1}: \"${c}\" \u2192 PASS or FAIL?`);\n  });\n  requirements.forEach((r, i) => {\n    checklistItems.push(`CR-${i+1}: \"${r}\" \u2192 MET or NOT_MET?`);\n  });\n\n  criteriaChecklist = checklistItems.join('\\n');\n\n  briefSection = `## THE CONTENT BRIEF (YOUR EVALUATION RUBRIC)\n\nKEY MESSAGE: ${brief.key_message || 'Not specified'}\nTARGET AUDIENCE: ${brief.target_audience || 'Not specified'}\nCONTENT TYPE: ${brief.content_type || 'Not specified'}\n\n### Channel Specs:\n${brief.channel_specs ? Object.entries(brief.channel_specs).map(([ch, spec]) => {\n  return `${ch.toUpperCase()}: ${spec.word_count_range?.[0]}-${spec.word_count_range?.[1]} words, ${spec.char_limit} char limit, Tone: ${spec.tone || 'N/A'}, Hashtags: ${spec.hashtag_count_range?.[0]}-${spec.hashtag_count_range?.[1]}`;\n}).join('\\n') : 'None specified'}\n\n### What to Avoid:\n${brief.what_to_avoid?.map(a => '- ' + a).join('\\n') || 'None specified'}\n`;\n}\n\nconst iterationContext = isFinalIteration\n  ? `## FINAL ITERATION (${iterationNumber} of ${maxIterations})\nThis is the final standard review. Give your HONEST assessment.\nPRIORITIES: (1) Factual accuracy is paramount - fact-check aggressively. (2) Style/length concerns should be noted but understand they will be treated as editor's notes. (3) The workflow handles the approval decision based on whether factual errors exist.`\n  : `## ITERATION ${iterationNumber} of ${maxIterations}\nYou can push for improvements. Don't settle for \"good enough\" yet.`;\n\nconst systemPrompt = `You are a Content Editor. You review drafts against a Content Brief \u2014 checking EACH specific criterion, not a generic rubric.\n\n${briefSection}\n\n##############################################\n# STEP 1: BRIEF COMPLIANCE (MANDATORY)      #\n##############################################\n\n${brief ? `You MUST evaluate EACH of the following criteria individually. Do not skip any. Do not substitute your own criteria. Check these EXACT items:\n\n${criteriaChecklist}\n\nFor each criterion, provide a clear PASS/FAIL or MET/NOT_MET with a brief explanation.\n\nIn your output, success_criteria_results MUST use the EXACT criterion text as the key, and content_requirements_results MUST use the EXACT requirement text as the key.\n\nExample:\n\"success_criteria_results\": {\n  \"Hook is 2 lines or less and includes a specific statistic\": \"FAIL - Hook is 2 lines but does not include the 4-10% statistic\"\n}\n\nDO NOT make up your own criteria. Only evaluate the ones listed above.` : `No brief provided. Evaluate based on general content quality standards.`}\n\n### Channel Spec Compliance (mechanical check):\nFor each channel, count words and characters. Compare against the spec above. Report exact numbers.\n\n##############################################\n# STEP 2: AUTHENTICITY CHECK (MANDATORY)    #\n##############################################\n\nCheck for AI-generated content tells. This is as important as fact-checking.\n\n### Parenthetical Citations\n- Flag ANY instance of \"(Source Name)\" style citations as a REQUIRED FIX\n- LinkedIn posts, tweets, and social content should NEVER have academic-style parenthetical citations\n- Sources should be woven naturally (\"Formstack found that...\") or omitted entirely\n- If you find parenthetical citations, mark authenticity_check as FAIL\n\n### Voice & Personality\n- Does the content use first-person (\"I\", \"we\", \"our\")?\n- Does it sound like a real person with opinions, or a neutral information compiler?\n- Is there any personal framing, anecdote, or experiential language?\n- If it reads like a research summary rather than a person sharing insights: flag it\n\n### Structural Patterns\n- Does it follow a predictable template (hook \u2192 data \u2192 data \u2192 data \u2192 fix \u2192 closing)?\n- Are all list items the same grammatical structure?\n- Is every paragraph the same length?\n- Variety is good. Mechanical uniformity is an AI tell.\n\n### Sentence Variation (Burstiness)\n- Are there dramatic sentence length variations? (3-word punches mixed with 20+ word sentences)\n- Are there fragments, asides, or rule-breaking sentences?\n- Or is every sentence 10-15 words in the same cadence?\n\nReport authenticity as: PASS (reads human), NEEDS_WORK (some AI tells), or FAIL (clearly AI-generated).\n\n##############################################\n# STEP 3: FACT-CHECK (ALWAYS REQUIRED)      #\n##############################################\n\nUse web_search to verify EVERY specific claim, statistic, or data point.\nFactual errors ALWAYS block publication regardless of iteration.\n\n##############################################\n# STEP 4: EDITORIAL JUDGMENT (The Three R's)#\n##############################################\n\nFor anything the brief does NOT explicitly cover:\n- REQUIRED: Deal-breakers that would embarrass the brand (factual errors, wrong company name, offensive content, AI-obvious tells)\n- RECOMMENDED: Meaningful improvements to engagement (stronger hook, better CTA)\n- REFINEMENT: Nice-to-haves a reasonable editor might disagree on (word choice, style)\n\nREQUIRED issues and brief criterion FAILURES block publication.\nParenthetical citations are a REQUIRED fix (AI tell).\nRECOMMENDED and REFINEMENT issues are noted but do NOT block.\n\n${iterationContext}\n\n## YOUR DEFAULT STANCE: \"Does this meet the brief AND sound human?\"\nYou are a fair judge. If the brief criteria are met, facts are accurate, and the content sounds authentically human, approve it.\nBias toward acceptance. Push back on: brief failures, factual errors, and AI tells.\n\nAPPROVAL THRESHOLD \u2014 be pragmatic:\n- Perfect content is rare. If 80%+ of criteria pass and there are zero factual errors, approve with reservations.\n- Minor stylistic misses or word count being 5-10% off are NOT blockers \u2014 note them as recommended_improvements.\n- Only block on: factual errors, critical brief failures (wrong topic, wrong audience), or obvious AI tells (parenthetical citations).\n- Remember: the user will review the content themselves via the approval card. Your job is to catch real problems, not polish to perfection.\n\n## BRAND GUIDELINES (for editorial judgment, not scoring)\n${brandGuide.substring(0, 1500)}\n\n## CONTENT STRATEGY\n${contentStrategy.substring(0, 1000)}\n\n## PRODUCT KNOWLEDGE (Wrkbelt Scheduler & Industry Context)\nUse this to fact-check any claims about scheduling software, trade industry practices, or Wrkbelt product capabilities:\n${productKnowledge.substring(0, 2000)}\n\n## VOICE REFERENCE (Spencer Marx Writing Samples)\nUse these as the GOLD STANDARD for voice, tone, and style. The draft should read like these examples:\n${voiceReference.substring(0, 2000)}\n\n## DRAFTS TO REVIEW\n${draftsText}\n\n## AVAILABLE TOOLS\nweb_search for fact-checking claims\n\n## OUTPUT FORMAT\n{\n  \"overall_assessment\": \"meets_brief|needs_work|approved_with_reservations|major_issues\",\n  \"requires_more_revisions\": false,\n  \"approved_with_reservations\": false,\n  \"reviewer_confidence\": \"high|medium|low\",\n  \"brief_compliance\": {\n    \"success_criteria_results\": {\n      \"<exact criterion text from brief>\": \"PASS|FAIL - explanation\"\n    },\n    \"content_requirements_results\": {\n      \"<exact requirement text from brief>\": \"MET|NOT_MET - explanation\"\n    },\n    \"channel_spec_compliance\": {\n      \"channel_name\": {\n        \"word_count\": 185,\n        \"word_count_pass\": true,\n        \"char_count\": 1230,\n        \"char_count_pass\": true\n      }\n    }\n  },\n  \"authenticity_check\": {\n    \"overall\": \"PASS|NEEDS_WORK|FAIL\",\n    \"parenthetical_citations_found\": false,\n    \"personal_voice_present\": true,\n    \"structural_variety\": true,\n    \"sentence_variation\": true,\n    \"ai_tells\": [\"List any specific AI tells found\"]\n  },\n  \"fact_check_results\": {\n    \"claims_verified\": [\"Claim - Source: URL\"],\n    \"claims_unverified\": [\"Claim that could not be verified\"],\n    \"claims_inaccurate\": [\"Claim that is incorrect - correction: X\"]\n  },\n  \"editorial_feedback\": {\n    \"required_fixes\": [\"Deal-breaker issues only \u2014 including AI tells\"],\n    \"recommended_improvements\": [\"Meaningful engagement improvements\"],\n    \"refinements\": [\"Nice-to-haves\"]\n  },\n  \"revision_priority\": [\"Most important fix first\"]\n}\n\n## DECISION FRAMEWORK\n${brief ? `- All success_criteria PASS + authenticity PASS + no required_fixes + no claims_inaccurate \u2192 overall_assessment: \"meets_brief\", requires_more_revisions: false\n- Most success_criteria PASS + no factual errors + authenticity PASS/NEEDS_WORK + only 1-2 minor criterion shortfalls \u2192 overall_assessment: \"approved_with_reservations\", approved_with_reservations: true, requires_more_revisions: false (note shortfalls in recommended_improvements)\n- Multiple success_criteria FAIL or factual errors or authenticity FAIL \u2192 requires_more_revisions: true\n- authenticity_check FAIL (e.g. parenthetical citations) \u2192 requires_more_revisions: true\n- Any claims_inaccurate \u2192 requires_more_revisions: true\n- Only recommended/refinement issues \u2192 requires_more_revisions: false (note them)\n- authenticity_check NEEDS_WORK \u2192 add to recommended_improvements, do NOT block` : `- Content is well-written, factually accurate, sounds human \u2192 requires_more_revisions: false\n- Factual errors, AI-obvious content, or major structural issues \u2192 requires_more_revisions: true\n- Minor style issues only \u2192 requires_more_revisions: false (note them)`}\n\nIMPORTANT: Use web_search to verify factual claims before finalizing your review.`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_prompt: `Review these drafts${brief ? ' against the content brief' : ''}. This is iteration ${iterationNumber} of ${maxIterations}.\n\nYOUR CHECKLIST:\n1. Check EACH success criterion from the brief individually (use exact criterion text as keys)\n2. Check EACH content requirement individually (use exact requirement text as keys)\n3. Check channel spec compliance (word count, char count)\n4. Run the authenticity check \u2014 look for parenthetical citations, AI tells, missing personal voice\n5. Fact-check every specific claim via web_search\n6. Apply editorial judgment (Three R's)\n\n${brief ? 'The brief has ' + (brief.success_criteria?.length || 0) + ' success criteria and ' + (brief.content_requirements?.length || 0) + ' content requirements. Your output MUST have results for ALL of them.' : ''}\n\nOriginal task: ${context.original_task}. Winning idea: ${context.winning_idea}`,\n    drafts: context.drafts,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations,\n    is_final_iteration: isFinalIteration,\n    content_brief: context.content_brief\n  }\n}];\n"
+        }
+      },
+      {
+        "id": "claude-model",
+        "name": "Claude Sonnet",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          1740,
+          480
+        ],
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-sonnet-4-5-20250929"
+          },
+          "options": {
+            "maxTokensToSample": 3000,
+            "temperature": 0.3
+          }
+        },
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "id": "ai-agent",
+        "name": "Reviewer Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          1740,
+          300
+        ],
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.user_prompt }}",
+          "options": {
+            "systemMessage": "={{ $json.system_prompt }}",
+            "maxIterations": 10,
+            "returnIntermediateSteps": true
+          },
+          "hasOutputParser": true
+        }
+      },
+      {
+        "id": "parse-review",
+        "name": "Parse Review",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1960,
+          300
+        ],
+        "parameters": {
+          "jsCode": "// Parse Review - receives structured data from Output Parser\nconst input = $input.first().json;\n\nlet parsed = null;\nlet success = true;\nlet error = null;\n\ntry {\n  // Check for structured output\n  if (input.output && typeof input.output === 'object') {\n    parsed = input.output;\n  } else if (input.requires_more_revisions !== undefined || input.overall_score !== undefined) {\n    parsed = input;\n  } else if (input.text) {\n    // Fallback: try to extract JSON\n    const response = input.text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsed = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('No JSON object found');\n    }\n  } else {\n    throw new Error('Unexpected output format');\n  }\n\n} catch (e) {\n  success = false;\n  error = `Failed to parse AI response: ${e.message}`;\n  parsed = {\n    requires_more_revisions: true,\n    overall_score: 5,\n    per_channel_feedback: {},\n    critical_issues: ['Review parsing failed - manual review required'],\n    minor_suggestions: []\n  };\n}\n\nreturn [{\n  json: {\n    success: success,\n    output: parsed,\n    output_type: 'review',\n    error: error\n  }\n}];"
+        }
+      },
+      {
+        "id": "evaluate-revision-needed",
+        "name": "Evaluate Revision Needed",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2180,
+          300
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "Rw7786cYTYOTQhH9"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "predicate": "The content requires more revisions. Return TRUE if: the overall_assessment is 'needs_work' or 'major_issues', the editorial_feedback.required_fixes array is non-empty, the fact_check_results.claims_inaccurate array is non-empty, the authenticity_check.overall is 'FAIL', or requires_more_revisions is explicitly true.",
+              "context": "={{ JSON.stringify($json.output) }}"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-output",
+        "name": "Format Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2400,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const parseResult = $('Parse Review').first().json;\nconst predicateResult = $input.first().json;\nconst buildPromptData = $('Build System Prompt').first().json;\n\nconst reviewResult = parseResult.output;\n\n// Iteration context\nconst iterationNumber = buildPromptData.iteration_number || 1;\nconst maxIterations = buildPromptData.max_iterations || 3;\nconst isFinalIteration = iterationNumber >= maxIterations;\nconst isBeyondMax = iterationNumber > maxIterations;\n\n// PRIMARY: Use the objective predicate evaluator result\nlet requiresMoreRevisions = predicateResult.result === true;\n\n// Check for factual accuracy issues\nconst factCheckResults = reviewResult.fact_check_results || {};\nconst claimsInaccurate = factCheckResults.claims_inaccurate || [];\nconst hasFactualErrors = claimsInaccurate.length > 0;\nlet factualErrorsOnly = false;\nlet approvedWithReservations = false;\n\n// Extract authenticity check\nconst authenticityCheck = reviewResult.authenticity_check || { overall: 'PASS', parenthetical_citations_found: false, personal_voice_present: true, structural_variety: true, sentence_variation: true, ai_tells: [] };\n\n// Extract editorial feedback\nconst editorialFeedback = reviewResult.editorial_feedback || { required_fixes: [], recommended_improvements: [], refinements: [] };\nconst requiredFixes = editorialFeedback.required_fixes || [];\n\nif (isBeyondMax) {\n  console.log(`Iteration ${iterationNumber} exceeds max ${maxIterations} - forcing approval (absolute cap)`);\n  requiresMoreRevisions = false;\n  approvedWithReservations = true;\n  requiredFixes.push('[ABSOLUTE CAP] Content approved after exceeding maximum iterations.');\n} else if (isFinalIteration) {\n  if (hasFactualErrors) {\n    console.log(`Final iteration but factual errors found (${claimsInaccurate.length}) - requesting factual-only revision`);\n    requiresMoreRevisions = true;\n    factualErrorsOnly = true;\n    requiredFixes.push(`[FINAL ITERATION - FACTUAL ERRORS] ${claimsInaccurate.length} factual inaccuracies must be corrected. One emergency revision authorized for factual fixes ONLY.`);\n  } else {\n    console.log('Final iteration, no factual errors - approving with reservations');\n    requiresMoreRevisions = false;\n    approvedWithReservations = true;\n  }\n}\n\nreturn [{\n  json: {\n    success: parseResult.success,\n    output: {\n      requires_more_revisions: requiresMoreRevisions,\n      factual_errors_only: factualErrorsOnly,\n      approved_with_reservations: approvedWithReservations,\n      overall_assessment: reviewResult.overall_assessment || 'needs_work',\n      authenticity_check: authenticityCheck,\n      brief_compliance: reviewResult.brief_compliance || {},\n      editorial_feedback: {\n        required_fixes: requiredFixes,\n        recommended_improvements: editorialFeedback.recommended_improvements || [],\n        refinements: editorialFeedback.refinements || []\n      },\n      fact_check_results: factCheckResults,\n      revision_priority: reviewResult.revision_priority || []\n    },\n    output_type: 'review',\n    error: parseResult.error,\n    is_final_iteration: isFinalIteration,\n    iteration_number: iterationNumber,\n    max_iterations: maxIterations\n  }\n}];\n"
+        }
+      },
+      {
+        "id": "tool-web-search",
+        "name": "Tool: Web Search",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          1520,
+          480
+        ],
+        "parameters": {
+          "name": "web_search",
+          "description": "Search the web to fact-check claims, verify statistics, and find supporting sources. Use this to verify any factual claims in the content before approving.",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "F0TUHVEzA79rroyS"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "query": "={{ $fromAI(\"query\", \"The search query to fact-check a claim or find information\", \"string\", \"\") }}",
+              "context": "={{ $fromAI(\"context\", \"Optional context about what youre trying to verify\", \"string\", \"\") }}"
+            },
+            "schema": [
+              {
+                "id": "query",
+                "type": "string",
+                "display": true,
+                "required": true,
+                "displayName": "query"
+              },
+              {
+                "id": "context",
+                "type": "string",
+                "display": true,
+                "required": false,
+                "displayName": "context"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "reviewer-output-parser",
+        "name": "Reviewer Output Schema",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          1740,
+          480
+        ],
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\"type\": \"object\", \"properties\": {\"overall_assessment\": {\"type\": \"string\", \"enum\": [\"meets_brief\", \"needs_work\", \"major_issues\"], \"description\": \"High-level assessment of brief compliance\"}, \"requires_more_revisions\": {\"type\": \"boolean\", \"description\": \"Whether content needs revisions - only true for required fixes or brief failures\"}, \"reviewer_confidence\": {\"type\": \"string\", \"enum\": [\"high\", \"medium\", \"low\"]}, \"brief_compliance\": {\"type\": \"object\", \"description\": \"Results of checking brief criteria\", \"properties\": {\"success_criteria_results\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"string\"}, \"description\": \"Each success criterion with PASS/FAIL result\"}, \"content_requirements_results\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"string\"}, \"description\": \"Each content requirement with MET/NOT_MET result\"}, \"channel_spec_compliance\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count\": {\"type\": \"number\"}, \"word_count_pass\": {\"type\": \"boolean\"}, \"char_count\": {\"type\": \"number\"}, \"char_count_pass\": {\"type\": \"boolean\"}}}, \"description\": \"Channel-level compliance checks\"}}}, \"fact_check_results\": {\"type\": \"object\", \"properties\": {\"claims_verified\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"claims_unverified\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"claims_inaccurate\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}, \"editorial_feedback\": {\"type\": \"object\", \"properties\": {\"required_fixes\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Deal-breaker issues that block publication\"}, \"recommended_improvements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Meaningful improvements to engagement\"}, \"refinements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"Nice-to-have suggestions\"}}, \"required\": [\"required_fixes\", \"recommended_improvements\", \"refinements\"]}, \"revision_priority\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"authenticity_check\": {\"type\": \"object\", \"description\": \"Assessment of content authenticity and human-sounding quality\", \"properties\": {\"overall\": {\"type\": \"string\", \"enum\": [\"PASS\", \"NEEDS_WORK\", \"FAIL\"]}, \"parenthetical_citations_found\": {\"type\": \"boolean\"}, \"personal_voice_present\": {\"type\": \"boolean\"}, \"structural_variety\": {\"type\": \"boolean\"}, \"sentence_variation\": {\"type\": \"boolean\"}, \"ai_tells\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}}, \"required\": [\"overall_assessment\", \"requires_more_revisions\", \"brief_compliance\", \"fact_check_results\", \"editorial_feedback\", \"authenticity_check\"]}",
+          "autoFix": true
+        }
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-3-5-haiku-20241022",
+            "cachedResultName": "Claude 3.5 Haiku"
+          },
+          "options": {}
+        },
+        "id": "parser-llm",
+        "name": "Parser LLM",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          1540,
+          580
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Prepare Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Context": {
+        "main": [
+          [
+            {
+              "node": "Has Provided Context?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Provided Context?": {
+        "main": [
+          [
+            {
+              "node": "Use Provided Context",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Config: Brand Guide",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Get Config: Content Strategy",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Get Config: Content Calendar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Use Provided Context": {
+        "main": [
+          [
+            {
+              "node": "Build System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config: Brand Guide": {
+        "main": [
+          [
+            {
+              "node": "Merge Configs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config: Content Strategy": {
+        "main": [
+          [
+            {
+              "node": "Merge Configs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config: Content Calendar": {
+        "main": [
+          [
+            {
+              "node": "Merge Configs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Configs": {
+        "main": [
+          [
+            {
+              "node": "Fetch Brand Guide",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch Content Strategy",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch Content Calendar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Brand Guide": {
+        "main": [
+          [
+            {
+              "node": "Merge Review Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Content Strategy": {
+        "main": [
+          [
+            {
+              "node": "Merge Review Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Content Calendar": {
+        "main": [
+          [
+            {
+              "node": "Merge Review Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Review Context": {
+        "main": [
+          [
+            {
+              "node": "Build System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build System Prompt": {
+        "main": [
+          [
+            {
+              "node": "Reviewer Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Sonnet": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Reviewer Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Reviewer Agent": {
+        "main": [
+          [
+            {
+              "node": "Parse Review",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Review": {
+        "main": [
+          [
+            {
+              "node": "Evaluate Revision Needed",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Evaluate Revision Needed": {
+        "main": [
+          [
+            {
+              "node": "Format Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Web Search": {
+        "ai_tool": [
+          [
+            {
+              "node": "Reviewer Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Reviewer Output Schema": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Reviewer Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parser LLM": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Reviewer Output Schema",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-10T11:15:24.957Z",
+        "id": 577,
+        "workflowId": "vZmSJnGeCeegKi8X",
+        "versionId": "a5416f1c-4991-4b45-b16c-d5b73f515b2d",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
+}

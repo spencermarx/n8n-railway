@@ -1,0 +1,557 @@
+{
+  "name": "Utility | Update Sheet Row",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "spreadsheet_id", "type": "string" },
+            { "name": "config_key", "type": "string" },
+            { "name": "sheet_name", "type": "string" },
+            { "name": "row_data", "type": "object" },
+            { "name": "action", "type": "string" },
+            { "name": "row_id", "type": "string" },
+            { "name": "slack_user_id", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "check-config-key",
+      "name": "Has Config Key?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [420, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-config",
+              "leftValue": "={{ $json.config_key }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "resolve-config",
+      "name": "Resolve Config",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [640, 180],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT config_value FROM alfred.system_config WHERE config_key = $1",
+        "options": { "queryReplacement": "={{ $json.config_key }}" }
+      },
+      "credentials": {
+        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+      }
+    },
+    {
+      "id": "merge-resolved",
+      "name": "Use Resolved ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 180],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.config_value }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_name",
+              "name": "sheet_name",
+              "value": "={{ $('Workflow Input').item.json.sheet_name }}",
+              "type": "string"
+            },
+            {
+              "id": "row_data",
+              "name": "row_data",
+              "value": "={{ $('Workflow Input').item.json.row_data }}",
+              "type": "object"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $('Workflow Input').item.json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "name": "row_id",
+              "value": "={{ $('Workflow Input').item.json.row_id }}",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $('Workflow Input').item.json.slack_user_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "use-direct-id",
+      "name": "Use Direct ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [640, 420],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheet_id }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_name",
+              "name": "sheet_name",
+              "value": "={{ $json.sheet_name }}",
+              "type": "string"
+            },
+            {
+              "id": "row_data",
+              "name": "row_data",
+              "value": "={{ $json.row_data }}",
+              "type": "object"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "name": "row_id",
+              "value": "={{ $json.row_id }}",
+              "type": "string"
+            },
+            {
+              "id": "slack_user_id",
+              "name": "slack_user_id",
+              "value": "={{ $json.slack_user_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge-context",
+      "name": "Merge Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1080, 300],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      }
+    },
+    {
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1300, 300],
+      "parameters": {
+        "workflowId": { "__rl": true, "mode": "id", "value": "S8GWoOTCaSqyc5bj" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $json.slack_user_id }}",
+            "scopes": "https://www.googleapis.com/auth/spreadsheets"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1520, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth-failed",
+      "name": "Auth Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1740, 500],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "success", "name": "success", "value": false, "type": "boolean" },
+            { "id": "error", "name": "error", "value": "={{ $json.error || 'Google authentication failed' }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1740, 180],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "access_token", "name": "access_token", "value": "={{ $json.access_token }}", "type": "string" },
+            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $('Merge Context').item.json.spreadsheet_id }}", "type": "string" },
+            { "id": "sheet_name", "name": "sheet_name", "value": "={{ $('Merge Context').item.json.sheet_name }}", "type": "string" },
+            { "id": "row_data", "name": "row_data", "value": "={{ $('Merge Context').item.json.row_data }}", "type": "object" },
+            { "id": "action", "name": "action", "value": "={{ $('Merge Context').item.json.action }}", "type": "string" },
+            { "id": "row_id", "name": "row_id", "value": "={{ $('Merge Context').item.json.row_id }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "get-headers",
+      "name": "Get Sheet Headers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1960, 180],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.sheet_name) }}!1:1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "route-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [2180, 180],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "append",
+              "conditions": {
+                "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Prepare Context').item.json.action }}",
+                    "rightValue": "append",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "update",
+              "conditions": {
+                "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Prepare Context').item.json.action }}",
+                    "rightValue": "update",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      }
+    },
+    {
+      "id": "prepare-append",
+      "name": "Prepare Append Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 60],
+      "parameters": {
+        "jsCode": "const headers = $json.values?.[0] || [];\nconst rowData = $('Prepare Context').first().json.row_data || {};\nconst accessToken = $('Prepare Context').first().json.access_token;\nconst spreadsheetId = $('Prepare Context').first().json.spreadsheet_id;\nconst sheetName = $('Prepare Context').first().json.sheet_name;\n\n// Map row_data to column positions based on headers\nconst rowValues = headers.map(header => {\n  const value = rowData[header];\n  return value !== undefined ? value : '';\n});\n\nreturn [{\n  json: {\n    access_token: accessToken,\n    spreadsheet_id: spreadsheetId,\n    sheet_name: sheetName,\n    values: [rowValues]\n  }\n}];"
+      }
+    },
+    {
+      "id": "append-row",
+      "name": "Append Row API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2620, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.sheet_name) }}:append",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueInputOption", "value": "USER_ENTERED" },
+            { "name": "insertDataOption", "value": "INSERT_ROWS" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "values", "value": "={{ $json.values }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-append-result",
+      "name": "Format Append Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2840, 60],
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\n\n// Extract the row number from the updated range (e.g., 'Sheet1!A5:E5' -> '5')\nconst updatedRange = result.updates?.updatedRange || '';\nconst rowMatch = updatedRange.match(/!(\\w+)(\\d+)/);\nconst rowId = rowMatch ? rowMatch[2] : null;\n\nreturn [{\n  json: {\n    success: true,\n    row_id: rowId,\n    action_taken: 'appended',\n    updated_range: updatedRange,\n    error: null\n  }\n}];"
+      }
+    },
+    {
+      "id": "find-row-for-update",
+      "name": "Find Row for Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2400, 180],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $('Prepare Context').item.json.spreadsheet_id }}/values/{{ encodeURIComponent($('Prepare Context').item.json.sheet_name) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Prepare Context').item.json.access_token }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-update",
+      "name": "Prepare Update Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2620, 180],
+      "parameters": {
+        "jsCode": "const allValues = $json.values || [];\nconst headers = allValues[0] || [];\nconst rowData = $('Prepare Context').first().json.row_data || {};\nconst rowId = $('Prepare Context').first().json.row_id;\nconst accessToken = $('Prepare Context').first().json.access_token;\nconst spreadsheetId = $('Prepare Context').first().json.spreadsheet_id;\nconst sheetName = $('Prepare Context').first().json.sheet_name;\n\nif (!rowId) {\n  return [{\n    json: {\n      success: false,\n      error: 'row_id is required for update action'\n    }\n  }];\n}\n\nconst targetRowIndex = parseInt(rowId, 10);\n\nif (isNaN(targetRowIndex) || targetRowIndex < 2) {\n  return [{\n    json: {\n      success: false,\n      error: 'Invalid row_id. Must be a number >= 2 (row 1 is headers)'\n    }\n  }];\n}\n\n// Get existing row data or empty array\nconst existingRow = allValues[targetRowIndex - 1] || [];\n\n// Merge existing data with new data\nconst updatedRow = headers.map((header, idx) => {\n  if (rowData.hasOwnProperty(header)) {\n    return rowData[header] !== undefined ? rowData[header] : '';\n  }\n  return existingRow[idx] || '';\n});\n\nreturn [{\n  json: {\n    access_token: accessToken,\n    spreadsheet_id: spreadsheetId,\n    sheet_name: sheetName,\n    row_id: rowId,\n    range: `${sheetName}!A${rowId}`,\n    values: [updatedRow]\n  }\n}];"
+      }
+    },
+    {
+      "id": "check-update-error",
+      "name": "Check Update Prep",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2840, 180],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-error",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": false,
+              "operator": { "type": "boolean", "operation": "notEquals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "update-row",
+      "name": "Update Row API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3060, 100],
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueInputOption", "value": "USER_ENTERED" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "values", "value": "={{ $json.values }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "format-update-result",
+      "name": "Format Update Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3280, 100],
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst rowId = $('Prepare Update Row').first().json.row_id;\n\nreturn [{\n  json: {\n    success: true,\n    row_id: rowId,\n    action_taken: 'updated',\n    updated_range: result.updatedRange,\n    error: null\n  }\n}];"
+      }
+    },
+    {
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2400, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "success", "name": "success", "value": false, "type": "boolean" },
+            { "id": "error", "name": "error", "value": "=Invalid action '{{ $('Prepare Context').item.json.action }}'. Valid actions: append, update", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [[{ "node": "Has Config Key?", "type": "main", "index": 0 }]]
+    },
+    "Has Config Key?": {
+      "main": [
+        [{ "node": "Resolve Config", "type": "main", "index": 0 }],
+        [{ "node": "Use Direct ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Resolve Config": {
+      "main": [[{ "node": "Use Resolved ID", "type": "main", "index": 0 }]]
+    },
+    "Use Resolved ID": {
+      "main": [[{ "node": "Merge Context", "type": "main", "index": 0 }]]
+    },
+    "Use Direct ID": {
+      "main": [[{ "node": "Merge Context", "type": "main", "index": 1 }]]
+    },
+    "Merge Context": {
+      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+    },
+    "Get Google Auth": {
+      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+    },
+    "Check Auth Success": {
+      "main": [
+        [{ "node": "Prepare Context", "type": "main", "index": 0 }],
+        [{ "node": "Auth Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Context": {
+      "main": [[{ "node": "Get Sheet Headers", "type": "main", "index": 0 }]]
+    },
+    "Get Sheet Headers": {
+      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
+    },
+    "Route by Action": {
+      "main": [
+        [{ "node": "Prepare Append Row", "type": "main", "index": 0 }],
+        [{ "node": "Find Row for Update", "type": "main", "index": 0 }],
+        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Append Row": {
+      "main": [[{ "node": "Append Row API", "type": "main", "index": 0 }]]
+    },
+    "Append Row API": {
+      "main": [[{ "node": "Format Append Result", "type": "main", "index": 0 }]]
+    },
+    "Find Row for Update": {
+      "main": [[{ "node": "Prepare Update Row", "type": "main", "index": 0 }]]
+    },
+    "Prepare Update Row": {
+      "main": [[{ "node": "Check Update Prep", "type": "main", "index": 0 }]]
+    },
+    "Check Update Prep": {
+      "main": [
+        [{ "node": "Update Row API", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Update Row API": {
+      "main": [[{ "node": "Format Update Result", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}
