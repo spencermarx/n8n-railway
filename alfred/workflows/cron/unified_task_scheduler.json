@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-10T11:21:04.828Z",
+    "updatedAt": "2026-02-11T10:21:34.478Z",
     "createdAt": "2026-02-04T09:41:12.597Z",
     "id": "RUHxLZdoh1kNNXvs",
     "name": "\ud83d\udd50 CRON | Unified Task Scheduler",
@@ -106,7 +106,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const now = new Date();\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
+                "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// =============================================================================\n// UNIVERSAL DATE/TIME INJECTION\n// Compute current date/time in user's timezone deterministically\n// so downstream LLMs never need to guess what \"today\" means.\n// =============================================================================\nconst now = new Date();\nconst userTz = task.user_timezone || 'UTC';\nconst dateFormatter = new Intl.DateTimeFormat('en-US', {\n  timeZone: userTz,\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric',\n});\nconst timeFormatter = new Intl.DateTimeFormat('en-US', {\n  timeZone: userTz,\n  hour: '2-digit',\n  minute: '2-digit',\n  hour12: true,\n});\nconst currentDate = dateFormatter.format(now);\nconst currentTime = timeFormatter.format(now);\n\nfullRequest += `\\n\\nCURRENT DATE/TIME (deterministic \u2014 always use this, NEVER guess the date):\\n- Date: ${currentDate}\\n- Time: ${currentTime}\\n- Timezone: ${userTz}`;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
             },
             "id": "prepare-request",
             "name": "Prepare Request",
@@ -396,9 +396,9 @@
             }
         ]
     },
-    "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
-    "activeVersionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
-    "versionCounter": 54,
+    "versionId": "4b023a8a-aba4-4ddb-8e01-a7dcc5077fda",
+    "activeVersionId": "4b023a8a-aba4-4ddb-8e01-a7dcc5077fda",
+    "versionCounter": 57,
     "triggerCount": 1,
     "shared": [
         {
@@ -423,7 +423,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "updatedAt": "2026-02-11T05:00:00.553Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -450,7 +450,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-10",
+                            "lastActiveAt": "2026-02-11",
                             "isPending": false
                         }
                     }
@@ -467,9 +467,9 @@
         }
     ],
     "activeVersion": {
-        "updatedAt": "2026-02-10T11:21:04.829Z",
-        "createdAt": "2026-02-10T11:21:04.829Z",
-        "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+        "updatedAt": "2026-02-11T10:21:34.482Z",
+        "createdAt": "2026-02-11T10:21:34.482Z",
+        "versionId": "4b023a8a-aba4-4ddb-8e01-a7dcc5077fda",
         "workflowId": "RUHxLZdoh1kNNXvs",
         "nodes": [
             {
@@ -571,7 +571,7 @@
             },
             {
                 "parameters": {
-                    "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const now = new Date();\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
+                    "jsCode": "// Read task data from the loop batch item (NOT from $input which is Fetch Notified Events query result)\nconst task = $('Loop Tasks').first().json;\n\n// Build channel-specific delivery instructions\nconst channels = task.channels || ['slack'];\n\nlet fullRequest = task.request;\n\n// =============================================================================\n// UNIVERSAL DATE/TIME INJECTION\n// Compute current date/time in user's timezone deterministically\n// so downstream LLMs never need to guess what \"today\" means.\n// =============================================================================\nconst now = new Date();\nconst userTz = task.user_timezone || 'UTC';\nconst dateFormatter = new Intl.DateTimeFormat('en-US', {\n  timeZone: userTz,\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric',\n});\nconst timeFormatter = new Intl.DateTimeFormat('en-US', {\n  timeZone: userTz,\n  hour: '2-digit',\n  minute: '2-digit',\n  hour12: true,\n});\nconst currentDate = dateFormatter.format(now);\nconst currentTime = timeFormatter.format(now);\n\nfullRequest += `\\n\\nCURRENT DATE/TIME (deterministic \u2014 always use this, NEVER guess the date):\\n- Date: ${currentDate}\\n- Time: ${currentTime}\\n- Timezone: ${userTz}`;\n\n// For calendar/meeting-related tasks, inject exact timestamps so the LLM\n// doesn't need to compute them (smaller models get time math wrong)\nconst taskNameLower = task.task_name.toLowerCase();\nconst isCalendarTask = taskNameLower.includes('meeting') || taskNameLower.includes('reminder') || taskNameLower.includes('prep') || taskNameLower.includes('calendar');\n\nif (isCalendarTask) {\n  const plus30 = new Date(now.getTime() + 30 * 60 * 1000);\n  const nowISO = now.toISOString();\n  const plus30ISO = plus30.toISOString();\n  fullRequest += `\\n\\nEXACT TIMESTAMPS FOR CALENDAR QUERY (use these, do NOT compute your own):\\n- time_min: ${nowISO}\\n- time_max: ${plus30ISO}\\n- calendar_id: primary`;\n}\n\n// Read notified event IDs from the Fetch Notified Events DB query\nlet notifiedEventIds = [];\ntry {\n  const notifiedResult = $('Fetch Notified Events').first().json;\n  const ids = notifiedResult.notified_ids;\n  // Handle both array and null/empty results\n  if (Array.isArray(ids)) {\n    notifiedEventIds = ids.filter(id => id && id !== '');\n  }\n} catch (e) {\n  // Fetch Notified Events might not have run or errored\n  notifiedEventIds = [];\n}\n\n// If there are previously notified events, add hard dedup context\nif (notifiedEventIds.length > 0 && isCalendarTask) {\n  fullRequest += `\\n\\nCRITICAL DEDUP \u2014 These calendar event IDs have ALREADY been notified today. Do NOT mention or notify about them again, even if they appear in your calendar query results. Skip them completely:\\n${notifiedEventIds.join('\\n')}`;\n}\n\nreturn [{\n  json: {\n    task_id: task.task_id,\n    user_id: task.user_id,\n    slack_user_id: task.slack_user_id,\n    slack_username: task.slack_username,\n    email: task.email,\n    user_timezone: task.user_timezone,\n    task_name: task.task_name,\n    request: fullRequest,\n    channels: channels,\n    schedule_type: task.schedule_type,\n    run_count: task.run_count,\n    metadata: task.metadata || {}\n  }\n}];"
                 },
                 "id": "prepare-request",
                 "name": "Prepare Request",
@@ -834,10 +834,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-10T11:21:04.951Z",
-                "id": 580,
+                "createdAt": "2026-02-11T10:21:34.797Z",
+                "id": 586,
                 "workflowId": "RUHxLZdoh1kNNXvs",
-                "versionId": "6fdd2042-1a06-46ec-9180-17e003e5b910",
+                "versionId": "4b023a8a-aba4-4ddb-8e01-a7dcc5077fda",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
