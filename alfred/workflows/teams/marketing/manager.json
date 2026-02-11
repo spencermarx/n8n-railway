@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-10T12:58:55.762Z",
+    "updatedAt": "2026-02-11T12:01:35.870Z",
     "createdAt": "2026-02-05T13:51:59.876Z",
     "id": "WUNHfC0c2FRgIlye",
     "name": "Team | Marketing Manager",
@@ -706,7 +706,8 @@
         },
         {
             "parameters": {
-                "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];"
+                "jsCode": "// Read from Process Outputs when available (normal no-approval path).\n// Fall back to $input for error paths where Process Outputs hasn't executed.\nlet input;\ntry {\n  input = $('Process Outputs').first().json;\n} catch (e) {\n  input = $input.first().json;\n}\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update,\n      sources_used: input.sources_used\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];",
+                "mode": "runOnceForAllItems"
             },
             "id": "format-output",
             "name": "Format Output",
@@ -746,24 +747,30 @@
                             "rightValue": true,
                             "operator": {
                                 "type": "boolean",
-                                "operation": "true"
-                            }
+                                "operation": "true",
+                                "singleValue": true
+                            },
+                            "id": "condition-1770811295513-vug8kdg6w"
                         },
                         {
                             "leftValue": "={{ $('Process Outputs').first().json.success !== false }}",
                             "rightValue": true,
                             "operator": {
                                 "type": "boolean",
-                                "operation": "true"
-                            }
+                                "operation": "true",
+                                "singleValue": true
+                            },
+                            "id": "condition-1770811295513-oi4aqfpiv"
                         },
                         {
                             "leftValue": "={{ $json.result }}",
                             "rightValue": true,
                             "operator": {
                                 "type": "boolean",
-                                "operation": "true"
-                            }
+                                "operation": "true",
+                                "singleValue": true
+                            },
+                            "id": "condition-1770811295513-gmsvqc56j"
                         }
                     ]
                 }
@@ -893,8 +900,10 @@
                             "rightValue": true,
                             "operator": {
                                 "type": "boolean",
-                                "operation": "true"
-                            }
+                                "operation": "true",
+                                "singleValue": true
+                            },
+                            "id": "condition-1770811295513-n129ymns9"
                         }
                     ]
                 },
@@ -1326,9 +1335,9 @@
             }
         ]
     },
-    "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
-    "activeVersionId": "99a082be-754f-4333-b96e-3a1895b0e017",
-    "versionCounter": 223,
+    "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
+    "activeVersionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
+    "versionCounter": 226,
     "triggerCount": 0,
     "shared": [
         {
@@ -1353,7 +1362,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "updatedAt": "2026-02-11T05:00:00.553Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -1380,7 +1389,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-10",
+                            "lastActiveAt": "2026-02-11",
                             "isPending": false
                         }
                     }
@@ -1390,9 +1399,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-10T12:58:55.764Z",
-        "createdAt": "2026-02-10T12:58:55.764Z",
-        "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+        "updatedAt": "2026-02-11T12:01:35.875Z",
+        "createdAt": "2026-02-11T12:01:35.875Z",
+        "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
         "workflowId": "WUNHfC0c2FRgIlye",
         "nodes": [
             {
@@ -2094,7 +2103,8 @@
             },
             {
                 "parameters": {
-                    "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];"
+                    "jsCode": "// Read from Process Outputs when available (normal no-approval path).\n// Fall back to $input for error paths where Process Outputs hasn't executed.\nlet input;\ntry {\n  input = $('Process Outputs').first().json;\n} catch (e) {\n  input = $input.first().json;\n}\n\nreturn [{\n  json: {\n    success: input.success,\n    output: {\n      manager_summary: input.manager_summary,\n      winning_angle: input.winning_angle,\n      drafts: input.drafts,\n      images: input.images,\n      calendar_update: input.calendar_update,\n      sources_used: input.sources_used\n    },\n    metadata: {\n      iterations_used: input.iterations_used,\n      quality_approved: input.quality_approved,\n      editor_feedback: input.editor_feedback,\n      steps_executed: input.raw_steps_count\n    },\n    error: input.error || null\n  }\n}];",
+                    "mode": "runOnceForAllItems"
                 },
                 "id": "format-output",
                 "name": "Format Output",
@@ -2134,24 +2144,30 @@
                                 "rightValue": true,
                                 "operator": {
                                     "type": "boolean",
-                                    "operation": "true"
-                                }
+                                    "operation": "true",
+                                    "singleValue": true
+                                },
+                                "id": "condition-1770811295513-vug8kdg6w"
                             },
                             {
                                 "leftValue": "={{ $('Process Outputs').first().json.success !== false }}",
                                 "rightValue": true,
                                 "operator": {
                                     "type": "boolean",
-                                    "operation": "true"
-                                }
+                                    "operation": "true",
+                                    "singleValue": true
+                                },
+                                "id": "condition-1770811295513-oi4aqfpiv"
                             },
                             {
                                 "leftValue": "={{ $json.result }}",
                                 "rightValue": true,
                                 "operator": {
                                     "type": "boolean",
-                                    "operation": "true"
-                                }
+                                    "operation": "true",
+                                    "singleValue": true
+                                },
+                                "id": "condition-1770811295513-gmsvqc56j"
                             }
                         ]
                     }
@@ -2281,8 +2297,10 @@
                                 "rightValue": true,
                                 "operator": {
                                     "type": "boolean",
-                                    "operation": "true"
-                                }
+                                    "operation": "true",
+                                    "singleValue": true
+                                },
+                                "id": "condition-1770811295513-n129ymns9"
                             }
                         ]
                     },
@@ -2695,10 +2713,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-10T12:58:56.084Z",
-                "id": 584,
+                "createdAt": "2026-02-11T12:01:36.215Z",
+                "id": 589,
                 "workflowId": "WUNHfC0c2FRgIlye",
-                "versionId": "99a082be-754f-4333-b96e-3a1895b0e017",
+                "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
