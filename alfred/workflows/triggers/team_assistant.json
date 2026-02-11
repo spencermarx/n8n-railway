@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-11T10:22:48.364Z",
+    "updatedAt": "2026-02-11T13:21:55.731Z",
     "createdAt": "2026-02-03T10:50:19.448Z",
     "id": "KJpZBr3isT66Rzoa",
     "name": "\ud83e\udd16 Alfred | Team Assistant",
@@ -1266,7 +1266,7 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                2640,
+                2860,
                 -250
             ],
             "parameters": {
@@ -1279,7 +1279,7 @@
             "type": "n8n-nodes-base.executeWorkflow",
             "typeVersion": 1.2,
             "position": [
-                2860,
+                3080,
                 -250
             ],
             "parameters": {
@@ -1309,7 +1309,7 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                3080,
+                3520,
                 -250
             ],
             "parameters": {
@@ -1336,7 +1336,7 @@
             "type": "n8n-nodes-base.executeWorkflow",
             "typeVersion": 1.2,
             "position": [
-                3300,
+                3740,
                 -250
             ],
             "parameters": {
@@ -1381,6 +1381,113 @@
             },
             "alwaysOutputData": true,
             "onError": "continueRegularOutput"
+        },
+        {
+            "id": "check-image-gen-success",
+            "name": "Check Image Gen Success",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                2640,
+                -250
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "check-img-success",
+                            "leftValue": "={{ $json.success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "check-calendar-success",
+            "name": "Check Calendar Success",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                3300,
+                -250
+            ],
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "leftValue": "",
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "check-cal-success",
+                            "leftValue": "={{ $json.success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            }
+        },
+        {
+            "id": "format-approval-error",
+            "name": "Format Approval Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2860,
+                -450
+            ],
+            "parameters": {
+                "jsCode": "const approval = $('Check Text Approval').first().json;\nconst result = $input.first().json;\n\nlet stepName = 'approval process';\nlet errorDetail = result.error || 'An unexpected error occurred';\n\nif (result.output && 'images_generated' in (result.output || {})) {\n  stepName = 'image generation';\n  errorDetail = result.error || 'Failed to generate images for the approved content';\n} else if (result.output && 'tracker_updated' in (result.output || {})) {\n  stepName = 'content calendar update';\n  errorDetail = result.error || 'Failed to update the content calendar';\n}\n\nconst errorMessage = `:warning: Sorry, I ran into an issue during ${stepName} for your approved content.\\n\\n*Error:* ${errorDetail}\\n\\nPlease try approving again or let Spencer know if this keeps happening.`;\n\nreturn [{\n  json: {\n    action: 'post_thread',\n    channel_id: approval.channel_id,\n    thread_ts: approval.thread_ts,\n    text: errorMessage,\n    blocks: []\n  }\n}];"
+            }
+        },
+        {
+            "id": "send-approval-error",
+            "name": "Send Approval Error",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1.2,
+            "position": [
+                3080,
+                -450
+            ],
+            "parameters": {
+                "workflowId": {
+                    "__rl": true,
+                    "mode": "id",
+                    "value": "xbFJVyUFvGfUbY4s"
+                },
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "action": "={{ $json.action }}",
+                        "channel_id": "={{ $json.channel_id }}",
+                        "thread_ts": "={{ $json.thread_ts }}",
+                        "text": "={{ $json.text }}",
+                        "blocks": "={{ $json.blocks }}"
+                    }
+                },
+                "options": {}
+            }
         }
     ],
     "connections": {
@@ -1858,33 +1965,11 @@
                 ]
             ]
         },
-        "Call Image Generator": {
-            "main": [
-                [
-                    {
-                        "node": "Prepare Calendar Update",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
         "Prepare Calendar Update": {
             "main": [
                 [
                     {
                         "node": "Update Content Calendar",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Update Content Calendar": {
-            "main": [
-                [
-                    {
-                        "node": "Update Approval Card",
                         "type": "main",
                         "index": 0
                     }
@@ -1907,6 +1992,75 @@
                 [
                     {
                         "node": "Log Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Image Generator": {
+            "main": [
+                [
+                    {
+                        "node": "Check Image Gen Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Image Gen Success": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Calendar Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format Approval Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Content Calendar": {
+            "main": [
+                [
+                    {
+                        "node": "Check Calendar Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Calendar Success": {
+            "main": [
+                [
+                    {
+                        "node": "Update Approval Card",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format Approval Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Approval Error": {
+            "main": [
+                [
+                    {
+                        "node": "Send Approval Error",
                         "type": "main",
                         "index": 0
                     }
@@ -1960,9 +2114,9 @@
             }
         ]
     },
-    "versionId": "f80915cc-24fe-415c-a5a6-245e761d97c4",
-    "activeVersionId": "f80915cc-24fe-415c-a5a6-245e761d97c4",
-    "versionCounter": 489,
+    "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
+    "activeVersionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
+    "versionCounter": 492,
     "triggerCount": 1,
     "shared": [
         {
@@ -2031,9 +2185,9 @@
         }
     ],
     "activeVersion": {
-        "updatedAt": "2026-02-11T10:22:48.367Z",
-        "createdAt": "2026-02-11T10:22:48.367Z",
-        "versionId": "f80915cc-24fe-415c-a5a6-245e761d97c4",
+        "updatedAt": "2026-02-11T13:21:55.730Z",
+        "createdAt": "2026-02-11T13:21:55.730Z",
+        "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
         "workflowId": "KJpZBr3isT66Rzoa",
         "nodes": [
             {
@@ -3295,7 +3449,7 @@
                 "type": "n8n-nodes-base.code",
                 "typeVersion": 2,
                 "position": [
-                    2640,
+                    2860,
                     -250
                 ],
                 "parameters": {
@@ -3308,7 +3462,7 @@
                 "type": "n8n-nodes-base.executeWorkflow",
                 "typeVersion": 1.2,
                 "position": [
-                    2860,
+                    3080,
                     -250
                 ],
                 "parameters": {
@@ -3338,7 +3492,7 @@
                 "type": "n8n-nodes-base.httpRequest",
                 "typeVersion": 4.2,
                 "position": [
-                    3080,
+                    3520,
                     -250
                 ],
                 "parameters": {
@@ -3365,7 +3519,7 @@
                 "type": "n8n-nodes-base.executeWorkflow",
                 "typeVersion": 1.2,
                 "position": [
-                    3300,
+                    3740,
                     -250
                 ],
                 "parameters": {
@@ -3410,6 +3564,113 @@
                 },
                 "alwaysOutputData": true,
                 "onError": "continueRegularOutput"
+            },
+            {
+                "id": "check-image-gen-success",
+                "name": "Check Image Gen Success",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    2640,
+                    -250
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "check-img-success",
+                                "leftValue": "={{ $json.success }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "check-calendar-success",
+                "name": "Check Calendar Success",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    3300,
+                    -250
+                ],
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "version": 2,
+                            "leftValue": "",
+                            "caseSensitive": true,
+                            "typeValidation": "strict"
+                        },
+                        "combinator": "and",
+                        "conditions": [
+                            {
+                                "id": "check-cal-success",
+                                "leftValue": "={{ $json.success }}",
+                                "rightValue": true,
+                                "operator": {
+                                    "type": "boolean",
+                                    "operation": "equals"
+                                }
+                            }
+                        ]
+                    },
+                    "options": {}
+                }
+            },
+            {
+                "id": "format-approval-error",
+                "name": "Format Approval Error",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    2860,
+                    -450
+                ],
+                "parameters": {
+                    "jsCode": "const approval = $('Check Text Approval').first().json;\nconst result = $input.first().json;\n\nlet stepName = 'approval process';\nlet errorDetail = result.error || 'An unexpected error occurred';\n\nif (result.output && 'images_generated' in (result.output || {})) {\n  stepName = 'image generation';\n  errorDetail = result.error || 'Failed to generate images for the approved content';\n} else if (result.output && 'tracker_updated' in (result.output || {})) {\n  stepName = 'content calendar update';\n  errorDetail = result.error || 'Failed to update the content calendar';\n}\n\nconst errorMessage = `:warning: Sorry, I ran into an issue during ${stepName} for your approved content.\\n\\n*Error:* ${errorDetail}\\n\\nPlease try approving again or let Spencer know if this keeps happening.`;\n\nreturn [{\n  json: {\n    action: 'post_thread',\n    channel_id: approval.channel_id,\n    thread_ts: approval.thread_ts,\n    text: errorMessage,\n    blocks: []\n  }\n}];"
+                }
+            },
+            {
+                "id": "send-approval-error",
+                "name": "Send Approval Error",
+                "type": "n8n-nodes-base.executeWorkflow",
+                "typeVersion": 1.2,
+                "position": [
+                    3080,
+                    -450
+                ],
+                "parameters": {
+                    "workflowId": {
+                        "__rl": true,
+                        "mode": "id",
+                        "value": "xbFJVyUFvGfUbY4s"
+                    },
+                    "workflowInputs": {
+                        "mappingMode": "defineBelow",
+                        "value": {
+                            "action": "={{ $json.action }}",
+                            "channel_id": "={{ $json.channel_id }}",
+                            "thread_ts": "={{ $json.thread_ts }}",
+                            "text": "={{ $json.text }}",
+                            "blocks": "={{ $json.blocks }}"
+                        }
+                    },
+                    "options": {}
+                }
             }
         ],
         "connections": {
@@ -3887,33 +4148,11 @@
                     ]
                 ]
             },
-            "Call Image Generator": {
-                "main": [
-                    [
-                        {
-                            "node": "Prepare Calendar Update",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
             "Prepare Calendar Update": {
                 "main": [
                     [
                         {
                             "node": "Update Content Calendar",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Update Content Calendar": {
-                "main": [
-                    [
-                        {
-                            "node": "Update Approval Card",
                             "type": "main",
                             "index": 0
                         }
@@ -3941,6 +4180,75 @@
                         }
                     ]
                 ]
+            },
+            "Call Image Generator": {
+                "main": [
+                    [
+                        {
+                            "node": "Check Image Gen Success",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Check Image Gen Success": {
+                "main": [
+                    [
+                        {
+                            "node": "Prepare Calendar Update",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Format Approval Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Update Content Calendar": {
+                "main": [
+                    [
+                        {
+                            "node": "Check Calendar Success",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Check Calendar Success": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Approval Card",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "Format Approval Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Format Approval Error": {
+                "main": [
+                    [
+                        {
+                            "node": "Send Approval Error",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
             }
         },
         "authors": "Spencer Marx",
@@ -3949,10 +4257,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-11T10:22:48.883Z",
-                "id": 587,
+                "createdAt": "2026-02-11T13:21:55.921Z",
+                "id": 591,
                 "workflowId": "KJpZBr3isT66Rzoa",
-                "versionId": "f80915cc-24fe-415c-a5a6-245e761d97c4",
+                "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }

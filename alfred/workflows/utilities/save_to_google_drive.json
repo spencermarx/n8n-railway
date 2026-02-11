@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-09T16:35:26.010Z",
+    "updatedAt": "2026-02-11T13:01:26.986Z",
     "createdAt": "2026-02-09T16:35:26.010Z",
     "id": "QMxT5NLQOL3jlrzv",
     "name": "Utility | Save to Google Drive",
@@ -308,8 +308,7 @@
                 180
             ],
             "parameters": {
-                "mode": "combine",
-                "combineBy": "combineAll",
+                "mode": "append",
                 "options": {}
             }
         },
@@ -543,55 +542,8 @@
                 60
             ],
             "parameters": {
-                "mode": "combine",
-                "combineBy": "combineAll",
+                "mode": "append",
                 "options": {}
-            }
-        },
-        {
-            "id": "upload-to-drive",
-            "name": "Upload to Drive",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.2,
-            "position": [
-                3280,
-                60
-            ],
-            "parameters": {
-                "method": "POST",
-                "url": "https://www.googleapis.com/upload/drive/v3/files",
-                "sendQuery": true,
-                "queryParameters": {
-                    "parameters": [
-                        {
-                            "name": "uploadType",
-                            "value": "multipart"
-                        }
-                    ]
-                },
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Authorization",
-                            "value": "=Bearer {{ $json.access_token }}"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "contentType": "multipart-form-data",
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "name": "metadata",
-                            "value": "={{ JSON.stringify({ name: $json.file_name, mimeType: $json.mime_type, ...($json.folder_id ? { parents: [$json.folder_id] } : {}) }) }}",
-                            "parameterType": "formData"
-                        }
-                    ]
-                },
-                "options": {
-                    "bodyContentType": "multipart-form-data"
-                }
             }
         },
         {
@@ -888,9 +840,9 @@
     "staticData": null,
     "meta": null,
     "pinData": null,
-    "versionId": "1fe57a8d-3f26-4aa9-b38e-bcdf51f86bac",
-    "activeVersionId": "1fe57a8d-3f26-4aa9-b38e-bcdf51f86bac",
-    "versionCounter": 3,
+    "versionId": "2239d605-4679-4ebc-ad66-877426104756",
+    "activeVersionId": "2239d605-4679-4ebc-ad66-877426104756",
+    "versionCounter": 9,
     "triggerCount": 0,
     "shared": [
         {
@@ -915,7 +867,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-09T12:02:49.196Z",
+                            "updatedAt": "2026-02-11T05:00:00.553Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -942,7 +894,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-09",
+                            "lastActiveAt": "2026-02-11",
                             "isPending": false
                         }
                     }
@@ -952,9 +904,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-09T16:35:26.035Z",
-        "createdAt": "2026-02-09T16:35:26.035Z",
-        "versionId": "1fe57a8d-3f26-4aa9-b38e-bcdf51f86bac",
+        "updatedAt": "2026-02-11T13:01:26.985Z",
+        "createdAt": "2026-02-11T13:01:26.985Z",
+        "versionId": "2239d605-4679-4ebc-ad66-877426104756",
         "workflowId": "QMxT5NLQOL3jlrzv",
         "nodes": [
             {
@@ -1258,8 +1210,7 @@
                     180
                 ],
                 "parameters": {
-                    "mode": "combine",
-                    "combineBy": "combineAll",
+                    "mode": "append",
                     "options": {}
                 }
             },
@@ -1493,55 +1444,8 @@
                     60
                 ],
                 "parameters": {
-                    "mode": "combine",
-                    "combineBy": "combineAll",
+                    "mode": "append",
                     "options": {}
-                }
-            },
-            {
-                "id": "upload-to-drive",
-                "name": "Upload to Drive",
-                "type": "n8n-nodes-base.httpRequest",
-                "typeVersion": 4.2,
-                "position": [
-                    3280,
-                    60
-                ],
-                "parameters": {
-                    "method": "POST",
-                    "url": "https://www.googleapis.com/upload/drive/v3/files",
-                    "sendQuery": true,
-                    "queryParameters": {
-                        "parameters": [
-                            {
-                                "name": "uploadType",
-                                "value": "multipart"
-                            }
-                        ]
-                    },
-                    "sendHeaders": true,
-                    "headerParameters": {
-                        "parameters": [
-                            {
-                                "name": "Authorization",
-                                "value": "=Bearer {{ $json.access_token }}"
-                            }
-                        ]
-                    },
-                    "sendBody": true,
-                    "contentType": "multipart-form-data",
-                    "bodyParameters": {
-                        "parameters": [
-                            {
-                                "name": "metadata",
-                                "value": "={{ JSON.stringify({ name: $json.file_name, mimeType: $json.mime_type, ...($json.folder_id ? { parents: [$json.folder_id] } : {}) }) }}",
-                                "parameterType": "formData"
-                            }
-                        ]
-                    },
-                    "options": {
-                        "bodyContentType": "multipart-form-data"
-                    }
                 }
             },
             {
@@ -1836,10 +1740,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-09T16:35:26.394Z",
-                "id": 554,
+                "createdAt": "2026-02-11T13:01:27.143Z",
+                "id": 590,
                 "workflowId": "QMxT5NLQOL3jlrzv",
-                "versionId": "1fe57a8d-3f26-4aa9-b38e-bcdf51f86bac",
+                "versionId": "2239d605-4679-4ebc-ad66-877426104756",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
