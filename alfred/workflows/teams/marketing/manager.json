@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-11T12:01:35.870Z",
+    "updatedAt": "2026-02-11T17:02:42.902Z",
     "createdAt": "2026-02-05T13:51:59.876Z",
     "id": "WUNHfC0c2FRgIlye",
     "name": "Team | Marketing Manager",
@@ -967,7 +967,8 @@
                     "mappingMode": "defineBelow",
                     "value": {
                         "predicate": "Return TRUE if the agent produced NEW or REVISED content (such as draft posts, articles, or creative writing) that requires user review and approval before publishing. Return FALSE if the agent only performed operational tasks such as updating a calendar, scheduling, running analytics, answering a question, looking up information, or providing confirmations \u2014 or if no publishable content was created.",
-                        "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}"
+                        "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}",
+                        "fallback": "true"
                     },
                     "matchingColumns": [],
                     "schema": [
@@ -983,6 +984,15 @@
                         {
                             "id": "context",
                             "displayName": "context",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "fallback",
+                            "displayName": "fallback",
                             "required": false,
                             "defaultMatch": false,
                             "display": true,
@@ -1335,9 +1345,9 @@
             }
         ]
     },
-    "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
-    "activeVersionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
-    "versionCounter": 226,
+    "versionId": "2e72efc1-40f1-423b-a493-8b532d87a044",
+    "activeVersionId": "2e72efc1-40f1-423b-a493-8b532d87a044",
+    "versionCounter": 231,
     "triggerCount": 0,
     "shared": [
         {
@@ -1362,7 +1372,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-11T05:00:00.553Z",
+                            "updatedAt": "2026-02-11T15:20:23.001Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -1399,9 +1409,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-11T12:01:35.875Z",
-        "createdAt": "2026-02-11T12:01:35.875Z",
-        "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
+        "updatedAt": "2026-02-11T17:02:42.903Z",
+        "createdAt": "2026-02-11T17:02:42.903Z",
+        "versionId": "2e72efc1-40f1-423b-a493-8b532d87a044",
         "workflowId": "WUNHfC0c2FRgIlye",
         "nodes": [
             {
@@ -2364,7 +2374,8 @@
                         "mappingMode": "defineBelow",
                         "value": {
                             "predicate": "Return TRUE if the agent produced NEW or REVISED content (such as draft posts, articles, or creative writing) that requires user review and approval before publishing. Return FALSE if the agent only performed operational tasks such as updating a calendar, scheduling, running analytics, answering a question, looking up information, or providing confirmations \u2014 or if no publishable content was created.",
-                            "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}"
+                            "context": "={{ JSON.stringify({ agent_summary: $('Process Outputs').first().json.manager_summary, task_prompt: $('Initialize State').first().json.task_prompt, draft_channels: Object.keys($('Process Outputs').first().json.drafts || {}), tools_used_count: $('Process Outputs').first().json.raw_steps_count }) }}",
+                            "fallback": "true"
                         },
                         "matchingColumns": [],
                         "schema": [
@@ -2380,6 +2391,15 @@
                             {
                                 "id": "context",
                                 "displayName": "context",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "fallback",
+                                "displayName": "fallback",
                                 "required": false,
                                 "defaultMatch": false,
                                 "display": true,
@@ -2713,10 +2733,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-11T12:01:36.215Z",
-                "id": 589,
+                "createdAt": "2026-02-11T17:02:43.025Z",
+                "id": 595,
                 "workflowId": "WUNHfC0c2FRgIlye",
-                "versionId": "7529f756-c6bb-4fbf-8d1d-6306b7e7fb99",
+                "versionId": "2e72efc1-40f1-423b-a493-8b532d87a044",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }

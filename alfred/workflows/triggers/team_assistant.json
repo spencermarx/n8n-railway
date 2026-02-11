@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-11T13:21:55.731Z",
+    "updatedAt": "2026-02-11T17:02:37.933Z",
     "createdAt": "2026-02-03T10:50:19.448Z",
     "id": "KJpZBr3isT66Rzoa",
     "name": "\ud83e\udd16 Alfred | Team Assistant",
@@ -590,7 +590,8 @@
                     "mappingMode": "defineBelow",
                     "value": {
                         "predicate": "Return TRUE if the response provides value to the user. This includes: (1) Specific actionable content like meeting details, calendar events, requested data, (2) Error messages or technical issues the user needs to know about, (3) Clarifying questions that require user input, (4) Status updates on requested tasks, (5) Any substantive response to what the user asked for. Return FALSE ONLY for: (1) Generic task confirmations like 'Task completed', 'Done', 'OK' with no other content, (2) When a scheduled/automated task found nothing to report AND the original request explicitly said 'do not send any message' in that case. When in doubt, return TRUE - it's better to inform the user than leave them waiting.",
-                        "context": "={{ JSON.stringify({ response: $json.response_text, original_request: $json.original_request }) }}"
+                        "context": "={{ JSON.stringify({ response: $json.response_text, original_request: $json.original_request }) }}",
+                        "fallback": "true"
                     },
                     "matchingColumns": [],
                     "schema": [
@@ -606,6 +607,15 @@
                         {
                             "id": "context",
                             "displayName": "context",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "fallback",
+                            "displayName": "fallback",
                             "required": false,
                             "defaultMatch": false,
                             "display": true,
@@ -684,7 +694,8 @@
                     "mappingMode": "defineBelow",
                     "value": {
                         "predicate": "isComplex",
-                        "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}"
+                        "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}",
+                        "fallback": "true"
                     },
                     "matchingColumns": [],
                     "schema": [
@@ -700,6 +711,15 @@
                         {
                             "id": "context",
                             "displayName": "context",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "canBeUsedToMatch": true,
+                            "type": "string"
+                        },
+                        {
+                            "id": "fallback",
+                            "displayName": "fallback",
                             "required": false,
                             "defaultMatch": false,
                             "display": true,
@@ -2114,9 +2134,9 @@
             }
         ]
     },
-    "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
-    "activeVersionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
-    "versionCounter": 492,
+    "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
+    "activeVersionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
+    "versionCounter": 497,
     "triggerCount": 1,
     "shared": [
         {
@@ -2141,7 +2161,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-11T05:00:00.553Z",
+                            "updatedAt": "2026-02-11T15:20:23.001Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -2185,9 +2205,9 @@
         }
     ],
     "activeVersion": {
-        "updatedAt": "2026-02-11T13:21:55.730Z",
-        "createdAt": "2026-02-11T13:21:55.730Z",
-        "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
+        "updatedAt": "2026-02-11T17:02:37.934Z",
+        "createdAt": "2026-02-11T17:02:37.934Z",
+        "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
         "workflowId": "KJpZBr3isT66Rzoa",
         "nodes": [
             {
@@ -2773,7 +2793,8 @@
                         "mappingMode": "defineBelow",
                         "value": {
                             "predicate": "Return TRUE if the response provides value to the user. This includes: (1) Specific actionable content like meeting details, calendar events, requested data, (2) Error messages or technical issues the user needs to know about, (3) Clarifying questions that require user input, (4) Status updates on requested tasks, (5) Any substantive response to what the user asked for. Return FALSE ONLY for: (1) Generic task confirmations like 'Task completed', 'Done', 'OK' with no other content, (2) When a scheduled/automated task found nothing to report AND the original request explicitly said 'do not send any message' in that case. When in doubt, return TRUE - it's better to inform the user than leave them waiting.",
-                            "context": "={{ JSON.stringify({ response: $json.response_text, original_request: $json.original_request }) }}"
+                            "context": "={{ JSON.stringify({ response: $json.response_text, original_request: $json.original_request }) }}",
+                            "fallback": "true"
                         },
                         "matchingColumns": [],
                         "schema": [
@@ -2789,6 +2810,15 @@
                             {
                                 "id": "context",
                                 "displayName": "context",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "fallback",
+                                "displayName": "fallback",
                                 "required": false,
                                 "defaultMatch": false,
                                 "display": true,
@@ -2867,7 +2897,8 @@
                         "mappingMode": "defineBelow",
                         "value": {
                             "predicate": "isComplex",
-                            "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}"
+                            "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}",
+                            "fallback": "true"
                         },
                         "matchingColumns": [],
                         "schema": [
@@ -2883,6 +2914,15 @@
                             {
                                 "id": "context",
                                 "displayName": "context",
+                                "required": false,
+                                "defaultMatch": false,
+                                "display": true,
+                                "canBeUsedToMatch": true,
+                                "type": "string"
+                            },
+                            {
+                                "id": "fallback",
+                                "displayName": "fallback",
                                 "required": false,
                                 "defaultMatch": false,
                                 "display": true,
@@ -4257,10 +4297,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-11T13:21:55.921Z",
-                "id": 591,
+                "createdAt": "2026-02-11T17:02:38.128Z",
+                "id": 593,
                 "workflowId": "KJpZBr3isT66Rzoa",
-                "versionId": "0339aa5c-4789-44d0-b30b-4d9c24b2ef78",
+                "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
