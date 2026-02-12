@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-11T17:02:37.933Z",
+    "updatedAt": "2026-02-12T10:16:20.271Z",
     "createdAt": "2026-02-03T10:50:19.448Z",
     "id": "KJpZBr3isT66Rzoa",
     "name": "\ud83e\udd16 Alfred | Team Assistant",
@@ -694,7 +694,7 @@
                     "mappingMode": "defineBelow",
                     "value": {
                         "predicate": "isComplex",
-                        "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}",
+                        "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_rule: 'A request is COMPLEX if it likely requires 3 or more distinct steps to fulfill, OR if it requires specialty knowledge such as marketing, content creation, or brand guidelines. Otherwise it is SIMPLE.' }) }}",
                         "fallback": "true"
                     },
                     "matchingColumns": [],
@@ -2134,9 +2134,9 @@
             }
         ]
     },
-    "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
-    "activeVersionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
-    "versionCounter": 497,
+    "versionId": "ab4e4c25-7cc0-42c7-9322-605da6d6c238",
+    "activeVersionId": "ab4e4c25-7cc0-42c7-9322-605da6d6c238",
+    "versionCounter": 500,
     "triggerCount": 1,
     "shared": [
         {
@@ -2161,7 +2161,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-11T15:20:23.001Z",
+                            "updatedAt": "2026-02-12T09:21:05.281Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -2188,7 +2188,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-11",
+                            "lastActiveAt": "2026-02-12",
                             "isPending": false
                         }
                     }
@@ -2205,9 +2205,9 @@
         }
     ],
     "activeVersion": {
-        "updatedAt": "2026-02-11T17:02:37.934Z",
-        "createdAt": "2026-02-11T17:02:37.934Z",
-        "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
+        "updatedAt": "2026-02-12T10:16:20.271Z",
+        "createdAt": "2026-02-12T10:16:20.271Z",
+        "versionId": "ab4e4c25-7cc0-42c7-9322-605da6d6c238",
         "workflowId": "KJpZBr3isT66Rzoa",
         "nodes": [
             {
@@ -2897,7 +2897,7 @@
                         "mappingMode": "defineBelow",
                         "value": {
                             "predicate": "isComplex",
-                            "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_criteria: { complex_if: ['Request involves multiple sequential steps that build on each other', 'Request requires creative content generation (blog posts, marketing copy, documents)', 'Request explicitly asks for drafts, revisions, or iterative refinement', 'Request requires research followed by synthesis or creation', 'Request involves coordinating across multiple domains (e.g., research + writing + scheduling)'], simple_if: ['Request is a single query for information (calendar, email lookup, search)', 'Request is a direct action (send email, schedule event, update preference)', 'Request can be completed with 1-2 tool calls', 'Request does not require iteration or revision cycles'] } }) }}",
+                            "context": "={{ JSON.stringify({ user_request: $json.user_request, complexity_rule: 'A request is COMPLEX if it likely requires 3 or more distinct steps to fulfill, OR if it requires specialty knowledge such as marketing, content creation, or brand guidelines. Otherwise it is SIMPLE.' }) }}",
                             "fallback": "true"
                         },
                         "matchingColumns": [],
@@ -4297,10 +4297,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-11T17:02:38.128Z",
-                "id": 593,
+                "createdAt": "2026-02-12T10:16:20.561Z",
+                "id": 598,
                 "workflowId": "KJpZBr3isT66Rzoa",
-                "versionId": "af5ebdf3-2d6a-4941-8cf7-29d9317f0673",
+                "versionId": "ab4e4c25-7cc0-42c7-9322-605da6d6c238",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
