@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-11T13:01:26.986Z",
+    "updatedAt": "2026-02-12T11:34:04.445Z",
     "createdAt": "2026-02-09T16:35:26.010Z",
     "id": "QMxT5NLQOL3jlrzv",
     "name": "Utility | Save to Google Drive",
@@ -560,37 +560,6 @@
             }
         },
         {
-            "id": "drive-upload-api",
-            "name": "Drive Upload API",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.2,
-            "position": [
-                3500,
-                60
-            ],
-            "parameters": {
-                "method": "POST",
-                "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Authorization",
-                            "value": "=Bearer {{ $json.access_token }}"
-                        },
-                        {
-                            "name": "Content-Type",
-                            "value": "=multipart/related; boundary={{ $json.boundary }}"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "specifyBody": "string",
-                "body": "=--{{ $json.boundary }}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{{ JSON.stringify($json.metadata) }}\r\n--{{ $json.boundary }}\r\nContent-Type: {{ $json.mime_type }}\r\nContent-Transfer-Encoding: base64\r\n\r\n{{ $json.file_content }}\r\n--{{ $json.boundary }}--",
-                "options": {}
-            }
-        },
-        {
             "id": "format-result",
             "name": "Format Result",
             "type": "n8n-nodes-base.code",
@@ -601,6 +570,19 @@
             ],
             "parameters": {
                 "jsCode": "const result = $input.first().json;\n\nif (result.error) {\n  return [{\n    json: {\n      success: false,\n      error: result.error.message || 'Upload to Google Drive failed'\n    }\n  }];\n}\n\nconst fileId = result.id;\nconst fileUrl = `https://drive.google.com/file/d/${fileId}/view`;\n\nreturn [{\n  json: {\n    success: true,\n    file_id: fileId,\n    file_url: fileUrl,\n    file_name: result.name,\n    mime_type: result.mimeType,\n    error: null\n  }\n}];"
+            }
+        },
+        {
+            "id": "drive-upload-api",
+            "name": "Drive Upload API",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3500,
+                60
+            ],
+            "parameters": {
+                "jsCode": "const input = $input.first().json;\n\nconst boundary = input.boundary;\nconst metadata = JSON.stringify(input.metadata);\nconst fileContent = input.file_content; // base64 string\n\n// Decode base64 to raw binary Buffer\nconst binaryBuffer = Buffer.from(fileContent, 'base64');\n\n// Build multipart body: text preamble + raw binary + closing boundary\n// Use Buffer.concat to properly handle binary data\nconst preamble = Buffer.from(\n  `--${boundary}\\r\\n` +\n  `Content-Type: application/json; charset=UTF-8\\r\\n` +\n  `\\r\\n` +\n  `${metadata}\\r\\n` +\n  `--${boundary}\\r\\n` +\n  `Content-Type: ${input.mime_type}\\r\\n` +\n  `\\r\\n`\n);\n\nconst epilogue = Buffer.from(`\\r\\n--${boundary}--`);\n\nconst body = Buffer.concat([preamble, binaryBuffer, epilogue]);\n\nconst response = await fetch(\n  'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',\n  {\n    method: 'POST',\n    headers: {\n      'Authorization': `Bearer ${input.access_token}`,\n      'Content-Type': `multipart/related; boundary=${boundary}`\n    },\n    body: body\n  }\n);\n\nconst result = await response.json();\n\nif (!response.ok) {\n  throw new Error(\n    `Drive upload failed (${response.status}): ${result.error?.message || JSON.stringify(result)}`\n  );\n}\n\nreturn [{ json: result }];"
             }
         }
     ],
@@ -840,9 +822,9 @@
     "staticData": null,
     "meta": null,
     "pinData": null,
-    "versionId": "2239d605-4679-4ebc-ad66-877426104756",
-    "activeVersionId": "2239d605-4679-4ebc-ad66-877426104756",
-    "versionCounter": 9,
+    "versionId": "31a8988b-66fc-497d-ad8a-de7c0baa4c1e",
+    "activeVersionId": "31a8988b-66fc-497d-ad8a-de7c0baa4c1e",
+    "versionCounter": 17,
     "triggerCount": 0,
     "shared": [
         {
@@ -867,7 +849,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-11T05:00:00.553Z",
+                            "updatedAt": "2026-02-12T09:21:05.281Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -894,7 +876,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-11",
+                            "lastActiveAt": "2026-02-12",
                             "isPending": false
                         }
                     }
@@ -904,9 +886,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-11T13:01:26.985Z",
-        "createdAt": "2026-02-11T13:01:26.985Z",
-        "versionId": "2239d605-4679-4ebc-ad66-877426104756",
+        "updatedAt": "2026-02-12T11:34:04.446Z",
+        "createdAt": "2026-02-12T11:34:04.446Z",
+        "versionId": "31a8988b-66fc-497d-ad8a-de7c0baa4c1e",
         "workflowId": "QMxT5NLQOL3jlrzv",
         "nodes": [
             {
@@ -1462,37 +1444,6 @@
                 }
             },
             {
-                "id": "drive-upload-api",
-                "name": "Drive Upload API",
-                "type": "n8n-nodes-base.httpRequest",
-                "typeVersion": 4.2,
-                "position": [
-                    3500,
-                    60
-                ],
-                "parameters": {
-                    "method": "POST",
-                    "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                    "sendHeaders": true,
-                    "headerParameters": {
-                        "parameters": [
-                            {
-                                "name": "Authorization",
-                                "value": "=Bearer {{ $json.access_token }}"
-                            },
-                            {
-                                "name": "Content-Type",
-                                "value": "=multipart/related; boundary={{ $json.boundary }}"
-                            }
-                        ]
-                    },
-                    "sendBody": true,
-                    "specifyBody": "string",
-                    "body": "=--{{ $json.boundary }}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{{ JSON.stringify($json.metadata) }}\r\n--{{ $json.boundary }}\r\nContent-Type: {{ $json.mime_type }}\r\nContent-Transfer-Encoding: base64\r\n\r\n{{ $json.file_content }}\r\n--{{ $json.boundary }}--",
-                    "options": {}
-                }
-            },
-            {
                 "id": "format-result",
                 "name": "Format Result",
                 "type": "n8n-nodes-base.code",
@@ -1503,6 +1454,19 @@
                 ],
                 "parameters": {
                     "jsCode": "const result = $input.first().json;\n\nif (result.error) {\n  return [{\n    json: {\n      success: false,\n      error: result.error.message || 'Upload to Google Drive failed'\n    }\n  }];\n}\n\nconst fileId = result.id;\nconst fileUrl = `https://drive.google.com/file/d/${fileId}/view`;\n\nreturn [{\n  json: {\n    success: true,\n    file_id: fileId,\n    file_url: fileUrl,\n    file_name: result.name,\n    mime_type: result.mimeType,\n    error: null\n  }\n}];"
+                }
+            },
+            {
+                "id": "drive-upload-api",
+                "name": "Drive Upload API",
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                    3500,
+                    60
+                ],
+                "parameters": {
+                    "jsCode": "const input = $input.first().json;\n\nconst boundary = input.boundary;\nconst metadata = JSON.stringify(input.metadata);\nconst fileContent = input.file_content; // base64 string\n\n// Decode base64 to raw binary Buffer\nconst binaryBuffer = Buffer.from(fileContent, 'base64');\n\n// Build multipart body: text preamble + raw binary + closing boundary\n// Use Buffer.concat to properly handle binary data\nconst preamble = Buffer.from(\n  `--${boundary}\\r\\n` +\n  `Content-Type: application/json; charset=UTF-8\\r\\n` +\n  `\\r\\n` +\n  `${metadata}\\r\\n` +\n  `--${boundary}\\r\\n` +\n  `Content-Type: ${input.mime_type}\\r\\n` +\n  `\\r\\n`\n);\n\nconst epilogue = Buffer.from(`\\r\\n--${boundary}--`);\n\nconst body = Buffer.concat([preamble, binaryBuffer, epilogue]);\n\nconst response = await fetch(\n  'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',\n  {\n    method: 'POST',\n    headers: {\n      'Authorization': `Bearer ${input.access_token}`,\n      'Content-Type': `multipart/related; boundary=${boundary}`\n    },\n    body: body\n  }\n);\n\nconst result = await response.json();\n\nif (!response.ok) {\n  throw new Error(\n    `Drive upload failed (${response.status}): ${result.error?.message || JSON.stringify(result)}`\n  );\n}\n\nreturn [{ json: result }];"
                 }
             }
         ],
@@ -1740,10 +1704,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-11T13:01:27.143Z",
-                "id": 590,
+                "createdAt": "2026-02-12T11:34:04.537Z",
+                "id": 604,
                 "workflowId": "QMxT5NLQOL3jlrzv",
-                "versionId": "2239d605-4679-4ebc-ad66-877426104756",
+                "versionId": "31a8988b-66fc-497d-ad8a-de7c0baa4c1e",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }

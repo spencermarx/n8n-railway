@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-10T10:47:28.701Z",
+    "updatedAt": "2026-02-12T11:27:20.077Z",
     "createdAt": "2026-02-04T13:56:19.841Z",
     "id": "iuU0eyfTN2We4uPR",
     "name": "\ud83d\udd14 Trigger | Approval Handler",
@@ -572,7 +572,7 @@
             "type": "n8n-nodes-base.executeWorkflow",
             "typeVersion": 1.2,
             "position": [
-                2620,
+                3060,
                 -100
             ],
             "parameters": {
@@ -662,7 +662,7 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                2840,
+                1960,
                 -100
             ],
             "parameters": {
@@ -679,7 +679,7 @@
                 },
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\ud83d\udcca Calendar updated to *Ready* \\u2022 {{ $('Prepare Calendar Data').first().json.image_gen_success ? '\\ud83d\\uddbc\\ufe0f Images generated' : '\\ud83d\\udcdd Text only' }} \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\\u23f3 Generating images & updating calendar... \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
                 "options": {}
             },
             "onError": "continueRegularOutput"
@@ -690,7 +690,7 @@
             "type": "n8n-nodes-base.executeWorkflow",
             "typeVersion": 1.2,
             "position": [
-                3060,
+                2180,
                 -100
             ],
             "parameters": {
@@ -718,7 +718,7 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1.1,
             "position": [
-                1960,
+                2400,
                 -100
             ],
             "parameters": {
@@ -926,7 +926,7 @@
             "type": "n8n-nodes-base.executeWorkflow",
             "typeVersion": 1.2,
             "position": [
-                2180,
+                2620,
                 -100
             ],
             "parameters": {
@@ -954,7 +954,7 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                2400,
+                2840,
                 -100
             ],
             "parameters": {
@@ -1193,28 +1193,6 @@
                 ]
             ]
         },
-        "Update Calendar - Ready": {
-            "main": [
-                [
-                    {
-                        "node": "Update Slack - Content Approved",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Update DB - Content Approved": {
-            "main": [
-                [
-                    {
-                        "node": "Respond OK - Content",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
         "Update Slack - Content Approved": {
             "main": [
                 [
@@ -1327,6 +1305,28 @@
                     }
                 ]
             ]
+        },
+        "Update DB - Content Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Update Slack - Content Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Feedback - Content Approved": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK - Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
         }
     },
     "settings": {
@@ -1337,9 +1337,9 @@
     "staticData": null,
     "meta": null,
     "pinData": null,
-    "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
-    "activeVersionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
-    "versionCounter": 46,
+    "versionId": "64efc8cb-0d16-4338-8ad4-afafe375f687",
+    "activeVersionId": "64efc8cb-0d16-4338-8ad4-afafe375f687",
+    "versionCounter": 51,
     "triggerCount": 1,
     "shared": [
         {
@@ -1364,7 +1364,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-10T09:40:41.292Z",
+                            "updatedAt": "2026-02-12T09:21:05.281Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -1391,7 +1391,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-10",
+                            "lastActiveAt": "2026-02-12",
                             "isPending": false
                         }
                     }
@@ -1401,9 +1401,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-10T10:47:28.702Z",
-        "createdAt": "2026-02-10T10:47:28.702Z",
-        "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
+        "updatedAt": "2026-02-12T11:27:20.078Z",
+        "createdAt": "2026-02-12T11:27:20.078Z",
+        "versionId": "64efc8cb-0d16-4338-8ad4-afafe375f687",
         "workflowId": "iuU0eyfTN2We4uPR",
         "nodes": [
             {
@@ -1971,7 +1971,7 @@
                 "type": "n8n-nodes-base.executeWorkflow",
                 "typeVersion": 1.2,
                 "position": [
-                    2620,
+                    3060,
                     -100
                 ],
                 "parameters": {
@@ -2061,7 +2061,7 @@
                 "type": "n8n-nodes-base.httpRequest",
                 "typeVersion": 4.2,
                 "position": [
-                    2840,
+                    1960,
                     -100
                 ],
                 "parameters": {
@@ -2078,7 +2078,7 @@
                     },
                     "sendBody": true,
                     "specifyBody": "json",
-                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\ud83d\udcca Calendar updated to *Ready* \\u2022 {{ $('Prepare Calendar Data').first().json.image_gen_success ? '\\ud83d\\uddbc\\ufe0f Images generated' : '\\ud83d\\udcdd Text only' }} \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
+                    "jsonBody": "={\n  \"replace_original\": true,\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"\\u2705 Content Approved\", \"emoji\": true }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Channel:*\\n{{ $('Validate Action').first().json.payload.content_type || $('Validate Action').first().json.payload.channel || 'Unknown' }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Topic:*\\n{{ $('Validate Action').first().json.payload.post_summary || 'New Post' }}\" }\n      ]\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        { \"type\": \"mrkdwn\", \"text\": \"\\u23f3 Generating images & updating calendar... \\u2022 Approved by <@{{ $('Validate Action').first().json.clicking_user_id }}>\" }\n      ]\n    }\n  ]\n}",
                     "options": {}
                 },
                 "onError": "continueRegularOutput"
@@ -2089,7 +2089,7 @@
                 "type": "n8n-nodes-base.executeWorkflow",
                 "typeVersion": 1.2,
                 "position": [
-                    3060,
+                    2180,
                     -100
                 ],
                 "parameters": {
@@ -2117,7 +2117,7 @@
                 "type": "n8n-nodes-base.respondToWebhook",
                 "typeVersion": 1.1,
                 "position": [
-                    1960,
+                    2400,
                     -100
                 ],
                 "parameters": {
@@ -2325,7 +2325,7 @@
                 "type": "n8n-nodes-base.executeWorkflow",
                 "typeVersion": 1.2,
                 "position": [
-                    2180,
+                    2620,
                     -100
                 ],
                 "parameters": {
@@ -2353,7 +2353,7 @@
                 "type": "n8n-nodes-base.code",
                 "typeVersion": 2,
                 "position": [
-                    2400,
+                    2840,
                     -100
                 ],
                 "parameters": {
@@ -2592,28 +2592,6 @@
                     ]
                 ]
             },
-            "Update Calendar - Ready": {
-                "main": [
-                    [
-                        {
-                            "node": "Update Slack - Content Approved",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Update DB - Content Approved": {
-                "main": [
-                    [
-                        {
-                            "node": "Respond OK - Content",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
             "Update Slack - Content Approved": {
                 "main": [
                     [
@@ -2726,6 +2704,28 @@
                         }
                     ]
                 ]
+            },
+            "Update DB - Content Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Update Slack - Content Approved",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Feedback - Content Approved": {
+                "main": [
+                    [
+                        {
+                            "node": "Respond OK - Content",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
             }
         },
         "authors": "Spencer Marx",
@@ -2734,10 +2734,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-10T10:47:28.870Z",
-                "id": 566,
+                "createdAt": "2026-02-12T11:27:20.348Z",
+                "id": 602,
                 "workflowId": "iuU0eyfTN2We4uPR",
-                "versionId": "4ea02f63-ae3c-4479-8c9c-99bc31c4711e",
+                "versionId": "64efc8cb-0d16-4338-8ad4-afafe375f687",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
