@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-03T10:45:19.238Z",
-  "createdAt": "2026-02-03T10:36:17.098Z",
   "id": "mHy10eByiuuyr8U1",
-  "name": "🔍 Sub-Agent | User Lookup",
+  "name": "\ud83d\udd0d Sub-Agent | User Lookup",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -12,10 +10,18 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
-          "values": [{ "name": "slack_user_id", "type": "string" }]
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            }
+          ]
         }
       }
     },
@@ -24,14 +30,22 @@
       "name": "Lookup User with Permissions",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [450, 300],
+      "position": [
+        450,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT\n  u.id,\n  u.slack_user_id,\n  u.slack_username,\n  u.email,\n  u.role,\n  u.google_calendar_credential_id,\n  u.gmail_credential_id,\n  u.google_docs_credential_id,\n  u.google_sheets_credential_id,\n  u.google_drive_credential_id,\n  u.notion_credential_id,\n  u.calendar_ids,\n  u.preferences,\n  u.is_active,\n  u.created_at,\n  u.updated_at,\n  rp.permissions as effective_permissions\nFROM alfred.users u\nJOIN alfred.role_permissions rp ON u.role = rp.role\nWHERE u.slack_user_id = $1 AND u.is_active = true",
-        "options": { "queryReplacement": "={{ $json.slack_user_id }}" }
+        "options": {
+          "queryReplacement": "={{ $json.slack_user_id }}"
+        }
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -39,7 +53,10 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [650, 300],
+      "position": [
+        650,
+        300
+      ],
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "// Get the input slack_user_id and query result\nconst inputSlackUserId = $('Workflow Input').first().json.slack_user_id;\nconst queryResult = $input.all();\n\n// Check if user was found (query returned a row with an id)\nif (queryResult.length > 0 && queryResult[0].json.id) {\n  const user = queryResult[0].json;\n  return [{\n    json: {\n      found: true,\n      is_admin: user.role === 'admin',\n      user: {\n        id: user.id,\n        slack_user_id: user.slack_user_id,\n        slack_username: user.slack_username,\n        email: user.email,\n        role: user.role,\n        google_calendar_credential_id: user.google_calendar_credential_id,\n        gmail_credential_id: user.gmail_credential_id,\n        google_docs_credential_id: user.google_docs_credential_id,\n        google_sheets_credential_id: user.google_sheets_credential_id,\n        google_drive_credential_id: user.google_drive_credential_id,\n        notion_credential_id: user.notion_credential_id,\n        calendar_ids: user.calendar_ids,\n        preferences: user.preferences,\n        effective_permissions: user.effective_permissions\n      }\n    }\n  }];\n} else {\n  return [{\n    json: {\n      found: false,\n      error: 'User not registered or inactive',\n      slack_user_id: inputSlackUserId\n    }\n  }];\n}"
@@ -49,11 +66,25 @@
   "connections": {
     "Workflow Input": {
       "main": [
-        [{ "node": "Lookup User with Permissions", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Lookup User with Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Lookup User with Permissions": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -62,66 +93,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "versionId": "24002ceb-9301-4fe1-a598-e85b21dda273",
   "activeVersionId": "24002ceb-9301-4fe1-a598-e85b21dda273",
-  "versionCounter": 14,
+  "versionCounter": 20,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-03T10:36:17.098Z",
-      "createdAt": "2026-02-03T10:36:17.098Z",
-      "role": "workflow:owner",
-      "workflowId": "mHy10eByiuuyr8U1",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-03T10:53:28.894Z",
@@ -134,10 +109,18 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [250, 300],
+        "position": [
+          250,
+          300
+        ],
         "parameters": {
           "workflowInputs": {
-            "values": [{ "name": "slack_user_id", "type": "string" }]
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              }
+            ]
           }
         }
       },
@@ -146,14 +129,22 @@
         "name": "Lookup User with Permissions",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [450, 300],
+        "position": [
+          450,
+          300
+        ],
         "parameters": {
           "operation": "executeQuery",
           "query": "SELECT\n  u.id,\n  u.slack_user_id,\n  u.slack_username,\n  u.email,\n  u.role,\n  u.google_calendar_credential_id,\n  u.gmail_credential_id,\n  u.google_docs_credential_id,\n  u.google_sheets_credential_id,\n  u.google_drive_credential_id,\n  u.notion_credential_id,\n  u.calendar_ids,\n  u.preferences,\n  u.is_active,\n  u.created_at,\n  u.updated_at,\n  rp.permissions as effective_permissions\nFROM alfred.users u\nJOIN alfred.role_permissions rp ON u.role = rp.role\nWHERE u.slack_user_id = $1 AND u.is_active = true",
-          "options": { "queryReplacement": "={{ $json.slack_user_id }}" }
+          "options": {
+            "queryReplacement": "={{ $json.slack_user_id }}"
+          }
         },
         "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
         }
       },
       {
@@ -161,7 +152,10 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [650, 300],
+        "position": [
+          650,
+          300
+        ],
         "parameters": {
           "mode": "runOnceForAllItems",
           "jsCode": "// Get the input slack_user_id and query result\nconst inputSlackUserId = $('Workflow Input').first().json.slack_user_id;\nconst queryResult = $input.all();\n\n// Check if user was found (query returned a row with an id)\nif (queryResult.length > 0 && queryResult[0].json.id) {\n  const user = queryResult[0].json;\n  return [{\n    json: {\n      found: true,\n      is_admin: user.role === 'admin',\n      user: {\n        id: user.id,\n        slack_user_id: user.slack_user_id,\n        slack_username: user.slack_username,\n        email: user.email,\n        role: user.role,\n        google_calendar_credential_id: user.google_calendar_credential_id,\n        gmail_credential_id: user.gmail_credential_id,\n        google_docs_credential_id: user.google_docs_credential_id,\n        google_sheets_credential_id: user.google_sheets_credential_id,\n        google_drive_credential_id: user.google_drive_credential_id,\n        notion_credential_id: user.notion_credential_id,\n        calendar_ids: user.calendar_ids,\n        preferences: user.preferences,\n        effective_permissions: user.effective_permissions\n      }\n    }\n  }];\n} else {\n  return [{\n    json: {\n      found: false,\n      error: 'User not registered or inactive',\n      slack_user_id: inputSlackUserId\n    }\n  }];\n}"
@@ -181,7 +175,15 @@
         ]
       },
       "Lookup User with Permissions": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Spencer Marx",

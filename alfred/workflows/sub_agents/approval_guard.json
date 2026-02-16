@@ -1,548 +1,486 @@
 {
-    "updatedAt": "2026-02-09T12:36:28.227Z",
-    "createdAt": "2026-02-04T13:52:54.722Z",
-    "id": "1S0dhI1K4X0528Dy",
-    "name": "\ud83d\udee1\ufe0f Tool | Approval Guard",
-    "description": null,
-    "active": true,
-    "isArchived": false,
-    "nodes": [
-        {
-            "parameters": {
-                "workflowInputs": {
-                    "values": [
-                        {
-                            "name": "action_type"
-                        },
-                        {
-                            "name": "user_id"
-                        },
-                        {
-                            "name": "slack_user_id"
-                        },
-                        {
-                            "name": "slack_channel_id"
-                        },
-                        {
-                            "name": "slack_thread_ts"
-                        },
-                        {
-                            "name": "payload",
-                            "type": "string"
-                        },
-                        {
-                            "name": "expiry_minutes",
-                            "type": "number"
-                        }
-                    ]
-                }
+  "id": "1S0dhI1K4X0528Dy",
+  "name": "\ud83d\udee1\ufe0f Tool | Approval Guard",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "action_type"
             },
-            "id": "workflow-input",
-            "name": "Workflow Input",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "typeVersion": 1.1,
-            "position": [
-                208,
-                304
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "const input = $input.first().json;\n\n// Calculate expiry timestamp\nconst expiryMinutes = input.expiry_minutes || 60;\nconst expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();\n\n// Generate a UUID v4 (compatible with n8n's execution environment)\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst actionId = generateUUID();\n\n// Parse payload - Manager sends JSON.stringify'd string, need to store as JSONB object\nlet parsedPayload = input.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { parsedPayload = {}; }\n}\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: input.action_type,\n    user_id: input.user_id,\n    slack_user_id: input.slack_user_id,\n    slack_channel_id: input.slack_channel_id,\n    slack_thread_ts: input.slack_thread_ts || null,\n    payload: parsedPayload,\n    expires_at: expiresAt,\n    expiry_minutes: expiryMinutes\n  }\n}];"
+            {
+              "name": "user_id"
             },
-            "id": "prepare-action",
-            "name": "Prepare Pending Action",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                432,
-                304
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "executeQuery",
-                "query": "WITH expired AS (\n  UPDATE alfred.pending_actions\n  SET status = 'expired',\n      resolved_at = NOW(),\n      resolution_note = 'Superseded by revision'\n  WHERE slack_thread_ts = $6\n    AND action_type = $2\n    AND status = 'pending'\n    AND $6 IS NOT NULL\n    AND $6 != ''\n  RETURNING id\n)\nINSERT INTO alfred.pending_actions (\n  id,\n  action_type,\n  user_id,\n  slack_user_id,\n  slack_channel_id,\n  slack_thread_ts,\n  payload,\n  status,\n  expires_at\n) VALUES (\n  $1::uuid,\n  $2,\n  $3::integer,\n  $4,\n  $5,\n  $6,\n  $7::jsonb,\n  'pending',\n  $8::timestamptz\n)\nRETURNING id, created_at, expires_at;",
-                "options": {
-                    "queryReplacement": "={{ [$json.action_id, $json.action_type, $json.user_id, $json.slack_user_id, $json.slack_channel_id, $json.slack_thread_ts, JSON.stringify($json.payload), $json.expires_at] }}"
-                }
+            {
+              "name": "slack_user_id"
             },
-            "id": "insert-pending-action",
-            "name": "Insert Pending Action",
-            "type": "n8n-nodes-base.postgres",
-            "typeVersion": 2.5,
-            "position": [
-                640,
-                304
-            ],
-            "credentials": {
-                "postgres": {
-                    "id": "8nTSHxonyIBczkvN",
-                    "name": "Postgres account"
-                }
+            {
+              "name": "slack_channel_id"
+            },
+            {
+              "name": "slack_thread_ts"
+            },
+            {
+              "name": "payload",
+              "type": "string"
+            },
+            {
+              "name": "expiry_minutes",
+              "type": "number"
             }
-        },
-        {
-            "parameters": {
-                "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst dbResult = $input.first().json;\n\nconst payload = prepared.payload;\nconst actionId = prepared.action_id;\nconst actionType = prepared.action_type;\nconst expiryMinutes = prepared.expiry_minutes;\n\n// Template-driven card builder based on action_type\nfunction buildEmailCard(payload, actionId, expiryMinutes, slackUserId) {\n  const bodyPreview = (payload.body_plain || '').length > 1500\n    ? payload.body_plain.substring(0, 1497) + '...'\n    : payload.body_plain || '';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\ud83d\udce7 Email Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*To:*\\n${payload.to || 'Not specified'}` },\n        { type: 'mrkdwn', text: `*From:*\\n${payload.user_email || 'Not specified'}` }\n      ]\n    }\n  ];\n\n  if (payload.cc || payload.bcc) {\n    const ccBccFields = [];\n    if (payload.cc) ccBccFields.push({ type: 'mrkdwn', text: `*CC:*\\n${payload.cc}` });\n    if (payload.bcc) ccBccFields.push({ type: 'mrkdwn', text: `*BCC:*\\n${payload.bcc}` });\n    blocks.push({ type: 'section', fields: ccBccFields });\n  }\n\n  blocks.push(\n    { type: 'section', text: { type: 'mrkdwn', text: `*Subject:*\\n${payload.subject || 'No subject'}` } },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${bodyPreview.replace(/\\n/g, '\\n> ') || '_No content_'}` } },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `email_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Send Email', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId,\n          confirm: {\n            title: { type: 'plain_text', text: 'Send this email?' },\n            text: { type: 'mrkdwn', text: `This will send the email to *${payload.to}*` },\n            confirm: { type: 'plain_text', text: 'Send' },\n            deny: { type: 'plain_text', text: 'Cancel' }\n          }\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  );\n\n  return {\n    blocks,\n    text: `\ud83d\udce7 Email approval required: ${payload.subject || 'No subject'}`\n  };\n}\n\nfunction buildContentCard(payload, actionId, expiryMinutes, slackUserId) {\n  // Extract content details\n  const channel = payload.content_type || payload.channel || 'Unknown';\n  const postSummary = payload.post_summary || payload.topic || 'New Post';\n  const drafts = payload.drafts || {};\n  const images = payload.images || {};\n  const revisionNumber = payload.revision_number || 0;\n\n  // Get the draft content for preview\n  const channelKey = channel.toLowerCase().replace(/[^a-z]/g, '');\n  const draft = drafts[channelKey] || drafts[Object.keys(drafts)[0]] || {};\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  const contentPreview = content.length > 800 ? content.substring(0, 797) + '...' : content;\n\n  // Get image info\n  const image = images[channelKey] || images[Object.keys(images)[0]];\n  const hasImage = !!image;\n\n  // Format channel name nicely\n  const channelDisplay = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog Post',\n    'linkedinpost': 'LinkedIn'\n  }[channelKey] || channel;\n\n  const blocks = [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: revisionNumber > 0 ? `\ud83d\udcdd Content Approval Required (Revision ${revisionNumber})` : '\ud83d\udcdd Content Approval Required',\n        emoji: true\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*Channel:*\\n${channelDisplay}` },\n        { type: 'mrkdwn', text: `*Topic:*\\n${postSummary}` }\n      ]\n    },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${contentPreview || '_No content_'}` } }\n  ];\n\n  // Add image info if available\n  if (hasImage) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\uddbc\ufe0f *Image:* ${image.dimensions || 'Generated'} \u2022 ${image.url ? '<' + image.url + '|View Image>' : 'Attached'}` }]\n    });\n  }\n\n  // Add calendar status if available\n  if (payload.calendar_row_id) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\udcca *Calendar Status:* Under review (Row ${payload.calendar_row_id})` }]\n    });\n  }\n\n  // Expiry and requester context\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n  });\n\n  // Action buttons\n  blocks.push({\n    type: 'actions',\n    block_id: `content_approval_${actionId}`,\n    elements: [\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u2705 Approve & Schedule', emoji: true },\n        style: 'primary',\n        action_id: 'approve_action',\n        value: actionId,\n        confirm: {\n          title: { type: 'plain_text', text: 'Approve this content?' },\n          text: { type: 'mrkdwn', text: `This will update the calendar status to *Ready* for ${channelDisplay}.` },\n          confirm: { type: 'plain_text', text: 'Approve' },\n          deny: { type: 'plain_text', text: 'Cancel' }\n        }\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\ud83d\udcdd View Full Post', emoji: true },\n        action_id: 'view_full_action',\n        value: actionId\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n        style: 'danger',\n        action_id: 'reject_action',\n        value: actionId\n      }\n    ]\n  });\n\n  // Add feedback hint\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: '\ud83d\udca1 _Reply to this thread to provide feedback for revisions_' }]\n  });\n\n  return {\n    blocks,\n    text: `\ud83d\udcdd Content approval required: ${postSummary} (${channelDisplay})`\n  };\n}\n\nfunction buildGenericCard(payload, actionId, actionType, expiryMinutes, slackUserId) {\n  // Fallback generic card for unknown action types\n  const description = payload.description || payload.summary || 'Action requires approval';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\u26a0\ufe0f Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Action Type:* ${actionType}` }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Details:*\\n${description}` }\n    },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `generic_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Approve', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Reject', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  ];\n\n  return {\n    blocks,\n    text: `\u26a0\ufe0f Approval required: ${actionType}`\n  };\n}\n\n// Route to appropriate card builder based on action_type\nlet cardData;\nswitch (actionType) {\n  case 'send_email':\n    cardData = buildEmailCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  case 'publish_content':\n    cardData = buildContentCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  default:\n    cardData = buildGenericCard(payload, actionId, actionType, expiryMinutes, prepared.slack_user_id);\n}\n\n// Determine the Slack action based on whether thread_ts is provided\nconst slackAction = prepared.slack_thread_ts ? 'post_thread' : 'post_message';\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: actionType,\n    slack_action: slackAction,\n    slack_channel_id: prepared.slack_channel_id,\n    slack_thread_ts: prepared.slack_thread_ts,\n    blocks: cardData.blocks,\n    text: cardData.text\n  }\n}];"
-            },
-            "id": "build-slack-blocks",
-            "name": "Build Slack Approval Card",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                864,
-                304
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "executeQuery",
-                "query": "UPDATE alfred.pending_actions\nSET \n  approval_channel_id = $1,\n  approval_message_ts = $2\nWHERE id = $3::uuid\nRETURNING id, approval_message_ts, expires_at;",
-                "options": {
-                    "queryReplacement": "={{ [$json.channel, $json.ts, $('Build Slack Approval Card').first().json.action_id] }}"
-                }
-            },
-            "id": "update-with-message-ts",
-            "name": "Update with Message TS",
-            "type": "n8n-nodes-base.postgres",
-            "typeVersion": 2.5,
-            "position": [
-                1312,
-                304
-            ],
-            "credentials": {
-                "postgres": {
-                    "id": "8nTSHxonyIBczkvN",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst slackResult = $('Send Approval Card to Slack').first().json;\nconst dbResult = $input.first().json;\n\nconst actionType = prepared.action_type;\nconst payload = prepared.payload;\n\n// Generate appropriate message based on action_type\nlet successMessage = \"\";\nswitch (actionType) {\n  case \"send_email\":\n    successMessage = `Email queued for approval. Please review and click 'Send Email' or 'Cancel' in the approval card above. The request will expire in ${prepared.expiry_minutes} minutes.`;\n    break;\n  case \"publish_content\":\n    const channel = payload.content_type || payload.channel || \"content\";\n    successMessage = `${channel} post ready for review\\! Click 'Approve & Schedule' to finalize, or reply to this thread with feedback. Expires in ${prepared.expiry_minutes} minutes.`;\n    break;\n  default:\n    successMessage = `Action queued for approval. Please review and respond in the approval card. Expires in ${prepared.expiry_minutes} minutes.`;\n}\n\nreturn [{\n  json: {\n    success: slackResult.success,\n    pending_action_id: prepared.action_id,\n    action_type: actionType,\n    approval_message_ts: slackResult.ts,\n    approval_channel_id: slackResult.channel,\n    expires_at: prepared.expires_at,\n    message: slackResult.success \n      ? successMessage\n      : `Failed to send approval card: ${slackResult.error || \"Unknown error\"}`\n  }\n}];"
-            },
-            "id": "format-response",
-            "name": "Format Response",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1520,
-                304
-            ]
-        },
-        {
-            "id": "call-slack-service",
-            "name": "Send Approval Card to Slack",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                1088,
-                304
-            ],
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "xbFJVyUFvGfUbY4s"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "action": "={{ $json.slack_action }}",
-                        "channel_id": "={{ $json.slack_channel_id }}",
-                        "thread_ts": "={{ $json.slack_thread_ts }}",
-                        "text": "={{ $json.text }}",
-                        "blocks": "={{ $json.blocks }}",
-                        "unfurl_links": false,
-                        "unfurl_media": false
-                    }
-                },
-                "options": {}
-            }
+          ]
         }
+      },
+      "id": "workflow-input",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Calculate expiry timestamp\nconst expiryMinutes = input.expiry_minutes || 60;\nconst expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();\n\n// Generate a UUID v4 (compatible with n8n's execution environment)\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst actionId = generateUUID();\n\n// Parse payload - Manager sends JSON.stringify'd string, need to store as JSONB object\nlet parsedPayload = input.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { parsedPayload = {}; }\n}\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: input.action_type,\n    user_id: input.user_id,\n    slack_user_id: input.slack_user_id,\n    slack_channel_id: input.slack_channel_id,\n    slack_thread_ts: input.slack_thread_ts || null,\n    payload: parsedPayload,\n    expires_at: expiresAt,\n    expiry_minutes: expiryMinutes\n  }\n}];"
+      },
+      "id": "prepare-action",
+      "name": "Prepare Pending Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH expired AS (\n  UPDATE alfred.pending_actions\n  SET status = 'expired',\n      resolved_at = NOW(),\n      resolution_note = 'Superseded by revision'\n  WHERE slack_thread_ts = $6\n    AND action_type = $2\n    AND status = 'pending'\n    AND $6 IS NOT NULL\n    AND $6 != ''\n  RETURNING id\n)\nINSERT INTO alfred.pending_actions (\n  id,\n  action_type,\n  user_id,\n  slack_user_id,\n  slack_channel_id,\n  slack_thread_ts,\n  payload,\n  status,\n  expires_at\n) VALUES (\n  $1::uuid,\n  $2,\n  $3::integer,\n  $4,\n  $5,\n  $6,\n  $7::jsonb,\n  'pending',\n  $8::timestamptz\n)\nRETURNING id, created_at, expires_at;",
+        "options": {
+          "queryReplacement": "={{ [$json.action_id, $json.action_type, $json.user_id, $json.slack_user_id, $json.slack_channel_id, $json.slack_thread_ts, JSON.stringify($json.payload), $json.expires_at] }}"
+        }
+      },
+      "id": "insert-pending-action",
+      "name": "Insert Pending Action",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        640,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst dbResult = $input.first().json;\n\nconst payload = prepared.payload;\nconst actionId = prepared.action_id;\nconst actionType = prepared.action_type;\nconst expiryMinutes = prepared.expiry_minutes;\n\n// Template-driven card builder based on action_type\nfunction buildEmailCard(payload, actionId, expiryMinutes, slackUserId) {\n  const bodyPreview = (payload.body_plain || '').length > 1500\n    ? payload.body_plain.substring(0, 1497) + '...'\n    : payload.body_plain || '';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\ud83d\udce7 Email Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*To:*\\n${payload.to || 'Not specified'}` },\n        { type: 'mrkdwn', text: `*From:*\\n${payload.user_email || 'Not specified'}` }\n      ]\n    }\n  ];\n\n  if (payload.cc || payload.bcc) {\n    const ccBccFields = [];\n    if (payload.cc) ccBccFields.push({ type: 'mrkdwn', text: `*CC:*\\n${payload.cc}` });\n    if (payload.bcc) ccBccFields.push({ type: 'mrkdwn', text: `*BCC:*\\n${payload.bcc}` });\n    blocks.push({ type: 'section', fields: ccBccFields });\n  }\n\n  blocks.push(\n    { type: 'section', text: { type: 'mrkdwn', text: `*Subject:*\\n${payload.subject || 'No subject'}` } },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${bodyPreview.replace(/\\n/g, '\\n> ') || '_No content_'}` } },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `email_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Send Email', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId,\n          confirm: {\n            title: { type: 'plain_text', text: 'Send this email?' },\n            text: { type: 'mrkdwn', text: `This will send the email to *${payload.to}*` },\n            confirm: { type: 'plain_text', text: 'Send' },\n            deny: { type: 'plain_text', text: 'Cancel' }\n          }\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  );\n\n  return {\n    blocks,\n    text: `\ud83d\udce7 Email approval required: ${payload.subject || 'No subject'}`\n  };\n}\n\nfunction buildContentCard(payload, actionId, expiryMinutes, slackUserId) {\n  // Extract content details\n  const channel = payload.content_type || payload.channel || 'Unknown';\n  const postSummary = payload.post_summary || payload.topic || 'New Post';\n  const drafts = payload.drafts || {};\n  const images = payload.images || {};\n  const revisionNumber = payload.revision_number || 0;\n\n  // Get the draft content for preview\n  const channelKey = channel.toLowerCase().replace(/[^a-z]/g, '');\n  const draft = drafts[channelKey] || drafts[Object.keys(drafts)[0]] || {};\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  const contentPreview = content.length > 800 ? content.substring(0, 797) + '...' : content;\n\n  // Get image info\n  const image = images[channelKey] || images[Object.keys(images)[0]];\n  const hasImage = !!image;\n\n  // Format channel name nicely\n  const channelDisplay = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog Post',\n    'linkedinpost': 'LinkedIn'\n  }[channelKey] || channel;\n\n  const blocks = [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: revisionNumber > 0 ? `\ud83d\udcdd Content Approval Required (Revision ${revisionNumber})` : '\ud83d\udcdd Content Approval Required',\n        emoji: true\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*Channel:*\\n${channelDisplay}` },\n        { type: 'mrkdwn', text: `*Topic:*\\n${postSummary}` }\n      ]\n    },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${contentPreview || '_No content_'}` } }\n  ];\n\n  // Add image info if available\n  if (hasImage) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\uddbc\ufe0f *Image:* ${image.dimensions || 'Generated'} \u2022 ${image.url ? '<' + image.url + '|View Image>' : 'Attached'}` }]\n    });\n  }\n\n  // Add calendar status if available\n  if (payload.calendar_row_id) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\udcca *Calendar Status:* Under review (Row ${payload.calendar_row_id})` }]\n    });\n  }\n\n  // Expiry and requester context\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n  });\n\n  // Action buttons\n  blocks.push({\n    type: 'actions',\n    block_id: `content_approval_${actionId}`,\n    elements: [\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u2705 Approve & Schedule', emoji: true },\n        style: 'primary',\n        action_id: 'approve_action',\n        value: actionId,\n        confirm: {\n          title: { type: 'plain_text', text: 'Approve this content?' },\n          text: { type: 'mrkdwn', text: `This will update the calendar status to *Ready* for ${channelDisplay}.` },\n          confirm: { type: 'plain_text', text: 'Approve' },\n          deny: { type: 'plain_text', text: 'Cancel' }\n        }\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\ud83d\udcdd View Full Post', emoji: true },\n        action_id: 'view_full_action',\n        value: actionId\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n        style: 'danger',\n        action_id: 'reject_action',\n        value: actionId\n      }\n    ]\n  });\n\n  // Add feedback hint\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: '\ud83d\udca1 _Reply to this thread to provide feedback for revisions_' }]\n  });\n\n  return {\n    blocks,\n    text: `\ud83d\udcdd Content approval required: ${postSummary} (${channelDisplay})`\n  };\n}\n\nfunction buildGenericCard(payload, actionId, actionType, expiryMinutes, slackUserId) {\n  // Fallback generic card for unknown action types\n  const description = payload.description || payload.summary || 'Action requires approval';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\u26a0\ufe0f Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Action Type:* ${actionType}` }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Details:*\\n${description}` }\n    },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `generic_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Approve', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Reject', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  ];\n\n  return {\n    blocks,\n    text: `\u26a0\ufe0f Approval required: ${actionType}`\n  };\n}\n\n// Route to appropriate card builder based on action_type\nlet cardData;\nswitch (actionType) {\n  case 'send_email':\n    cardData = buildEmailCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  case 'publish_content':\n    cardData = buildContentCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  default:\n    cardData = buildGenericCard(payload, actionId, actionType, expiryMinutes, prepared.slack_user_id);\n}\n\n// Determine the Slack action based on whether thread_ts is provided\nconst slackAction = prepared.slack_thread_ts ? 'post_thread' : 'post_message';\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: actionType,\n    slack_action: slackAction,\n    slack_channel_id: prepared.slack_channel_id,\n    slack_thread_ts: prepared.slack_thread_ts,\n    blocks: cardData.blocks,\n    text: cardData.text\n  }\n}];"
+      },
+      "id": "build-slack-blocks",
+      "name": "Build Slack Approval Card",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE alfred.pending_actions\nSET \n  approval_channel_id = $1,\n  approval_message_ts = $2\nWHERE id = $3::uuid\nRETURNING id, approval_message_ts, expires_at;",
+        "options": {
+          "queryReplacement": "={{ [$json.channel, $json.ts, $('Build Slack Approval Card').first().json.action_id] }}"
+        }
+      },
+      "id": "update-with-message-ts",
+      "name": "Update with Message TS",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1312,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst slackResult = $('Send Approval Card to Slack').first().json;\nconst dbResult = $input.first().json;\n\nconst actionType = prepared.action_type;\nconst payload = prepared.payload;\n\n// Generate appropriate message based on action_type\nlet successMessage = \"\";\nswitch (actionType) {\n  case \"send_email\":\n    successMessage = `Email queued for approval. Please review and click 'Send Email' or 'Cancel' in the approval card above. The request will expire in ${prepared.expiry_minutes} minutes.`;\n    break;\n  case \"publish_content\":\n    const channel = payload.content_type || payload.channel || \"content\";\n    successMessage = `${channel} post ready for review\\! Click 'Approve & Schedule' to finalize, or reply to this thread with feedback. Expires in ${prepared.expiry_minutes} minutes.`;\n    break;\n  default:\n    successMessage = `Action queued for approval. Please review and respond in the approval card. Expires in ${prepared.expiry_minutes} minutes.`;\n}\n\nreturn [{\n  json: {\n    success: slackResult.success,\n    pending_action_id: prepared.action_id,\n    action_type: actionType,\n    approval_message_ts: slackResult.ts,\n    approval_channel_id: slackResult.channel,\n    expires_at: prepared.expires_at,\n    message: slackResult.success \n      ? successMessage\n      : `Failed to send approval card: ${slackResult.error || \"Unknown error\"}`\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        304
+      ]
+    },
+    {
+      "id": "call-slack-service",
+      "name": "Send Approval Card to Slack",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        304
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "xbFJVyUFvGfUbY4s"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "={{ $json.slack_action }}",
+            "channel_id": "={{ $json.slack_channel_id }}",
+            "thread_ts": "={{ $json.slack_thread_ts }}",
+            "text": "={{ $json.text }}",
+            "blocks": "={{ $json.blocks }}",
+            "unfurl_links": false,
+            "unfurl_media": false
+          }
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare Pending Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Pending Action": {
+      "main": [
+        [
+          {
+            "node": "Insert Pending Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Pending Action": {
+      "main": [
+        [
+          {
+            "node": "Build Slack Approval Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update with Message TS": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Slack Approval Card": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Card to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approval Card to Slack": {
+      "main": [
+        [
+          {
+            "node": "Update with Message TS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "activeVersionId": "7576e803-b182-48f1-b374-bb763ad811b4",
+  "versionCounter": 54,
+  "triggerCount": 0,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-09T12:36:28.227Z",
+    "createdAt": "2026-02-09T12:36:28.227Z",
+    "versionId": "7576e803-b182-48f1-b374-bb763ad811b4",
+    "workflowId": "1S0dhI1K4X0528Dy",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "action_type"
+              },
+              {
+                "name": "user_id"
+              },
+              {
+                "name": "slack_user_id"
+              },
+              {
+                "name": "slack_channel_id"
+              },
+              {
+                "name": "slack_thread_ts"
+              },
+              {
+                "name": "payload",
+                "type": "string"
+              },
+              {
+                "name": "expiry_minutes",
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          208,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\n// Calculate expiry timestamp\nconst expiryMinutes = input.expiry_minutes || 60;\nconst expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();\n\n// Generate a UUID v4 (compatible with n8n's execution environment)\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst actionId = generateUUID();\n\n// Parse payload - Manager sends JSON.stringify'd string, need to store as JSONB object\nlet parsedPayload = input.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { parsedPayload = {}; }\n}\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: input.action_type,\n    user_id: input.user_id,\n    slack_user_id: input.slack_user_id,\n    slack_channel_id: input.slack_channel_id,\n    slack_thread_ts: input.slack_thread_ts || null,\n    payload: parsedPayload,\n    expires_at: expiresAt,\n    expiry_minutes: expiryMinutes\n  }\n}];"
+        },
+        "id": "prepare-action",
+        "name": "Prepare Pending Action",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          432,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "WITH expired AS (\n  UPDATE alfred.pending_actions\n  SET status = 'expired',\n      resolved_at = NOW(),\n      resolution_note = 'Superseded by revision'\n  WHERE slack_thread_ts = $6\n    AND action_type = $2\n    AND status = 'pending'\n    AND $6 IS NOT NULL\n    AND $6 != ''\n  RETURNING id\n)\nINSERT INTO alfred.pending_actions (\n  id,\n  action_type,\n  user_id,\n  slack_user_id,\n  slack_channel_id,\n  slack_thread_ts,\n  payload,\n  status,\n  expires_at\n) VALUES (\n  $1::uuid,\n  $2,\n  $3::integer,\n  $4,\n  $5,\n  $6,\n  $7::jsonb,\n  'pending',\n  $8::timestamptz\n)\nRETURNING id, created_at, expires_at;",
+          "options": {
+            "queryReplacement": "={{ [$json.action_id, $json.action_type, $json.user_id, $json.slack_user_id, $json.slack_channel_id, $json.slack_thread_ts, JSON.stringify($json.payload), $json.expires_at] }}"
+          }
+        },
+        "id": "insert-pending-action",
+        "name": "Insert Pending Action",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          640,
+          304
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst dbResult = $input.first().json;\n\nconst payload = prepared.payload;\nconst actionId = prepared.action_id;\nconst actionType = prepared.action_type;\nconst expiryMinutes = prepared.expiry_minutes;\n\n// Template-driven card builder based on action_type\nfunction buildEmailCard(payload, actionId, expiryMinutes, slackUserId) {\n  const bodyPreview = (payload.body_plain || '').length > 1500\n    ? payload.body_plain.substring(0, 1497) + '...'\n    : payload.body_plain || '';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\ud83d\udce7 Email Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*To:*\\n${payload.to || 'Not specified'}` },\n        { type: 'mrkdwn', text: `*From:*\\n${payload.user_email || 'Not specified'}` }\n      ]\n    }\n  ];\n\n  if (payload.cc || payload.bcc) {\n    const ccBccFields = [];\n    if (payload.cc) ccBccFields.push({ type: 'mrkdwn', text: `*CC:*\\n${payload.cc}` });\n    if (payload.bcc) ccBccFields.push({ type: 'mrkdwn', text: `*BCC:*\\n${payload.bcc}` });\n    blocks.push({ type: 'section', fields: ccBccFields });\n  }\n\n  blocks.push(\n    { type: 'section', text: { type: 'mrkdwn', text: `*Subject:*\\n${payload.subject || 'No subject'}` } },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${bodyPreview.replace(/\\n/g, '\\n> ') || '_No content_'}` } },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `email_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Send Email', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId,\n          confirm: {\n            title: { type: 'plain_text', text: 'Send this email?' },\n            text: { type: 'mrkdwn', text: `This will send the email to *${payload.to}*` },\n            confirm: { type: 'plain_text', text: 'Send' },\n            deny: { type: 'plain_text', text: 'Cancel' }\n          }\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  );\n\n  return {\n    blocks,\n    text: `\ud83d\udce7 Email approval required: ${payload.subject || 'No subject'}`\n  };\n}\n\nfunction buildContentCard(payload, actionId, expiryMinutes, slackUserId) {\n  // Extract content details\n  const channel = payload.content_type || payload.channel || 'Unknown';\n  const postSummary = payload.post_summary || payload.topic || 'New Post';\n  const drafts = payload.drafts || {};\n  const images = payload.images || {};\n  const revisionNumber = payload.revision_number || 0;\n\n  // Get the draft content for preview\n  const channelKey = channel.toLowerCase().replace(/[^a-z]/g, '');\n  const draft = drafts[channelKey] || drafts[Object.keys(drafts)[0]] || {};\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  const contentPreview = content.length > 800 ? content.substring(0, 797) + '...' : content;\n\n  // Get image info\n  const image = images[channelKey] || images[Object.keys(images)[0]];\n  const hasImage = !!image;\n\n  // Format channel name nicely\n  const channelDisplay = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog Post',\n    'linkedinpost': 'LinkedIn'\n  }[channelKey] || channel;\n\n  const blocks = [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: revisionNumber > 0 ? `\ud83d\udcdd Content Approval Required (Revision ${revisionNumber})` : '\ud83d\udcdd Content Approval Required',\n        emoji: true\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*Channel:*\\n${channelDisplay}` },\n        { type: 'mrkdwn', text: `*Topic:*\\n${postSummary}` }\n      ]\n    },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${contentPreview || '_No content_'}` } }\n  ];\n\n  // Add image info if available\n  if (hasImage) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\uddbc\ufe0f *Image:* ${image.dimensions || 'Generated'} \u2022 ${image.url ? '<' + image.url + '|View Image>' : 'Attached'}` }]\n    });\n  }\n\n  // Add calendar status if available\n  if (payload.calendar_row_id) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\udcca *Calendar Status:* Under review (Row ${payload.calendar_row_id})` }]\n    });\n  }\n\n  // Expiry and requester context\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n  });\n\n  // Action buttons\n  blocks.push({\n    type: 'actions',\n    block_id: `content_approval_${actionId}`,\n    elements: [\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u2705 Approve & Schedule', emoji: true },\n        style: 'primary',\n        action_id: 'approve_action',\n        value: actionId,\n        confirm: {\n          title: { type: 'plain_text', text: 'Approve this content?' },\n          text: { type: 'mrkdwn', text: `This will update the calendar status to *Ready* for ${channelDisplay}.` },\n          confirm: { type: 'plain_text', text: 'Approve' },\n          deny: { type: 'plain_text', text: 'Cancel' }\n        }\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\ud83d\udcdd View Full Post', emoji: true },\n        action_id: 'view_full_action',\n        value: actionId\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n        style: 'danger',\n        action_id: 'reject_action',\n        value: actionId\n      }\n    ]\n  });\n\n  // Add feedback hint\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: '\ud83d\udca1 _Reply to this thread to provide feedback for revisions_' }]\n  });\n\n  return {\n    blocks,\n    text: `\ud83d\udcdd Content approval required: ${postSummary} (${channelDisplay})`\n  };\n}\n\nfunction buildGenericCard(payload, actionId, actionType, expiryMinutes, slackUserId) {\n  // Fallback generic card for unknown action types\n  const description = payload.description || payload.summary || 'Action requires approval';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\u26a0\ufe0f Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Action Type:* ${actionType}` }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Details:*\\n${description}` }\n    },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `generic_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Approve', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Reject', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  ];\n\n  return {\n    blocks,\n    text: `\u26a0\ufe0f Approval required: ${actionType}`\n  };\n}\n\n// Route to appropriate card builder based on action_type\nlet cardData;\nswitch (actionType) {\n  case 'send_email':\n    cardData = buildEmailCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  case 'publish_content':\n    cardData = buildContentCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  default:\n    cardData = buildGenericCard(payload, actionId, actionType, expiryMinutes, prepared.slack_user_id);\n}\n\n// Determine the Slack action based on whether thread_ts is provided\nconst slackAction = prepared.slack_thread_ts ? 'post_thread' : 'post_message';\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: actionType,\n    slack_action: slackAction,\n    slack_channel_id: prepared.slack_channel_id,\n    slack_thread_ts: prepared.slack_thread_ts,\n    blocks: cardData.blocks,\n    text: cardData.text\n  }\n}];"
+        },
+        "id": "build-slack-blocks",
+        "name": "Build Slack Approval Card",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          864,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE alfred.pending_actions\nSET \n  approval_channel_id = $1,\n  approval_message_ts = $2\nWHERE id = $3::uuid\nRETURNING id, approval_message_ts, expires_at;",
+          "options": {
+            "queryReplacement": "={{ [$json.channel, $json.ts, $('Build Slack Approval Card').first().json.action_id] }}"
+          }
+        },
+        "id": "update-with-message-ts",
+        "name": "Update with Message TS",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1312,
+          304
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst slackResult = $('Send Approval Card to Slack').first().json;\nconst dbResult = $input.first().json;\n\nconst actionType = prepared.action_type;\nconst payload = prepared.payload;\n\n// Generate appropriate message based on action_type\nlet successMessage = \"\";\nswitch (actionType) {\n  case \"send_email\":\n    successMessage = `Email queued for approval. Please review and click 'Send Email' or 'Cancel' in the approval card above. The request will expire in ${prepared.expiry_minutes} minutes.`;\n    break;\n  case \"publish_content\":\n    const channel = payload.content_type || payload.channel || \"content\";\n    successMessage = `${channel} post ready for review\\! Click 'Approve & Schedule' to finalize, or reply to this thread with feedback. Expires in ${prepared.expiry_minutes} minutes.`;\n    break;\n  default:\n    successMessage = `Action queued for approval. Please review and respond in the approval card. Expires in ${prepared.expiry_minutes} minutes.`;\n}\n\nreturn [{\n  json: {\n    success: slackResult.success,\n    pending_action_id: prepared.action_id,\n    action_type: actionType,\n    approval_message_ts: slackResult.ts,\n    approval_channel_id: slackResult.channel,\n    expires_at: prepared.expires_at,\n    message: slackResult.success \n      ? successMessage\n      : `Failed to send approval card: ${slackResult.error || \"Unknown error\"}`\n  }\n}];"
+        },
+        "id": "format-response",
+        "name": "Format Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          304
+        ]
+      },
+      {
+        "id": "call-slack-service",
+        "name": "Send Approval Card to Slack",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1088,
+          304
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "xbFJVyUFvGfUbY4s"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "action": "={{ $json.slack_action }}",
+              "channel_id": "={{ $json.slack_channel_id }}",
+              "thread_ts": "={{ $json.slack_thread_ts }}",
+              "text": "={{ $json.text }}",
+              "blocks": "={{ $json.blocks }}",
+              "unfurl_links": false,
+              "unfurl_media": false
+            }
+          },
+          "options": {}
+        }
+      }
     ],
     "connections": {
-        "Workflow Input": {
-            "main": [
-                [
-                    {
-                        "node": "Prepare Pending Action",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Prepare Pending Action": {
-            "main": [
-                [
-                    {
-                        "node": "Insert Pending Action",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Insert Pending Action": {
-            "main": [
-                [
-                    {
-                        "node": "Build Slack Approval Card",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Update with Message TS": {
-            "main": [
-                [
-                    {
-                        "node": "Format Response",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Build Slack Approval Card": {
-            "main": [
-                [
-                    {
-                        "node": "Send Approval Card to Slack",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Send Approval Card to Slack": {
-            "main": [
-                [
-                    {
-                        "node": "Update with Message TS",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
-    },
-    "settings": {
-        "executionOrder": "v1",
-        "callerPolicy": "workflowsFromSameOwner",
-        "availableInMCP": false
-    },
-    "staticData": null,
-    "meta": null,
-    "pinData": {},
-    "versionId": "7576e803-b182-48f1-b374-bb763ad811b4",
-    "activeVersionId": "7576e803-b182-48f1-b374-bb763ad811b4",
-    "versionCounter": 52,
-    "triggerCount": 0,
-    "shared": [
-        {
-            "updatedAt": "2026-02-04T13:52:54.722Z",
-            "createdAt": "2026-02-04T13:52:54.722Z",
-            "role": "workflow:owner",
-            "workflowId": "1S0dhI1K4X0528Dy",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "project": {
-                "updatedAt": "2026-02-02T12:27:52.037Z",
-                "createdAt": "2026-02-02T12:20:35.714Z",
-                "id": "Jd992SEPuokf8o5Z",
-                "name": "Spencer Marx <spencer@aclarify.com>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-                "projectRelations": [
-                    {
-                        "updatedAt": "2026-02-02T12:20:35.714Z",
-                        "createdAt": "2026-02-02T12:20:35.714Z",
-                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-                        "projectId": "Jd992SEPuokf8o5Z",
-                        "user": {
-                            "updatedAt": "2026-02-10T09:40:41.292Z",
-                            "createdAt": "2026-02-02T12:20:29.217Z",
-                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
-                            "email": "spencer@aclarify.com",
-                            "firstName": "Spencer",
-                            "lastName": "Marx",
-                            "personalizationAnswers": {
-                                "version": "v4",
-                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                                "personalization_survey_n8n_version": "2.6.2",
-                                "companySize": "<20",
-                                "companyType": "saas",
-                                "role": "business-owner",
-                                "reportedSource": "friend"
-                            },
-                            "settings": {
-                                "userActivated": true,
-                                "easyAIWorkflowOnboarded": true,
-                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                                "userActivatedAt": 1770049275864,
-                                "npsSurvey": {
-                                    "responded": true,
-                                    "lastShownAt": 1770325854784
-                                }
-                            },
-                            "disabled": false,
-                            "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-10",
-                            "isPending": false
-                        }
-                    }
-                ]
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Prepare Pending Action",
+              "type": "main",
+              "index": 0
             }
-        }
-    ],
-    "tags": [],
-    "activeVersion": {
-        "updatedAt": "2026-02-09T12:36:28.227Z",
-        "createdAt": "2026-02-09T12:36:28.227Z",
-        "versionId": "7576e803-b182-48f1-b374-bb763ad811b4",
-        "workflowId": "1S0dhI1K4X0528Dy",
-        "nodes": [
-            {
-                "parameters": {
-                    "workflowInputs": {
-                        "values": [
-                            {
-                                "name": "action_type"
-                            },
-                            {
-                                "name": "user_id"
-                            },
-                            {
-                                "name": "slack_user_id"
-                            },
-                            {
-                                "name": "slack_channel_id"
-                            },
-                            {
-                                "name": "slack_thread_ts"
-                            },
-                            {
-                                "name": "payload",
-                                "type": "string"
-                            },
-                            {
-                                "name": "expiry_minutes",
-                                "type": "number"
-                            }
-                        ]
-                    }
-                },
-                "id": "workflow-input",
-                "name": "Workflow Input",
-                "type": "n8n-nodes-base.executeWorkflowTrigger",
-                "typeVersion": 1.1,
-                "position": [
-                    208,
-                    304
-                ]
-            },
-            {
-                "parameters": {
-                    "jsCode": "const input = $input.first().json;\n\n// Calculate expiry timestamp\nconst expiryMinutes = input.expiry_minutes || 60;\nconst expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();\n\n// Generate a UUID v4 (compatible with n8n's execution environment)\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nconst actionId = generateUUID();\n\n// Parse payload - Manager sends JSON.stringify'd string, need to store as JSONB object\nlet parsedPayload = input.payload;\nif (typeof parsedPayload === 'string') {\n  try { parsedPayload = JSON.parse(parsedPayload); } catch (e) { parsedPayload = {}; }\n}\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: input.action_type,\n    user_id: input.user_id,\n    slack_user_id: input.slack_user_id,\n    slack_channel_id: input.slack_channel_id,\n    slack_thread_ts: input.slack_thread_ts || null,\n    payload: parsedPayload,\n    expires_at: expiresAt,\n    expiry_minutes: expiryMinutes\n  }\n}];"
-                },
-                "id": "prepare-action",
-                "name": "Prepare Pending Action",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    432,
-                    304
-                ]
-            },
-            {
-                "parameters": {
-                    "operation": "executeQuery",
-                    "query": "WITH expired AS (\n  UPDATE alfred.pending_actions\n  SET status = 'expired',\n      resolved_at = NOW(),\n      resolution_note = 'Superseded by revision'\n  WHERE slack_thread_ts = $6\n    AND action_type = $2\n    AND status = 'pending'\n    AND $6 IS NOT NULL\n    AND $6 != ''\n  RETURNING id\n)\nINSERT INTO alfred.pending_actions (\n  id,\n  action_type,\n  user_id,\n  slack_user_id,\n  slack_channel_id,\n  slack_thread_ts,\n  payload,\n  status,\n  expires_at\n) VALUES (\n  $1::uuid,\n  $2,\n  $3::integer,\n  $4,\n  $5,\n  $6,\n  $7::jsonb,\n  'pending',\n  $8::timestamptz\n)\nRETURNING id, created_at, expires_at;",
-                    "options": {
-                        "queryReplacement": "={{ [$json.action_id, $json.action_type, $json.user_id, $json.slack_user_id, $json.slack_channel_id, $json.slack_thread_ts, JSON.stringify($json.payload), $json.expires_at] }}"
-                    }
-                },
-                "id": "insert-pending-action",
-                "name": "Insert Pending Action",
-                "type": "n8n-nodes-base.postgres",
-                "typeVersion": 2.5,
-                "position": [
-                    640,
-                    304
-                ],
-                "credentials": {
-                    "postgres": {
-                        "id": "8nTSHxonyIBczkvN",
-                        "name": "Postgres account"
-                    }
-                }
-            },
-            {
-                "parameters": {
-                    "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst dbResult = $input.first().json;\n\nconst payload = prepared.payload;\nconst actionId = prepared.action_id;\nconst actionType = prepared.action_type;\nconst expiryMinutes = prepared.expiry_minutes;\n\n// Template-driven card builder based on action_type\nfunction buildEmailCard(payload, actionId, expiryMinutes, slackUserId) {\n  const bodyPreview = (payload.body_plain || '').length > 1500\n    ? payload.body_plain.substring(0, 1497) + '...'\n    : payload.body_plain || '';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\ud83d\udce7 Email Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*To:*\\n${payload.to || 'Not specified'}` },\n        { type: 'mrkdwn', text: `*From:*\\n${payload.user_email || 'Not specified'}` }\n      ]\n    }\n  ];\n\n  if (payload.cc || payload.bcc) {\n    const ccBccFields = [];\n    if (payload.cc) ccBccFields.push({ type: 'mrkdwn', text: `*CC:*\\n${payload.cc}` });\n    if (payload.bcc) ccBccFields.push({ type: 'mrkdwn', text: `*BCC:*\\n${payload.bcc}` });\n    blocks.push({ type: 'section', fields: ccBccFields });\n  }\n\n  blocks.push(\n    { type: 'section', text: { type: 'mrkdwn', text: `*Subject:*\\n${payload.subject || 'No subject'}` } },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${bodyPreview.replace(/\\n/g, '\\n> ') || '_No content_'}` } },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `email_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Send Email', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId,\n          confirm: {\n            title: { type: 'plain_text', text: 'Send this email?' },\n            text: { type: 'mrkdwn', text: `This will send the email to *${payload.to}*` },\n            confirm: { type: 'plain_text', text: 'Send' },\n            deny: { type: 'plain_text', text: 'Cancel' }\n          }\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  );\n\n  return {\n    blocks,\n    text: `\ud83d\udce7 Email approval required: ${payload.subject || 'No subject'}`\n  };\n}\n\nfunction buildContentCard(payload, actionId, expiryMinutes, slackUserId) {\n  // Extract content details\n  const channel = payload.content_type || payload.channel || 'Unknown';\n  const postSummary = payload.post_summary || payload.topic || 'New Post';\n  const drafts = payload.drafts || {};\n  const images = payload.images || {};\n  const revisionNumber = payload.revision_number || 0;\n\n  // Get the draft content for preview\n  const channelKey = channel.toLowerCase().replace(/[^a-z]/g, '');\n  const draft = drafts[channelKey] || drafts[Object.keys(drafts)[0]] || {};\n  const content = typeof draft === 'string' ? draft : (draft.content || '');\n  const contentPreview = content.length > 800 ? content.substring(0, 797) + '...' : content;\n\n  // Get image info\n  const image = images[channelKey] || images[Object.keys(images)[0]];\n  const hasImage = !!image;\n\n  // Format channel name nicely\n  const channelDisplay = {\n    'linkedin': 'LinkedIn',\n    'twitter': 'Twitter/X',\n    'facebook': 'Facebook',\n    'blog': 'Blog Post',\n    'linkedinpost': 'LinkedIn'\n  }[channelKey] || channel;\n\n  const blocks = [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: revisionNumber > 0 ? `\ud83d\udcdd Content Approval Required (Revision ${revisionNumber})` : '\ud83d\udcdd Content Approval Required',\n        emoji: true\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        { type: 'mrkdwn', text: `*Channel:*\\n${channelDisplay}` },\n        { type: 'mrkdwn', text: `*Topic:*\\n${postSummary}` }\n      ]\n    },\n    { type: 'divider' },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Preview:*' } },\n    { type: 'section', text: { type: 'mrkdwn', text: `>>> ${contentPreview || '_No content_'}` } }\n  ];\n\n  // Add image info if available\n  if (hasImage) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\uddbc\ufe0f *Image:* ${image.dimensions || 'Generated'} \u2022 ${image.url ? '<' + image.url + '|View Image>' : 'Attached'}` }]\n    });\n  }\n\n  // Add calendar status if available\n  if (payload.calendar_row_id) {\n    blocks.push({\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\ud83d\udcca *Calendar Status:* Under review (Row ${payload.calendar_row_id})` }]\n    });\n  }\n\n  // Expiry and requester context\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n  });\n\n  // Action buttons\n  blocks.push({\n    type: 'actions',\n    block_id: `content_approval_${actionId}`,\n    elements: [\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u2705 Approve & Schedule', emoji: true },\n        style: 'primary',\n        action_id: 'approve_action',\n        value: actionId,\n        confirm: {\n          title: { type: 'plain_text', text: 'Approve this content?' },\n          text: { type: 'mrkdwn', text: `This will update the calendar status to *Ready* for ${channelDisplay}.` },\n          confirm: { type: 'plain_text', text: 'Approve' },\n          deny: { type: 'plain_text', text: 'Cancel' }\n        }\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\ud83d\udcdd View Full Post', emoji: true },\n        action_id: 'view_full_action',\n        value: actionId\n      },\n      {\n        type: 'button',\n        text: { type: 'plain_text', text: '\u274c Cancel', emoji: true },\n        style: 'danger',\n        action_id: 'reject_action',\n        value: actionId\n      }\n    ]\n  });\n\n  // Add feedback hint\n  blocks.push({\n    type: 'context',\n    elements: [{ type: 'mrkdwn', text: '\ud83d\udca1 _Reply to this thread to provide feedback for revisions_' }]\n  });\n\n  return {\n    blocks,\n    text: `\ud83d\udcdd Content approval required: ${postSummary} (${channelDisplay})`\n  };\n}\n\nfunction buildGenericCard(payload, actionId, actionType, expiryMinutes, slackUserId) {\n  // Fallback generic card for unknown action types\n  const description = payload.description || payload.summary || 'Action requires approval';\n\n  const blocks = [\n    {\n      type: 'header',\n      text: { type: 'plain_text', text: '\u26a0\ufe0f Approval Required', emoji: true }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Action Type:* ${actionType}` }\n    },\n    {\n      type: 'section',\n      text: { type: 'mrkdwn', text: `*Details:*\\n${description}` }\n    },\n    {\n      type: 'context',\n      elements: [{ type: 'mrkdwn', text: `\u23f0 Expires in ${expiryMinutes} minutes \u2022 Requested by <@${slackUserId}>` }]\n    },\n    {\n      type: 'actions',\n      block_id: `generic_approval_${actionId}`,\n      elements: [\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u2705 Approve', emoji: true },\n          style: 'primary',\n          action_id: 'approve_action',\n          value: actionId\n        },\n        {\n          type: 'button',\n          text: { type: 'plain_text', text: '\u274c Reject', emoji: true },\n          style: 'danger',\n          action_id: 'reject_action',\n          value: actionId\n        }\n      ]\n    }\n  ];\n\n  return {\n    blocks,\n    text: `\u26a0\ufe0f Approval required: ${actionType}`\n  };\n}\n\n// Route to appropriate card builder based on action_type\nlet cardData;\nswitch (actionType) {\n  case 'send_email':\n    cardData = buildEmailCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  case 'publish_content':\n    cardData = buildContentCard(payload, actionId, expiryMinutes, prepared.slack_user_id);\n    break;\n  default:\n    cardData = buildGenericCard(payload, actionId, actionType, expiryMinutes, prepared.slack_user_id);\n}\n\n// Determine the Slack action based on whether thread_ts is provided\nconst slackAction = prepared.slack_thread_ts ? 'post_thread' : 'post_message';\n\nreturn [{\n  json: {\n    action_id: actionId,\n    action_type: actionType,\n    slack_action: slackAction,\n    slack_channel_id: prepared.slack_channel_id,\n    slack_thread_ts: prepared.slack_thread_ts,\n    blocks: cardData.blocks,\n    text: cardData.text\n  }\n}];"
-                },
-                "id": "build-slack-blocks",
-                "name": "Build Slack Approval Card",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    864,
-                    304
-                ]
-            },
-            {
-                "parameters": {
-                    "operation": "executeQuery",
-                    "query": "UPDATE alfred.pending_actions\nSET \n  approval_channel_id = $1,\n  approval_message_ts = $2\nWHERE id = $3::uuid\nRETURNING id, approval_message_ts, expires_at;",
-                    "options": {
-                        "queryReplacement": "={{ [$json.channel, $json.ts, $('Build Slack Approval Card').first().json.action_id] }}"
-                    }
-                },
-                "id": "update-with-message-ts",
-                "name": "Update with Message TS",
-                "type": "n8n-nodes-base.postgres",
-                "typeVersion": 2.5,
-                "position": [
-                    1312,
-                    304
-                ],
-                "credentials": {
-                    "postgres": {
-                        "id": "8nTSHxonyIBczkvN",
-                        "name": "Postgres account"
-                    }
-                }
-            },
-            {
-                "parameters": {
-                    "jsCode": "const prepared = $('Prepare Pending Action').first().json;\nconst slackResult = $('Send Approval Card to Slack').first().json;\nconst dbResult = $input.first().json;\n\nconst actionType = prepared.action_type;\nconst payload = prepared.payload;\n\n// Generate appropriate message based on action_type\nlet successMessage = \"\";\nswitch (actionType) {\n  case \"send_email\":\n    successMessage = `Email queued for approval. Please review and click 'Send Email' or 'Cancel' in the approval card above. The request will expire in ${prepared.expiry_minutes} minutes.`;\n    break;\n  case \"publish_content\":\n    const channel = payload.content_type || payload.channel || \"content\";\n    successMessage = `${channel} post ready for review\\! Click 'Approve & Schedule' to finalize, or reply to this thread with feedback. Expires in ${prepared.expiry_minutes} minutes.`;\n    break;\n  default:\n    successMessage = `Action queued for approval. Please review and respond in the approval card. Expires in ${prepared.expiry_minutes} minutes.`;\n}\n\nreturn [{\n  json: {\n    success: slackResult.success,\n    pending_action_id: prepared.action_id,\n    action_type: actionType,\n    approval_message_ts: slackResult.ts,\n    approval_channel_id: slackResult.channel,\n    expires_at: prepared.expires_at,\n    message: slackResult.success \n      ? successMessage\n      : `Failed to send approval card: ${slackResult.error || \"Unknown error\"}`\n  }\n}];"
-                },
-                "id": "format-response",
-                "name": "Format Response",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    1520,
-                    304
-                ]
-            },
-            {
-                "id": "call-slack-service",
-                "name": "Send Approval Card to Slack",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    1088,
-                    304
-                ],
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "xbFJVyUFvGfUbY4s"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "action": "={{ $json.slack_action }}",
-                            "channel_id": "={{ $json.slack_channel_id }}",
-                            "thread_ts": "={{ $json.slack_thread_ts }}",
-                            "text": "={{ $json.text }}",
-                            "blocks": "={{ $json.blocks }}",
-                            "unfurl_links": false,
-                            "unfurl_media": false
-                        }
-                    },
-                    "options": {}
-                }
-            }
-        ],
-        "connections": {
-            "Workflow Input": {
-                "main": [
-                    [
-                        {
-                            "node": "Prepare Pending Action",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Prepare Pending Action": {
-                "main": [
-                    [
-                        {
-                            "node": "Insert Pending Action",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Insert Pending Action": {
-                "main": [
-                    [
-                        {
-                            "node": "Build Slack Approval Card",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Update with Message TS": {
-                "main": [
-                    [
-                        {
-                            "node": "Format Response",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Build Slack Approval Card": {
-                "main": [
-                    [
-                        {
-                            "node": "Send Approval Card to Slack",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Send Approval Card to Slack": {
-                "main": [
-                    [
-                        {
-                            "node": "Update with Message TS",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            }
-        },
-        "authors": "Spencer Marx",
-        "name": null,
-        "description": null,
-        "autosaved": false,
-        "workflowPublishHistory": [
-            {
-                "createdAt": "2026-02-09T12:36:28.360Z",
-                "id": 541,
-                "workflowId": "1S0dhI1K4X0528Dy",
-                "versionId": "7576e803-b182-48f1-b374-bb763ad811b4",
-                "event": "activated",
-                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
-            }
+          ]
         ]
-    }
+      },
+      "Prepare Pending Action": {
+        "main": [
+          [
+            {
+              "node": "Insert Pending Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Insert Pending Action": {
+        "main": [
+          [
+            {
+              "node": "Build Slack Approval Card",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update with Message TS": {
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Slack Approval Card": {
+        "main": [
+          [
+            {
+              "node": "Send Approval Card to Slack",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Approval Card to Slack": {
+        "main": [
+          [
+            {
+              "node": "Update with Message TS",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-09T12:36:28.360Z",
+        "id": 541,
+        "workflowId": "1S0dhI1K4X0528Dy",
+        "versionId": "7576e803-b182-48f1-b374-bb763ad811b4",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

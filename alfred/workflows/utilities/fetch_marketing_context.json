@@ -1,888 +1,826 @@
 {
-    "updatedAt": "2026-02-09T12:59:08.891Z",
-    "createdAt": "2026-02-07T09:48:05.666Z",
-    "id": "thVHb2crL3ML98gX",
-    "name": "Utility | Fetch Marketing Context",
-    "description": null,
-    "active": true,
-    "isArchived": false,
-    "nodes": [
-        {
-            "parameters": {
-                "workflowInputs": {
-                    "values": [
-                        {
-                            "name": "slack_user_id",
-                            "type": "string"
-                        },
-                        {
-                            "name": "brand_guide_id",
-                            "type": "string"
-                        },
-                        {
-                            "name": "content_strategy_id",
-                            "type": "string"
-                        },
-                        {
-                            "name": "content_calendar_id",
-                            "type": "string"
-                        },
-                        {
-                            "name": "product_knowledge_id",
-                            "type": "string"
-                        },
-                        {
-                            "name": "voice_reference_id",
-                            "type": "string"
-                        }
-                    ]
-                }
+  "id": "thVHb2crL3ML98gX",
+  "name": "Utility | Fetch Marketing Context",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id",
+              "type": "string"
             },
-            "id": "trigger",
-            "name": "Workflow Input",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "typeVersion": 1.1,
-            "position": [
-                240,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "ZUMZ7oNUzDRDnFft"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                        "action": "get_document",
-                        "document_id": "={{ $('Workflow Input').first().json.brand_guide_id }}"
-                    },
-                    "schema": [
-                        {
-                            "id": "slack_user_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "slack_user_id"
-                        },
-                        {
-                            "id": "action",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "action"
-                        },
-                        {
-                            "id": "document_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "document_id"
-                        }
-                    ]
-                }
+            {
+              "name": "brand_guide_id",
+              "type": "string"
             },
-            "id": "fetch-brand-guide",
-            "name": "Fetch Brand Guide",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                480,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "ZUMZ7oNUzDRDnFft"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                        "action": "get_document",
-                        "document_id": "={{ $('Workflow Input').first().json.content_strategy_id }}"
-                    },
-                    "schema": [
-                        {
-                            "id": "slack_user_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "slack_user_id"
-                        },
-                        {
-                            "id": "action",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "action"
-                        },
-                        {
-                            "id": "document_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "document_id"
-                        }
-                    ]
-                }
+            {
+              "name": "content_strategy_id",
+              "type": "string"
             },
-            "id": "fetch-strategy",
-            "name": "Fetch Content Strategy",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                720,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "tWgJgDHdIHBhCOr0"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                        "action": "read_range",
-                        "spreadsheet_id": "={{ $('Workflow Input').first().json.content_calendar_id }}",
-                        "range": "A:Z"
-                    },
-                    "schema": [
-                        {
-                            "id": "slack_user_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "slack_user_id"
-                        },
-                        {
-                            "id": "action",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "action"
-                        },
-                        {
-                            "id": "spreadsheet_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "spreadsheet_id"
-                        },
-                        {
-                            "id": "range",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "range"
-                        }
-                    ]
-                }
+            {
+              "name": "content_calendar_id",
+              "type": "string"
             },
-            "id": "fetch-calendar",
-            "name": "Fetch Content Calendar",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                960,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "ZUMZ7oNUzDRDnFft"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                        "action": "get_document",
-                        "document_id": "={{ $('Workflow Input').first().json.product_knowledge_id }}"
-                    },
-                    "schema": [
-                        {
-                            "id": "slack_user_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "slack_user_id"
-                        },
-                        {
-                            "id": "action",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "action"
-                        },
-                        {
-                            "id": "document_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "document_id"
-                        }
-                    ]
-                }
+            {
+              "name": "product_knowledge_id",
+              "type": "string"
             },
-            "id": "fetch-product-knowledge",
-            "name": "Fetch Product Knowledge",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                1200,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "workflowId": {
-                    "__rl": true,
-                    "mode": "id",
-                    "value": "ZUMZ7oNUzDRDnFft"
-                },
-                "workflowInputs": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                        "action": "get_document",
-                        "document_id": "={{ $('Workflow Input').first().json.voice_reference_id }}"
-                    },
-                    "schema": [
-                        {
-                            "id": "slack_user_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "slack_user_id"
-                        },
-                        {
-                            "id": "action",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "action"
-                        },
-                        {
-                            "id": "document_id",
-                            "type": "string",
-                            "required": true,
-                            "displayName": "document_id"
-                        }
-                    ]
-                }
-            },
-            "id": "fetch-voice-reference",
-            "name": "Fetch Voice Reference",
-            "type": "n8n-nodes-base.executeWorkflow",
-            "typeVersion": 1.2,
-            "position": [
-                1440,
-                500
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "const input = $(\"Workflow Input\").first().json;\n\n// Fetch Playbook result\nlet marketingPlaybook = 'Playbook not found in system_config';\ntry {\n  const playbookResult = $('Fetch Playbook').first().json;\n  if (playbookResult && playbookResult.config_value) {\n    // config_value is JSONB - could be string or object\n    let playbook = playbookResult.config_value;\n    if (typeof playbook === 'object') {\n      marketingPlaybook = JSON.stringify(playbook, null, 2);\n    } else {\n      marketingPlaybook = String(playbook);\n    }\n  }\n} catch (e) {\n  // Fetch Playbook may not have executed (error/skip) - use placeholder\n  marketingPlaybook = 'Playbook not loaded';\n}\n\nconst brandGuideResult = $(\"Fetch Brand Guide\").first().json;\nconst strategyResult = $(\"Fetch Content Strategy\").first().json;\nconst calendarResult = $(\"Fetch Content Calendar\").first().json;\nconst productKnowledgeResult = $(\"Fetch Product Knowledge\").first().json;\nconst voiceReferenceResult = $(\"Fetch Voice Reference\").first().json;\n\n// Helper to extract error message from various formats\nfunction getErrorMsg(result, fallback) {\n  if (!result) return fallback;\n  if (typeof result.error === 'string') return result.error;\n  if (result.error?.message) return result.error.message;\n  if (result.error?.description) return result.error.description;\n  return fallback;\n}\n\nlet allSuccess = true;\nlet errors = [];\n\n// Brand Guide\nlet brandGuide = null;\nif (brandGuideResult?.success && brandGuideResult?.text) {\n  brandGuide = brandGuideResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(brandGuideResult, \"Failed to fetch brand guide\");\n  errors.push(\"Brand guide: \" + msg);\n  brandGuide = \"[Error: \" + msg + \"]\";\n}\n\n// Content Strategy\nlet contentStrategy = null;\nif (strategyResult?.success && strategyResult?.text) {\n  contentStrategy = strategyResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(strategyResult, \"Failed to fetch content strategy\");\n  errors.push(\"Content strategy: \" + msg);\n  contentStrategy = \"[Error: \" + msg + \"]\";\n}\n\n// Product Knowledge\nlet productKnowledge = null;\nif (productKnowledgeResult?.success) {\n  if (productKnowledgeResult.text && productKnowledgeResult.text.trim().length > 0) {\n    productKnowledge = productKnowledgeResult.text;\n  } else {\n    productKnowledge = \"[Product knowledge doc exists but is EMPTY. Please add content to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(productKnowledgeResult, \"Failed to fetch product knowledge\");\n  errors.push(\"Product knowledge: \" + msg);\n  productKnowledge = \"[Error: \" + msg + \"]\";\n}\n\n// Voice Reference\nlet voiceReference = null;\nif (voiceReferenceResult?.success) {\n  if (voiceReferenceResult.text && voiceReferenceResult.text.trim().length > 0) {\n    voiceReference = voiceReferenceResult.text;\n  } else {\n    voiceReference = \"[Voice reference doc exists but is EMPTY. Please add writing samples to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(voiceReferenceResult, \"Failed to fetch voice reference\");\n  errors.push(\"Voice reference: \" + msg);\n  voiceReference = \"[Error: \" + msg + \"]\";\n}\n\n// Content Calendar\nlet recentPosts = [];\nif (calendarResult?.success && calendarResult?.values) {\n  const rows = calendarResult.values;\n  recentPosts = rows\n    .slice(1)\n    .filter(row => row && row[0])\n    .slice(-10)\n    .map(row => \"[\" + (row[6] || \"No date\") + \"] \" + (row[0] || \"No title\") + \": \" + ((row[3] || \"\").substring(0, 100)) + \"...\")\n    .reverse();\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(calendarResult, \"Failed to fetch calendar\");\n  errors.push(\"Content calendar: \" + msg);\n  recentPosts = [\"[Error: \" + msg + \"]\"];\n}\n\nreturn [{\n  json: {\n    success: allSuccess,\n    error: allSuccess ? null : errors.join(\"; \"),\n    brand_guide: brandGuide,\n    content_strategy: contentStrategy,\n    recent_posts: recentPosts,\n    product_knowledge: productKnowledge,\n    voice_reference: voiceReference,\n    marketing_playbook: marketingPlaybook\n  }\n}];"
-            },
-            "id": "combine-context",
-            "name": "Combine Context",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1680,
-                500
-            ]
-        },
-        {
-            "id": "fetch-playbook",
-            "name": "Fetch Playbook",
-            "type": "n8n-nodes-base.postgres",
-            "typeVersion": 2.5,
-            "position": [
-                480,
-                700
-            ],
-            "parameters": {
-                "operation": "executeQuery",
-                "query": "SELECT config_value FROM alfred.system_config WHERE config_key = 'marketing.playbook'",
-                "options": {}
-            },
-            "credentials": {
-                "postgres": {
-                    "id": "8nTSHxonyIBczkvN",
-                    "name": "Postgres account"
-                }
-            },
-            "onError": "continueRegularOutput",
-            "alwaysOutputData": true
+            {
+              "name": "voice_reference_id",
+              "type": "string"
+            }
+          ]
         }
+      },
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $('Workflow Input').first().json.brand_guide_id }}"
+          },
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "type": "string",
+              "required": true,
+              "displayName": "slack_user_id"
+            },
+            {
+              "id": "action",
+              "type": "string",
+              "required": true,
+              "displayName": "action"
+            },
+            {
+              "id": "document_id",
+              "type": "string",
+              "required": true,
+              "displayName": "document_id"
+            }
+          ]
+        }
+      },
+      "id": "fetch-brand-guide",
+      "name": "Fetch Brand Guide",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $('Workflow Input').first().json.content_strategy_id }}"
+          },
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "type": "string",
+              "required": true,
+              "displayName": "slack_user_id"
+            },
+            {
+              "id": "action",
+              "type": "string",
+              "required": true,
+              "displayName": "action"
+            },
+            {
+              "id": "document_id",
+              "type": "string",
+              "required": true,
+              "displayName": "document_id"
+            }
+          ]
+        }
+      },
+      "id": "fetch-strategy",
+      "name": "Fetch Content Strategy",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tWgJgDHdIHBhCOr0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+            "action": "read_range",
+            "spreadsheet_id": "={{ $('Workflow Input').first().json.content_calendar_id }}",
+            "range": "A:Z"
+          },
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "type": "string",
+              "required": true,
+              "displayName": "slack_user_id"
+            },
+            {
+              "id": "action",
+              "type": "string",
+              "required": true,
+              "displayName": "action"
+            },
+            {
+              "id": "spreadsheet_id",
+              "type": "string",
+              "required": true,
+              "displayName": "spreadsheet_id"
+            },
+            {
+              "id": "range",
+              "type": "string",
+              "required": true,
+              "displayName": "range"
+            }
+          ]
+        }
+      },
+      "id": "fetch-calendar",
+      "name": "Fetch Content Calendar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $('Workflow Input').first().json.product_knowledge_id }}"
+          },
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "type": "string",
+              "required": true,
+              "displayName": "slack_user_id"
+            },
+            {
+              "id": "action",
+              "type": "string",
+              "required": true,
+              "displayName": "action"
+            },
+            {
+              "id": "document_id",
+              "type": "string",
+              "required": true,
+              "displayName": "document_id"
+            }
+          ]
+        }
+      },
+      "id": "fetch-product-knowledge",
+      "name": "Fetch Product Knowledge",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ZUMZ7oNUzDRDnFft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+            "action": "get_document",
+            "document_id": "={{ $('Workflow Input').first().json.voice_reference_id }}"
+          },
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "type": "string",
+              "required": true,
+              "displayName": "slack_user_id"
+            },
+            {
+              "id": "action",
+              "type": "string",
+              "required": true,
+              "displayName": "action"
+            },
+            {
+              "id": "document_id",
+              "type": "string",
+              "required": true,
+              "displayName": "document_id"
+            }
+          ]
+        }
+      },
+      "id": "fetch-voice-reference",
+      "name": "Fetch Voice Reference",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $(\"Workflow Input\").first().json;\n\n// Fetch Playbook result\nlet marketingPlaybook = 'Playbook not found in system_config';\ntry {\n  const playbookResult = $('Fetch Playbook').first().json;\n  if (playbookResult && playbookResult.config_value) {\n    // config_value is JSONB - could be string or object\n    let playbook = playbookResult.config_value;\n    if (typeof playbook === 'object') {\n      marketingPlaybook = JSON.stringify(playbook, null, 2);\n    } else {\n      marketingPlaybook = String(playbook);\n    }\n  }\n} catch (e) {\n  // Fetch Playbook may not have executed (error/skip) - use placeholder\n  marketingPlaybook = 'Playbook not loaded';\n}\n\nconst brandGuideResult = $(\"Fetch Brand Guide\").first().json;\nconst strategyResult = $(\"Fetch Content Strategy\").first().json;\nconst calendarResult = $(\"Fetch Content Calendar\").first().json;\nconst productKnowledgeResult = $(\"Fetch Product Knowledge\").first().json;\nconst voiceReferenceResult = $(\"Fetch Voice Reference\").first().json;\n\n// Helper to extract error message from various formats\nfunction getErrorMsg(result, fallback) {\n  if (!result) return fallback;\n  if (typeof result.error === 'string') return result.error;\n  if (result.error?.message) return result.error.message;\n  if (result.error?.description) return result.error.description;\n  return fallback;\n}\n\nlet allSuccess = true;\nlet errors = [];\n\n// Brand Guide\nlet brandGuide = null;\nif (brandGuideResult?.success && brandGuideResult?.text) {\n  brandGuide = brandGuideResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(brandGuideResult, \"Failed to fetch brand guide\");\n  errors.push(\"Brand guide: \" + msg);\n  brandGuide = \"[Error: \" + msg + \"]\";\n}\n\n// Content Strategy\nlet contentStrategy = null;\nif (strategyResult?.success && strategyResult?.text) {\n  contentStrategy = strategyResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(strategyResult, \"Failed to fetch content strategy\");\n  errors.push(\"Content strategy: \" + msg);\n  contentStrategy = \"[Error: \" + msg + \"]\";\n}\n\n// Product Knowledge\nlet productKnowledge = null;\nif (productKnowledgeResult?.success) {\n  if (productKnowledgeResult.text && productKnowledgeResult.text.trim().length > 0) {\n    productKnowledge = productKnowledgeResult.text;\n  } else {\n    productKnowledge = \"[Product knowledge doc exists but is EMPTY. Please add content to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(productKnowledgeResult, \"Failed to fetch product knowledge\");\n  errors.push(\"Product knowledge: \" + msg);\n  productKnowledge = \"[Error: \" + msg + \"]\";\n}\n\n// Voice Reference\nlet voiceReference = null;\nif (voiceReferenceResult?.success) {\n  if (voiceReferenceResult.text && voiceReferenceResult.text.trim().length > 0) {\n    voiceReference = voiceReferenceResult.text;\n  } else {\n    voiceReference = \"[Voice reference doc exists but is EMPTY. Please add writing samples to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(voiceReferenceResult, \"Failed to fetch voice reference\");\n  errors.push(\"Voice reference: \" + msg);\n  voiceReference = \"[Error: \" + msg + \"]\";\n}\n\n// Content Calendar\nlet recentPosts = [];\nif (calendarResult?.success && calendarResult?.values) {\n  const rows = calendarResult.values;\n  recentPosts = rows\n    .slice(1)\n    .filter(row => row && row[0])\n    .slice(-10)\n    .map(row => \"[\" + (row[6] || \"No date\") + \"] \" + (row[0] || \"No title\") + \": \" + ((row[3] || \"\").substring(0, 100)) + \"...\")\n    .reverse();\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(calendarResult, \"Failed to fetch calendar\");\n  errors.push(\"Content calendar: \" + msg);\n  recentPosts = [\"[Error: \" + msg + \"]\"];\n}\n\nreturn [{\n  json: {\n    success: allSuccess,\n    error: allSuccess ? null : errors.join(\"; \"),\n    brand_guide: brandGuide,\n    content_strategy: contentStrategy,\n    recent_posts: recentPosts,\n    product_knowledge: productKnowledge,\n    voice_reference: voiceReference,\n    marketing_playbook: marketingPlaybook\n  }\n}];"
+      },
+      "id": "combine-context",
+      "name": "Combine Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        500
+      ]
+    },
+    {
+      "id": "fetch-playbook",
+      "name": "Fetch Playbook",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        700
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT config_value FROM alfred.system_config WHERE config_key = 'marketing.playbook'",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Fetch Brand Guide",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Playbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Brand Guide": {
+      "main": [
+        [
+          {
+            "node": "Fetch Content Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content Strategy": {
+      "main": [
+        [
+          {
+            "node": "Fetch Content Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Content Calendar": {
+      "main": [
+        [
+          {
+            "node": "Fetch Product Knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Product Knowledge": {
+      "main": [
+        [
+          {
+            "node": "Fetch Voice Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Voice Reference": {
+      "main": [
+        [
+          {
+            "node": "Combine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Playbook": {
+      "main": [
+        [
+          {
+            "node": "Combine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": null,
+  "activeVersionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
+  "versionCounter": 29,
+  "triggerCount": 0,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-09T12:59:08.891Z",
+    "createdAt": "2026-02-09T12:59:08.891Z",
+    "versionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
+    "workflowId": "thVHb2crL3ML98gX",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "brand_guide_id",
+                "type": "string"
+              },
+              {
+                "name": "content_strategy_id",
+                "type": "string"
+              },
+              {
+                "name": "content_calendar_id",
+                "type": "string"
+              },
+              {
+                "name": "product_knowledge_id",
+                "type": "string"
+              },
+              {
+                "name": "voice_reference_id",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $('Workflow Input').first().json.brand_guide_id }}"
+            },
+            "schema": [
+              {
+                "id": "slack_user_id",
+                "type": "string",
+                "required": true,
+                "displayName": "slack_user_id"
+              },
+              {
+                "id": "action",
+                "type": "string",
+                "required": true,
+                "displayName": "action"
+              },
+              {
+                "id": "document_id",
+                "type": "string",
+                "required": true,
+                "displayName": "document_id"
+              }
+            ]
+          }
+        },
+        "id": "fetch-brand-guide",
+        "name": "Fetch Brand Guide",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $('Workflow Input').first().json.content_strategy_id }}"
+            },
+            "schema": [
+              {
+                "id": "slack_user_id",
+                "type": "string",
+                "required": true,
+                "displayName": "slack_user_id"
+              },
+              {
+                "id": "action",
+                "type": "string",
+                "required": true,
+                "displayName": "action"
+              },
+              {
+                "id": "document_id",
+                "type": "string",
+                "required": true,
+                "displayName": "document_id"
+              }
+            ]
+          }
+        },
+        "id": "fetch-strategy",
+        "name": "Fetch Content Strategy",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          720,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "tWgJgDHdIHBhCOr0"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+              "action": "read_range",
+              "spreadsheet_id": "={{ $('Workflow Input').first().json.content_calendar_id }}",
+              "range": "A:Z"
+            },
+            "schema": [
+              {
+                "id": "slack_user_id",
+                "type": "string",
+                "required": true,
+                "displayName": "slack_user_id"
+              },
+              {
+                "id": "action",
+                "type": "string",
+                "required": true,
+                "displayName": "action"
+              },
+              {
+                "id": "spreadsheet_id",
+                "type": "string",
+                "required": true,
+                "displayName": "spreadsheet_id"
+              },
+              {
+                "id": "range",
+                "type": "string",
+                "required": true,
+                "displayName": "range"
+              }
+            ]
+          }
+        },
+        "id": "fetch-calendar",
+        "name": "Fetch Content Calendar",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          960,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $('Workflow Input').first().json.product_knowledge_id }}"
+            },
+            "schema": [
+              {
+                "id": "slack_user_id",
+                "type": "string",
+                "required": true,
+                "displayName": "slack_user_id"
+              },
+              {
+                "id": "action",
+                "type": "string",
+                "required": true,
+                "displayName": "action"
+              },
+              {
+                "id": "document_id",
+                "type": "string",
+                "required": true,
+                "displayName": "document_id"
+              }
+            ]
+          }
+        },
+        "id": "fetch-product-knowledge",
+        "name": "Fetch Product Knowledge",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1200,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "ZUMZ7oNUzDRDnFft"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
+              "action": "get_document",
+              "document_id": "={{ $('Workflow Input').first().json.voice_reference_id }}"
+            },
+            "schema": [
+              {
+                "id": "slack_user_id",
+                "type": "string",
+                "required": true,
+                "displayName": "slack_user_id"
+              },
+              {
+                "id": "action",
+                "type": "string",
+                "required": true,
+                "displayName": "action"
+              },
+              {
+                "id": "document_id",
+                "type": "string",
+                "required": true,
+                "displayName": "document_id"
+              }
+            ]
+          }
+        },
+        "id": "fetch-voice-reference",
+        "name": "Fetch Voice Reference",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1440,
+          500
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $(\"Workflow Input\").first().json;\n\n// Fetch Playbook result\nlet marketingPlaybook = 'Playbook not found in system_config';\ntry {\n  const playbookResult = $('Fetch Playbook').first().json;\n  if (playbookResult && playbookResult.config_value) {\n    // config_value is JSONB - could be string or object\n    let playbook = playbookResult.config_value;\n    if (typeof playbook === 'object') {\n      marketingPlaybook = JSON.stringify(playbook, null, 2);\n    } else {\n      marketingPlaybook = String(playbook);\n    }\n  }\n} catch (e) {\n  // Fetch Playbook may not have executed (error/skip) - use placeholder\n  marketingPlaybook = 'Playbook not loaded';\n}\n\nconst brandGuideResult = $(\"Fetch Brand Guide\").first().json;\nconst strategyResult = $(\"Fetch Content Strategy\").first().json;\nconst calendarResult = $(\"Fetch Content Calendar\").first().json;\nconst productKnowledgeResult = $(\"Fetch Product Knowledge\").first().json;\nconst voiceReferenceResult = $(\"Fetch Voice Reference\").first().json;\n\n// Helper to extract error message from various formats\nfunction getErrorMsg(result, fallback) {\n  if (!result) return fallback;\n  if (typeof result.error === 'string') return result.error;\n  if (result.error?.message) return result.error.message;\n  if (result.error?.description) return result.error.description;\n  return fallback;\n}\n\nlet allSuccess = true;\nlet errors = [];\n\n// Brand Guide\nlet brandGuide = null;\nif (brandGuideResult?.success && brandGuideResult?.text) {\n  brandGuide = brandGuideResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(brandGuideResult, \"Failed to fetch brand guide\");\n  errors.push(\"Brand guide: \" + msg);\n  brandGuide = \"[Error: \" + msg + \"]\";\n}\n\n// Content Strategy\nlet contentStrategy = null;\nif (strategyResult?.success && strategyResult?.text) {\n  contentStrategy = strategyResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(strategyResult, \"Failed to fetch content strategy\");\n  errors.push(\"Content strategy: \" + msg);\n  contentStrategy = \"[Error: \" + msg + \"]\";\n}\n\n// Product Knowledge\nlet productKnowledge = null;\nif (productKnowledgeResult?.success) {\n  if (productKnowledgeResult.text && productKnowledgeResult.text.trim().length > 0) {\n    productKnowledge = productKnowledgeResult.text;\n  } else {\n    productKnowledge = \"[Product knowledge doc exists but is EMPTY. Please add content to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(productKnowledgeResult, \"Failed to fetch product knowledge\");\n  errors.push(\"Product knowledge: \" + msg);\n  productKnowledge = \"[Error: \" + msg + \"]\";\n}\n\n// Voice Reference\nlet voiceReference = null;\nif (voiceReferenceResult?.success) {\n  if (voiceReferenceResult.text && voiceReferenceResult.text.trim().length > 0) {\n    voiceReference = voiceReferenceResult.text;\n  } else {\n    voiceReference = \"[Voice reference doc exists but is EMPTY. Please add writing samples to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(voiceReferenceResult, \"Failed to fetch voice reference\");\n  errors.push(\"Voice reference: \" + msg);\n  voiceReference = \"[Error: \" + msg + \"]\";\n}\n\n// Content Calendar\nlet recentPosts = [];\nif (calendarResult?.success && calendarResult?.values) {\n  const rows = calendarResult.values;\n  recentPosts = rows\n    .slice(1)\n    .filter(row => row && row[0])\n    .slice(-10)\n    .map(row => \"[\" + (row[6] || \"No date\") + \"] \" + (row[0] || \"No title\") + \": \" + ((row[3] || \"\").substring(0, 100)) + \"...\")\n    .reverse();\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(calendarResult, \"Failed to fetch calendar\");\n  errors.push(\"Content calendar: \" + msg);\n  recentPosts = [\"[Error: \" + msg + \"]\"];\n}\n\nreturn [{\n  json: {\n    success: allSuccess,\n    error: allSuccess ? null : errors.join(\"; \"),\n    brand_guide: brandGuide,\n    content_strategy: contentStrategy,\n    recent_posts: recentPosts,\n    product_knowledge: productKnowledge,\n    voice_reference: voiceReference,\n    marketing_playbook: marketingPlaybook\n  }\n}];"
+        },
+        "id": "combine-context",
+        "name": "Combine Context",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1680,
+          500
+        ]
+      },
+      {
+        "id": "fetch-playbook",
+        "name": "Fetch Playbook",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          480,
+          700
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT config_value FROM alfred.system_config WHERE config_key = 'marketing.playbook'",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      }
     ],
     "connections": {
-        "Workflow Input": {
-            "main": [
-                [
-                    {
-                        "node": "Fetch Brand Guide",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Fetch Playbook",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Brand Guide": {
-            "main": [
-                [
-                    {
-                        "node": "Fetch Content Strategy",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Content Strategy": {
-            "main": [
-                [
-                    {
-                        "node": "Fetch Content Calendar",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Content Calendar": {
-            "main": [
-                [
-                    {
-                        "node": "Fetch Product Knowledge",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Product Knowledge": {
-            "main": [
-                [
-                    {
-                        "node": "Fetch Voice Reference",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Voice Reference": {
-            "main": [
-                [
-                    {
-                        "node": "Combine Context",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Fetch Playbook": {
-            "main": [
-                [
-                    {
-                        "node": "Combine Context",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
-    },
-    "settings": {
-        "executionOrder": "v1",
-        "callerPolicy": "workflowsFromSameOwner",
-        "availableInMCP": false
-    },
-    "staticData": null,
-    "meta": null,
-    "pinData": null,
-    "versionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
-    "activeVersionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
-    "versionCounter": 27,
-    "triggerCount": 0,
-    "shared": [
-        {
-            "updatedAt": "2026-02-07T09:48:05.666Z",
-            "createdAt": "2026-02-07T09:48:05.666Z",
-            "role": "workflow:owner",
-            "workflowId": "thVHb2crL3ML98gX",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "project": {
-                "updatedAt": "2026-02-02T12:27:52.037Z",
-                "createdAt": "2026-02-02T12:20:35.714Z",
-                "id": "Jd992SEPuokf8o5Z",
-                "name": "Spencer Marx <spencer@aclarify.com>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-                "projectRelations": [
-                    {
-                        "updatedAt": "2026-02-02T12:20:35.714Z",
-                        "createdAt": "2026-02-02T12:20:35.714Z",
-                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-                        "projectId": "Jd992SEPuokf8o5Z",
-                        "user": {
-                            "updatedAt": "2026-02-10T09:40:41.292Z",
-                            "createdAt": "2026-02-02T12:20:29.217Z",
-                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
-                            "email": "spencer@aclarify.com",
-                            "firstName": "Spencer",
-                            "lastName": "Marx",
-                            "personalizationAnswers": {
-                                "version": "v4",
-                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                                "personalization_survey_n8n_version": "2.6.2",
-                                "companySize": "<20",
-                                "companyType": "saas",
-                                "role": "business-owner",
-                                "reportedSource": "friend"
-                            },
-                            "settings": {
-                                "userActivated": true,
-                                "easyAIWorkflowOnboarded": true,
-                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                                "userActivatedAt": 1770049275864,
-                                "npsSurvey": {
-                                    "responded": true,
-                                    "lastShownAt": 1770325854784
-                                }
-                            },
-                            "disabled": false,
-                            "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-10",
-                            "isPending": false
-                        }
-                    }
-                ]
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Fetch Brand Guide",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch Playbook",
+              "type": "main",
+              "index": 0
             }
-        }
-    ],
-    "tags": [],
-    "activeVersion": {
-        "updatedAt": "2026-02-09T12:59:08.891Z",
-        "createdAt": "2026-02-09T12:59:08.891Z",
-        "versionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
-        "workflowId": "thVHb2crL3ML98gX",
-        "nodes": [
-            {
-                "parameters": {
-                    "workflowInputs": {
-                        "values": [
-                            {
-                                "name": "slack_user_id",
-                                "type": "string"
-                            },
-                            {
-                                "name": "brand_guide_id",
-                                "type": "string"
-                            },
-                            {
-                                "name": "content_strategy_id",
-                                "type": "string"
-                            },
-                            {
-                                "name": "content_calendar_id",
-                                "type": "string"
-                            },
-                            {
-                                "name": "product_knowledge_id",
-                                "type": "string"
-                            },
-                            {
-                                "name": "voice_reference_id",
-                                "type": "string"
-                            }
-                        ]
-                    }
-                },
-                "id": "trigger",
-                "name": "Workflow Input",
-                "type": "n8n-nodes-base.executeWorkflowTrigger",
-                "typeVersion": 1.1,
-                "position": [
-                    240,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "ZUMZ7oNUzDRDnFft"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                            "action": "get_document",
-                            "document_id": "={{ $('Workflow Input').first().json.brand_guide_id }}"
-                        },
-                        "schema": [
-                            {
-                                "id": "slack_user_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "slack_user_id"
-                            },
-                            {
-                                "id": "action",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "action"
-                            },
-                            {
-                                "id": "document_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "document_id"
-                            }
-                        ]
-                    }
-                },
-                "id": "fetch-brand-guide",
-                "name": "Fetch Brand Guide",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    480,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "ZUMZ7oNUzDRDnFft"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                            "action": "get_document",
-                            "document_id": "={{ $('Workflow Input').first().json.content_strategy_id }}"
-                        },
-                        "schema": [
-                            {
-                                "id": "slack_user_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "slack_user_id"
-                            },
-                            {
-                                "id": "action",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "action"
-                            },
-                            {
-                                "id": "document_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "document_id"
-                            }
-                        ]
-                    }
-                },
-                "id": "fetch-strategy",
-                "name": "Fetch Content Strategy",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    720,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "tWgJgDHdIHBhCOr0"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                            "action": "read_range",
-                            "spreadsheet_id": "={{ $('Workflow Input').first().json.content_calendar_id }}",
-                            "range": "A:Z"
-                        },
-                        "schema": [
-                            {
-                                "id": "slack_user_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "slack_user_id"
-                            },
-                            {
-                                "id": "action",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "action"
-                            },
-                            {
-                                "id": "spreadsheet_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "spreadsheet_id"
-                            },
-                            {
-                                "id": "range",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "range"
-                            }
-                        ]
-                    }
-                },
-                "id": "fetch-calendar",
-                "name": "Fetch Content Calendar",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    960,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "ZUMZ7oNUzDRDnFft"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                            "action": "get_document",
-                            "document_id": "={{ $('Workflow Input').first().json.product_knowledge_id }}"
-                        },
-                        "schema": [
-                            {
-                                "id": "slack_user_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "slack_user_id"
-                            },
-                            {
-                                "id": "action",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "action"
-                            },
-                            {
-                                "id": "document_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "document_id"
-                            }
-                        ]
-                    }
-                },
-                "id": "fetch-product-knowledge",
-                "name": "Fetch Product Knowledge",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    1200,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "workflowId": {
-                        "__rl": true,
-                        "mode": "id",
-                        "value": "ZUMZ7oNUzDRDnFft"
-                    },
-                    "workflowInputs": {
-                        "mappingMode": "defineBelow",
-                        "value": {
-                            "slack_user_id": "={{ $('Workflow Input').first().json.slack_user_id }}",
-                            "action": "get_document",
-                            "document_id": "={{ $('Workflow Input').first().json.voice_reference_id }}"
-                        },
-                        "schema": [
-                            {
-                                "id": "slack_user_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "slack_user_id"
-                            },
-                            {
-                                "id": "action",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "action"
-                            },
-                            {
-                                "id": "document_id",
-                                "type": "string",
-                                "required": true,
-                                "displayName": "document_id"
-                            }
-                        ]
-                    }
-                },
-                "id": "fetch-voice-reference",
-                "name": "Fetch Voice Reference",
-                "type": "n8n-nodes-base.executeWorkflow",
-                "typeVersion": 1.2,
-                "position": [
-                    1440,
-                    500
-                ]
-            },
-            {
-                "parameters": {
-                    "jsCode": "const input = $(\"Workflow Input\").first().json;\n\n// Fetch Playbook result\nlet marketingPlaybook = 'Playbook not found in system_config';\ntry {\n  const playbookResult = $('Fetch Playbook').first().json;\n  if (playbookResult && playbookResult.config_value) {\n    // config_value is JSONB - could be string or object\n    let playbook = playbookResult.config_value;\n    if (typeof playbook === 'object') {\n      marketingPlaybook = JSON.stringify(playbook, null, 2);\n    } else {\n      marketingPlaybook = String(playbook);\n    }\n  }\n} catch (e) {\n  // Fetch Playbook may not have executed (error/skip) - use placeholder\n  marketingPlaybook = 'Playbook not loaded';\n}\n\nconst brandGuideResult = $(\"Fetch Brand Guide\").first().json;\nconst strategyResult = $(\"Fetch Content Strategy\").first().json;\nconst calendarResult = $(\"Fetch Content Calendar\").first().json;\nconst productKnowledgeResult = $(\"Fetch Product Knowledge\").first().json;\nconst voiceReferenceResult = $(\"Fetch Voice Reference\").first().json;\n\n// Helper to extract error message from various formats\nfunction getErrorMsg(result, fallback) {\n  if (!result) return fallback;\n  if (typeof result.error === 'string') return result.error;\n  if (result.error?.message) return result.error.message;\n  if (result.error?.description) return result.error.description;\n  return fallback;\n}\n\nlet allSuccess = true;\nlet errors = [];\n\n// Brand Guide\nlet brandGuide = null;\nif (brandGuideResult?.success && brandGuideResult?.text) {\n  brandGuide = brandGuideResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(brandGuideResult, \"Failed to fetch brand guide\");\n  errors.push(\"Brand guide: \" + msg);\n  brandGuide = \"[Error: \" + msg + \"]\";\n}\n\n// Content Strategy\nlet contentStrategy = null;\nif (strategyResult?.success && strategyResult?.text) {\n  contentStrategy = strategyResult.text;\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(strategyResult, \"Failed to fetch content strategy\");\n  errors.push(\"Content strategy: \" + msg);\n  contentStrategy = \"[Error: \" + msg + \"]\";\n}\n\n// Product Knowledge\nlet productKnowledge = null;\nif (productKnowledgeResult?.success) {\n  if (productKnowledgeResult.text && productKnowledgeResult.text.trim().length > 0) {\n    productKnowledge = productKnowledgeResult.text;\n  } else {\n    productKnowledge = \"[Product knowledge doc exists but is EMPTY. Please add content to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(productKnowledgeResult, \"Failed to fetch product knowledge\");\n  errors.push(\"Product knowledge: \" + msg);\n  productKnowledge = \"[Error: \" + msg + \"]\";\n}\n\n// Voice Reference\nlet voiceReference = null;\nif (voiceReferenceResult?.success) {\n  if (voiceReferenceResult.text && voiceReferenceResult.text.trim().length > 0) {\n    voiceReference = voiceReferenceResult.text;\n  } else {\n    voiceReference = \"[Voice reference doc exists but is EMPTY. Please add writing samples to the Google Doc.]\";\n  }\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(voiceReferenceResult, \"Failed to fetch voice reference\");\n  errors.push(\"Voice reference: \" + msg);\n  voiceReference = \"[Error: \" + msg + \"]\";\n}\n\n// Content Calendar\nlet recentPosts = [];\nif (calendarResult?.success && calendarResult?.values) {\n  const rows = calendarResult.values;\n  recentPosts = rows\n    .slice(1)\n    .filter(row => row && row[0])\n    .slice(-10)\n    .map(row => \"[\" + (row[6] || \"No date\") + \"] \" + (row[0] || \"No title\") + \": \" + ((row[3] || \"\").substring(0, 100)) + \"...\")\n    .reverse();\n} else {\n  allSuccess = false;\n  const msg = getErrorMsg(calendarResult, \"Failed to fetch calendar\");\n  errors.push(\"Content calendar: \" + msg);\n  recentPosts = [\"[Error: \" + msg + \"]\"];\n}\n\nreturn [{\n  json: {\n    success: allSuccess,\n    error: allSuccess ? null : errors.join(\"; \"),\n    brand_guide: brandGuide,\n    content_strategy: contentStrategy,\n    recent_posts: recentPosts,\n    product_knowledge: productKnowledge,\n    voice_reference: voiceReference,\n    marketing_playbook: marketingPlaybook\n  }\n}];"
-                },
-                "id": "combine-context",
-                "name": "Combine Context",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    1680,
-                    500
-                ]
-            },
-            {
-                "id": "fetch-playbook",
-                "name": "Fetch Playbook",
-                "type": "n8n-nodes-base.postgres",
-                "typeVersion": 2.5,
-                "position": [
-                    480,
-                    700
-                ],
-                "parameters": {
-                    "operation": "executeQuery",
-                    "query": "SELECT config_value FROM alfred.system_config WHERE config_key = 'marketing.playbook'",
-                    "options": {}
-                },
-                "credentials": {
-                    "postgres": {
-                        "id": "8nTSHxonyIBczkvN",
-                        "name": "Postgres account"
-                    }
-                },
-                "onError": "continueRegularOutput",
-                "alwaysOutputData": true
-            }
-        ],
-        "connections": {
-            "Workflow Input": {
-                "main": [
-                    [
-                        {
-                            "node": "Fetch Brand Guide",
-                            "type": "main",
-                            "index": 0
-                        },
-                        {
-                            "node": "Fetch Playbook",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Brand Guide": {
-                "main": [
-                    [
-                        {
-                            "node": "Fetch Content Strategy",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Content Strategy": {
-                "main": [
-                    [
-                        {
-                            "node": "Fetch Content Calendar",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Content Calendar": {
-                "main": [
-                    [
-                        {
-                            "node": "Fetch Product Knowledge",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Product Knowledge": {
-                "main": [
-                    [
-                        {
-                            "node": "Fetch Voice Reference",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Voice Reference": {
-                "main": [
-                    [
-                        {
-                            "node": "Combine Context",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Fetch Playbook": {
-                "main": [
-                    [
-                        {
-                            "node": "Combine Context",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            }
-        },
-        "authors": "Spencer Marx",
-        "name": null,
-        "description": null,
-        "autosaved": false,
-        "workflowPublishHistory": [
-            {
-                "createdAt": "2026-02-09T12:59:09.067Z",
-                "id": 543,
-                "workflowId": "thVHb2crL3ML98gX",
-                "versionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
-                "event": "activated",
-                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
-            }
+          ]
         ]
-    }
+      },
+      "Fetch Brand Guide": {
+        "main": [
+          [
+            {
+              "node": "Fetch Content Strategy",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Content Strategy": {
+        "main": [
+          [
+            {
+              "node": "Fetch Content Calendar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Content Calendar": {
+        "main": [
+          [
+            {
+              "node": "Fetch Product Knowledge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Product Knowledge": {
+        "main": [
+          [
+            {
+              "node": "Fetch Voice Reference",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Voice Reference": {
+        "main": [
+          [
+            {
+              "node": "Combine Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Playbook": {
+        "main": [
+          [
+            {
+              "node": "Combine Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-09T12:59:09.067Z",
+        "id": 543,
+        "workflowId": "thVHb2crL3ML98gX",
+        "versionId": "5ed985d3-cee3-4895-a98f-8c32d5b9a185",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

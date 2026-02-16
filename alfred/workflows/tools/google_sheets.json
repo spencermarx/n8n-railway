@@ -1,28 +1,74 @@
 {
-  "name": "Tool | Google Sheets",
+  "id": "tWgJgDHdIHBhCOr0",
+  "name": "\ud83d\udcca Tool | Google Sheets",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "id": "trigger",
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "slack_user_id", "type": "string" },
-            { "name": "action", "type": "string" },
-            { "name": "spreadsheet_id", "type": "string" },
-            { "name": "range", "type": "string" },
-            { "name": "values", "type": "string" },
-            { "name": "title", "type": "string" },
-            { "name": "sheet_name", "type": "string" },
-            { "name": "ranges", "type": "string" },
-            { "name": "data", "type": "string" },
-            { "name": "sheet_id", "type": "string" },
-            { "name": "find", "type": "string" },
-            { "name": "replace", "type": "string" },
-            { "name": "match_case", "type": "string" }
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "spreadsheet_id",
+              "type": "string"
+            },
+            {
+              "name": "range",
+              "type": "string"
+            },
+            {
+              "name": "values",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "sheet_name",
+              "type": "string"
+            },
+            {
+              "name": "ranges",
+              "type": "string"
+            },
+            {
+              "name": "data",
+              "type": "string"
+            },
+            {
+              "name": "sheet_id",
+              "type": "string"
+            },
+            {
+              "name": "find",
+              "type": "string"
+            },
+            {
+              "name": "replace",
+              "type": "string"
+            },
+            {
+              "name": "match_case",
+              "type": "string"
+            }
           ]
         }
       }
@@ -32,9 +78,16 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [470, 300],
+      "position": [
+        470,
+        300
+      ],
       "parameters": {
-        "workflowId": { "__rl": true, "mode": "id", "value": "S8GWoOTCaSqyc5bj" },
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "S8GWoOTCaSqyc5bj"
+        },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -50,27 +103,110 @@
       "name": "Merge Input Context",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [690, 300],
+      "position": [
+        690,
+        300
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "action", "name": "action", "value": "={{ $('Workflow Input').item.json.action }}", "type": "string" },
-            { "id": "success", "name": "auth_success", "value": "={{ $json.success }}", "type": "boolean" },
-            { "id": "access_token", "name": "access_token", "value": "={{ $json.access_token }}", "type": "string" },
-            { "id": "user_email", "name": "user_email", "value": "={{ $json.user_email }}", "type": "string" },
-            { "id": "error", "name": "auth_error", "value": "={{ $json.error }}", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $('Workflow Input').item.json.spreadsheet_id }}", "type": "string" },
-            { "id": "range", "name": "range", "value": "={{ $('Workflow Input').item.json.range }}", "type": "string" },
-            { "id": "values", "name": "values", "value": "={{ $('Workflow Input').item.json.values }}", "type": "string" },
-            { "id": "title", "name": "title", "value": "={{ $('Workflow Input').item.json.title }}", "type": "string" },
-            { "id": "sheet_name", "name": "sheet_name", "value": "={{ $('Workflow Input').item.json.sheet_name }}", "type": "string" },
-            { "id": "ranges", "name": "ranges", "value": "={{ $('Workflow Input').item.json.ranges }}", "type": "string" },
-            { "id": "data", "name": "data", "value": "={{ $('Workflow Input').item.json.data }}", "type": "string" },
-            { "id": "sheet_id", "name": "sheet_id", "value": "={{ $('Workflow Input').item.json.sheet_id }}", "type": "string" },
-            { "id": "find", "name": "find", "value": "={{ $('Workflow Input').item.json.find }}", "type": "string" },
-            { "id": "replace", "name": "replace", "value": "={{ $('Workflow Input').item.json.replace }}", "type": "string" },
-            { "id": "match_case", "name": "match_case", "value": "={{ $('Workflow Input').item.json.match_case }}", "type": "string" }
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $('Workflow Input').item.json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "success",
+              "name": "auth_success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "access_token",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "user_email",
+              "name": "user_email",
+              "value": "={{ $json.user_email }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "auth_error",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $('Workflow Input').item.json.spreadsheet_id }}",
+              "type": "string"
+            },
+            {
+              "id": "range",
+              "name": "range",
+              "value": "={{ $('Workflow Input').item.json.range }}",
+              "type": "string"
+            },
+            {
+              "id": "values",
+              "name": "values",
+              "value": "={{ $('Workflow Input').item.json.values }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Workflow Input').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_name",
+              "name": "sheet_name",
+              "value": "={{ $('Workflow Input').item.json.sheet_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ranges",
+              "name": "ranges",
+              "value": "={{ $('Workflow Input').item.json.ranges }}",
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "name": "data",
+              "value": "={{ $('Workflow Input').item.json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_id",
+              "name": "sheet_id",
+              "value": "={{ $('Workflow Input').item.json.sheet_id }}",
+              "type": "string"
+            },
+            {
+              "id": "find",
+              "name": "find",
+              "value": "={{ $('Workflow Input').item.json.find }}",
+              "type": "string"
+            },
+            {
+              "id": "replace",
+              "name": "replace",
+              "value": "={{ $('Workflow Input').item.json.replace }}",
+              "type": "string"
+            },
+            {
+              "id": "match_case",
+              "name": "match_case",
+              "value": "={{ $('Workflow Input').item.json.match_case }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -81,13 +217,29 @@
       "name": "Check Auth Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [910, 300],
+      "position": [
+        910,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-auth", "leftValue": "={{ $json.auth_success }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.auth_success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -97,13 +249,26 @@
       "name": "Auth Failed Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1130, 900],
+      "position": [
+        1130,
+        900
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": false, "type": "boolean" },
-            { "id": "error", "name": "error", "value": "={{ $json.auth_error || 'Google authentication failed' }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -114,13 +279,29 @@
       "name": "Is Read Range?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1130, 300],
+      "position": [
+        1130,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "read_range", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "read_range",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -130,13 +311,29 @@
       "name": "Is Write Range?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1350, 380],
+      "position": [
+        1350,
+        380
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "write_range", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "write_range",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -146,13 +343,29 @@
       "name": "Is Append Rows?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1570, 460],
+      "position": [
+        1570,
+        460
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "append_rows", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "append_rows",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -162,13 +375,29 @@
       "name": "Is Create Spreadsheet?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1790, 540],
+      "position": [
+        1790,
+        540
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "create_spreadsheet", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create_spreadsheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -178,13 +407,29 @@
       "name": "Is Get Spreadsheet?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2010, 620],
+      "position": [
+        2010,
+        620
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "get_spreadsheet", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "get_spreadsheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -194,13 +439,29 @@
       "name": "Is Clear Range?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2230, 700],
+      "position": [
+        2230,
+        700
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "clear_range", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "clear_range",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -210,13 +471,29 @@
       "name": "Is Create Sheet?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2450, 780],
+      "position": [
+        2450,
+        780
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "create_sheet", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create_sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -226,13 +503,29 @@
       "name": "Is Delete Sheet?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2670, 860],
+      "position": [
+        2670,
+        860
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "delete_sheet", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "delete_sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -242,13 +535,29 @@
       "name": "Is Batch Get?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2890, 940],
+      "position": [
+        2890,
+        940
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "batch_get", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "batch_get",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -258,13 +567,29 @@
       "name": "Is Batch Update?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [3110, 1020],
+      "position": [
+        3110,
+        1020
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "batch_update", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "batch_update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -274,13 +599,29 @@
       "name": "Is Find Replace?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [3330, 1100],
+      "position": [
+        3330,
+        1100
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
-            { "id": "cond-action", "leftValue": "={{ $json.action }}", "rightValue": "find_replace", "operator": { "type": "string", "operation": "equals" } }
+            {
+              "id": "cond-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "find_replace",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
           ]
         }
       }
@@ -290,14 +631,20 @@
       "name": "Read Range API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1350, 140],
+      "position": [
+        1350,
+        140
+      ],
       "parameters": {
         "method": "GET",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
           ]
         },
         "options": {}
@@ -308,16 +655,44 @@
       "name": "Format Read Range",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1570, 140],
+      "position": [
+        1570,
+        140
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "read_range", "type": "string" },
-            { "id": "range", "name": "range", "value": "={{ $json.range }}", "type": "string" },
-            { "id": "values", "name": "values", "value": "={{ $json.values || [] }}", "type": "array" },
-            { "id": "row_count", "name": "row_count", "value": "={{ ($json.values || []).length }}", "type": "number" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "read_range",
+              "type": "string"
+            },
+            {
+              "id": "range",
+              "name": "range",
+              "value": "={{ $json.range }}",
+              "type": "string"
+            },
+            {
+              "id": "values",
+              "name": "values",
+              "value": "={{ $json.values || [] }}",
+              "type": "array"
+            },
+            {
+              "id": "row_count",
+              "name": "row_count",
+              "value": "={{ ($json.values || []).length }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
@@ -328,28 +703,43 @@
       "name": "Write Range API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1570, 300],
+      "position": [
+        1570,
+        300
+      ],
       "parameters": {
         "method": "PUT",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "valueInputOption", "value": "USER_ENTERED" }
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            }
           ]
         },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "values", "value": "={{ JSON.parse($json.values) }}" }
+            {
+              "name": "values",
+              "value": "={{ JSON.parse($json.values) }}"
+            }
           ]
         },
         "options": {}
@@ -360,17 +750,50 @@
       "name": "Format Write Range",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1790, 300],
+      "position": [
+        1790,
+        300
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "write_range", "type": "string" },
-            { "id": "updated_range", "name": "updated_range", "value": "={{ $json.updatedRange }}", "type": "string" },
-            { "id": "updated_rows", "name": "updated_rows", "value": "={{ $json.updatedRows }}", "type": "number" },
-            { "id": "updated_columns", "name": "updated_columns", "value": "={{ $json.updatedColumns }}", "type": "number" },
-            { "id": "updated_cells", "name": "updated_cells", "value": "={{ $json.updatedCells }}", "type": "number" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "write_range",
+              "type": "string"
+            },
+            {
+              "id": "updated_range",
+              "name": "updated_range",
+              "value": "={{ $json.updatedRange }}",
+              "type": "string"
+            },
+            {
+              "id": "updated_rows",
+              "name": "updated_rows",
+              "value": "={{ $json.updatedRows }}",
+              "type": "number"
+            },
+            {
+              "id": "updated_columns",
+              "name": "updated_columns",
+              "value": "={{ $json.updatedColumns }}",
+              "type": "number"
+            },
+            {
+              "id": "updated_cells",
+              "name": "updated_cells",
+              "value": "={{ $json.updatedCells }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
@@ -381,29 +804,47 @@
       "name": "Append Rows API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1790, 380],
+      "position": [
+        1790,
+        380
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}:append",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "valueInputOption", "value": "USER_ENTERED" },
-            { "name": "insertDataOption", "value": "INSERT_ROWS" }
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
           ]
         },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "values", "value": "={{ JSON.parse($json.values) }}" }
+            {
+              "name": "values",
+              "value": "={{ JSON.parse($json.values) }}"
+            }
           ]
         },
         "options": {}
@@ -414,15 +855,38 @@
       "name": "Format Append Rows",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2010, 380],
+      "position": [
+        2010,
+        380
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "append_rows", "type": "string" },
-            { "id": "updated_range", "name": "updated_range", "value": "={{ $json.updates?.updatedRange }}", "type": "string" },
-            { "id": "appended_rows", "name": "appended_rows", "value": "={{ $json.updates?.updatedRows }}", "type": "number" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "append_rows",
+              "type": "string"
+            },
+            {
+              "id": "updated_range",
+              "name": "updated_range",
+              "value": "={{ $json.updates?.updatedRange }}",
+              "type": "string"
+            },
+            {
+              "id": "appended_rows",
+              "name": "appended_rows",
+              "value": "={{ $json.updates?.updatedRows }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
@@ -433,22 +897,34 @@
       "name": "Create Spreadsheet API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2010, 460],
+      "position": [
+        2010,
+        460
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://sheets.googleapis.com/v4/spreadsheets",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "properties", "value": "={{ { title: $json.title || 'Untitled Spreadsheet' } }}" }
+            {
+              "name": "properties",
+              "value": "={{ { title: $json.title || 'Untitled Spreadsheet' } }}"
+            }
           ]
         },
         "options": {}
@@ -459,16 +935,44 @@
       "name": "Format Create Spreadsheet",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2230, 460],
+      "position": [
+        2230,
+        460
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "create_spreadsheet", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $json.spreadsheetId }}", "type": "string" },
-            { "id": "title", "name": "title", "value": "={{ $json.properties?.title }}", "type": "string" },
-            { "id": "spreadsheet_url", "name": "spreadsheet_url", "value": "={{ $json.spreadsheetUrl }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_spreadsheet",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.properties?.title }}",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_url",
+              "name": "spreadsheet_url",
+              "value": "={{ $json.spreadsheetUrl }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -479,20 +983,29 @@
       "name": "Get Spreadsheet API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2230, 540],
+      "position": [
+        2230,
+        540
+      ],
       "parameters": {
         "method": "GET",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "fields", "value": "spreadsheetId,properties,sheets.properties" }
+            {
+              "name": "fields",
+              "value": "spreadsheetId,properties,sheets.properties"
+            }
           ]
         },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
           ]
         },
         "options": {}
@@ -503,17 +1016,50 @@
       "name": "Format Get Spreadsheet",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2450, 540],
+      "position": [
+        2450,
+        540
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "get_spreadsheet", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $json.spreadsheetId }}", "type": "string" },
-            { "id": "title", "name": "title", "value": "={{ $json.properties?.title }}", "type": "string" },
-            { "id": "sheets", "name": "sheets", "value": "={{ ($json.sheets || []).map(s => ({ sheet_id: s.properties?.sheetId, title: s.properties?.title, row_count: s.properties?.gridProperties?.rowCount, column_count: s.properties?.gridProperties?.columnCount })) }}", "type": "array" },
-            { "id": "spreadsheet_url", "name": "spreadsheet_url", "value": "=https://docs.google.com/spreadsheets/d/{{ $json.spreadsheetId }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "get_spreadsheet",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.properties?.title }}",
+              "type": "string"
+            },
+            {
+              "id": "sheets",
+              "name": "sheets",
+              "value": "={{ ($json.sheets || []).map(s => ({ sheet_id: s.properties?.sheetId, title: s.properties?.title, row_count: s.properties?.gridProperties?.rowCount, column_count: s.properties?.gridProperties?.columnCount })) }}",
+              "type": "array"
+            },
+            {
+              "id": "spreadsheet_url",
+              "name": "spreadsheet_url",
+              "value": "=https://docs.google.com/spreadsheets/d/{{ $json.spreadsheetId }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -524,14 +1070,20 @@
       "name": "Clear Range API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2450, 620],
+      "position": [
+        2450,
+        620
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}:clear",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
           ]
         },
         "options": {}
@@ -542,14 +1094,32 @@
       "name": "Format Clear Range",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2670, 620],
+      "position": [
+        2670,
+        620
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "clear_range", "type": "string" },
-            { "id": "cleared_range", "name": "cleared_range", "value": "={{ $json.clearedRange }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "clear_range",
+              "type": "string"
+            },
+            {
+              "id": "cleared_range",
+              "name": "cleared_range",
+              "value": "={{ $json.clearedRange }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -560,22 +1130,34 @@
       "name": "Create Sheet API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2670, 700],
+      "position": [
+        2670,
+        700
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "requests", "value": "={{ [{ addSheet: { properties: { title: $json.sheet_name } } }] }}" }
+            {
+              "name": "requests",
+              "value": "={{ [{ addSheet: { properties: { title: $json.sheet_name } } }] }}"
+            }
           ]
         },
         "options": {}
@@ -586,16 +1168,44 @@
       "name": "Format Create Sheet",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2890, 700],
+      "position": [
+        2890,
+        700
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "create_sheet", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $json.spreadsheetId }}", "type": "string" },
-            { "id": "sheet_id", "name": "sheet_id", "value": "={{ $json.replies?.[0]?.addSheet?.properties?.sheetId }}", "type": "number" },
-            { "id": "sheet_name", "name": "sheet_name", "value": "={{ $json.replies?.[0]?.addSheet?.properties?.title }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "create_sheet",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "sheet_id",
+              "name": "sheet_id",
+              "value": "={{ $json.replies?.[0]?.addSheet?.properties?.sheetId }}",
+              "type": "number"
+            },
+            {
+              "id": "sheet_name",
+              "name": "sheet_name",
+              "value": "={{ $json.replies?.[0]?.addSheet?.properties?.title }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -606,22 +1216,34 @@
       "name": "Delete Sheet API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2890, 780],
+      "position": [
+        2890,
+        780
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "requests", "value": "={{ [{ deleteSheet: { sheetId: Number($json.sheet_id) } }] }}" }
+            {
+              "name": "requests",
+              "value": "={{ [{ deleteSheet: { sheetId: Number($json.sheet_id) } }] }}"
+            }
           ]
         },
         "options": {}
@@ -632,15 +1254,38 @@
       "name": "Format Delete Sheet",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3110, 780],
+      "position": [
+        3110,
+        780
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "delete_sheet", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $json.spreadsheetId }}", "type": "string" },
-            { "id": "deleted_sheet_id", "name": "deleted_sheet_id", "value": "={{ $('Merge Input Context').item.json.sheet_id }}", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "delete_sheet",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "deleted_sheet_id",
+              "name": "deleted_sheet_id",
+              "value": "={{ $('Merge Input Context').item.json.sheet_id }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -651,20 +1296,29 @@
       "name": "Batch Get API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3110, 860],
+      "position": [
+        3110,
+        860
+      ],
       "parameters": {
         "method": "GET",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values:batchGet",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "ranges", "value": "={{ JSON.parse($json.ranges).join(',') }}" }
+            {
+              "name": "ranges",
+              "value": "={{ JSON.parse($json.ranges).join(',') }}"
+            }
           ]
         },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
           ]
         },
         "options": {}
@@ -675,15 +1329,38 @@
       "name": "Format Batch Get",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3330, 860],
+      "position": [
+        3330,
+        860
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "batch_get", "type": "string" },
-            { "id": "spreadsheet_id", "name": "spreadsheet_id", "value": "={{ $json.spreadsheetId }}", "type": "string" },
-            { "id": "value_ranges", "name": "value_ranges", "value": "={{ ($json.valueRanges || []).map(vr => ({ range: vr.range, values: vr.values || [] })) }}", "type": "array" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "batch_get",
+              "type": "string"
+            },
+            {
+              "id": "spreadsheet_id",
+              "name": "spreadsheet_id",
+              "value": "={{ $json.spreadsheetId }}",
+              "type": "string"
+            },
+            {
+              "id": "value_ranges",
+              "name": "value_ranges",
+              "value": "={{ ($json.valueRanges || []).map(vr => ({ range: vr.range, values: vr.values || [] })) }}",
+              "type": "array"
+            }
           ]
         },
         "options": {}
@@ -694,23 +1371,38 @@
       "name": "Batch Update API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3330, 940],
+      "position": [
+        3330,
+        940
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values:batchUpdate",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "valueInputOption", "value": "USER_ENTERED" },
-            { "name": "data", "value": "={{ JSON.parse($json.data) }}" }
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.parse($json.data) }}"
+            }
           ]
         },
         "options": {}
@@ -721,16 +1413,44 @@
       "name": "Format Batch Update",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3550, 940],
+      "position": [
+        3550,
+        940
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "batch_update", "type": "string" },
-            { "id": "total_updated_rows", "name": "total_updated_rows", "value": "={{ $json.totalUpdatedRows }}", "type": "number" },
-            { "id": "total_updated_columns", "name": "total_updated_columns", "value": "={{ $json.totalUpdatedColumns }}", "type": "number" },
-            { "id": "total_updated_cells", "name": "total_updated_cells", "value": "={{ $json.totalUpdatedCells }}", "type": "number" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "batch_update",
+              "type": "string"
+            },
+            {
+              "id": "total_updated_rows",
+              "name": "total_updated_rows",
+              "value": "={{ $json.totalUpdatedRows }}",
+              "type": "number"
+            },
+            {
+              "id": "total_updated_columns",
+              "name": "total_updated_columns",
+              "value": "={{ $json.totalUpdatedColumns }}",
+              "type": "number"
+            },
+            {
+              "id": "total_updated_cells",
+              "name": "total_updated_cells",
+              "value": "={{ $json.totalUpdatedCells }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
@@ -741,22 +1461,34 @@
       "name": "Find Replace API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3550, 1020],
+      "position": [
+        3550,
+        1020
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
-            { "name": "requests", "value": "={{ [{ findReplace: { find: $json.find, replacement: $json.replace, matchCase: $json.match_case === 'true', allSheets: !$json.sheet_id, sheetId: $json.sheet_id ? Number($json.sheet_id) : undefined } }] }}" }
+            {
+              "name": "requests",
+              "value": "={{ [{ findReplace: { find: $json.find, replacement: $json.replace, matchCase: $json.match_case === 'true', allSheets: !$json.sheet_id, sheetId: $json.sheet_id ? Number($json.sheet_id) : undefined } }] }}"
+            }
           ]
         },
         "options": {}
@@ -767,15 +1499,38 @@
       "name": "Format Find Replace",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3770, 1020],
+      "position": [
+        3770,
+        1020
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": true, "type": "boolean" },
-            { "id": "action", "name": "action", "value": "find_replace", "type": "string" },
-            { "id": "occurrences_changed", "name": "occurrences_changed", "value": "={{ $json.replies?.[0]?.findReplace?.occurrencesChanged || 0 }}", "type": "number" },
-            { "id": "sheets_changed", "name": "sheets_changed", "value": "={{ $json.replies?.[0]?.findReplace?.sheetsChanged || 0 }}", "type": "number" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "find_replace",
+              "type": "string"
+            },
+            {
+              "id": "occurrences_changed",
+              "name": "occurrences_changed",
+              "value": "={{ $json.replies?.[0]?.findReplace?.occurrencesChanged || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "sheets_changed",
+              "name": "sheets_changed",
+              "value": "={{ $json.replies?.[0]?.findReplace?.sheetsChanged || 0 }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
@@ -786,13 +1541,26 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [3550, 1180],
+      "position": [
+        3550,
+        1180
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "success", "name": "success", "value": false, "type": "boolean" },
-            { "id": "error", "name": "error", "value": "=Invalid action '{{ $json.action }}'. Valid actions: read_range, write_range, append_rows, create_spreadsheet, get_spreadsheet, clear_range, create_sheet, delete_sheet, batch_get, batch_update, find_replace", "type": "string" }
+            {
+              "id": "success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "=Invalid action '{{ $json.action }}'. Valid actions: read_range, write_range, append_rows, create_spreadsheet, get_spreadsheet, clear_range, create_sheet, delete_sheet, batch_get, batch_update, find_replace",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -801,122 +1569,2340 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Google Auth": {
-      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Merge Input Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Merge Input Context": {
-      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Auth Success": {
       "main": [
-        [{ "node": "Is Read Range?", "type": "main", "index": 0 }],
-        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Is Read Range?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Read Range?": {
       "main": [
-        [{ "node": "Read Range API", "type": "main", "index": 0 }],
-        [{ "node": "Is Write Range?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Read Range API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Write Range?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Write Range?": {
       "main": [
-        [{ "node": "Write Range API", "type": "main", "index": 0 }],
-        [{ "node": "Is Append Rows?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Write Range API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Append Rows?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Append Rows?": {
       "main": [
-        [{ "node": "Append Rows API", "type": "main", "index": 0 }],
-        [{ "node": "Is Create Spreadsheet?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Append Rows API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Create Spreadsheet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Create Spreadsheet?": {
       "main": [
-        [{ "node": "Create Spreadsheet API", "type": "main", "index": 0 }],
-        [{ "node": "Is Get Spreadsheet?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Spreadsheet API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Get Spreadsheet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Get Spreadsheet?": {
       "main": [
-        [{ "node": "Get Spreadsheet API", "type": "main", "index": 0 }],
-        [{ "node": "Is Clear Range?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Spreadsheet API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Clear Range?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Clear Range?": {
       "main": [
-        [{ "node": "Clear Range API", "type": "main", "index": 0 }],
-        [{ "node": "Is Create Sheet?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Clear Range API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Create Sheet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Create Sheet?": {
       "main": [
-        [{ "node": "Create Sheet API", "type": "main", "index": 0 }],
-        [{ "node": "Is Delete Sheet?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Sheet API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Delete Sheet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Delete Sheet?": {
       "main": [
-        [{ "node": "Delete Sheet API", "type": "main", "index": 0 }],
-        [{ "node": "Is Batch Get?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Delete Sheet API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Batch Get?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Batch Get?": {
       "main": [
-        [{ "node": "Batch Get API", "type": "main", "index": 0 }],
-        [{ "node": "Is Batch Update?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Batch Get API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Batch Update?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Batch Update?": {
       "main": [
-        [{ "node": "Batch Update API", "type": "main", "index": 0 }],
-        [{ "node": "Is Find Replace?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Batch Update API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Find Replace?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Find Replace?": {
       "main": [
-        [{ "node": "Find Replace API", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Find Replace API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Read Range API": {
-      "main": [[{ "node": "Format Read Range", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Read Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Write Range API": {
-      "main": [[{ "node": "Format Write Range", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Write Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Append Rows API": {
-      "main": [[{ "node": "Format Append Rows", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Append Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Spreadsheet API": {
-      "main": [[{ "node": "Format Create Spreadsheet", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Create Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Spreadsheet API": {
-      "main": [[{ "node": "Format Get Spreadsheet", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Get Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Clear Range API": {
-      "main": [[{ "node": "Format Clear Range", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Clear Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Sheet API": {
-      "main": [[{ "node": "Format Create Sheet", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Create Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Delete Sheet API": {
-      "main": [[{ "node": "Format Delete Sheet", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Delete Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Batch Get API": {
-      "main": [[{ "node": "Format Batch Get", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Batch Get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Batch Update API": {
-      "main": [[{ "node": "Format Batch Update", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Batch Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Find Replace API": {
-      "main": [[{ "node": "Format Find Replace", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Find Replace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": null,
+  "activeVersionId": "d127e3c4-c375-406e-861f-b6a733bef098",
+  "versionCounter": 37,
+  "triggerCount": 0,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-05T14:13:58.749Z",
+    "createdAt": "2026-02-05T14:13:58.749Z",
+    "versionId": "d127e3c4-c375-406e-861f-b6a733bef098",
+    "workflowId": "tWgJgDHdIHBhCOr0",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          250,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "spreadsheet_id",
+                "type": "string"
+              },
+              {
+                "name": "range",
+                "type": "string"
+              },
+              {
+                "name": "values",
+                "type": "string"
+              },
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "name": "sheet_name",
+                "type": "string"
+              },
+              {
+                "name": "ranges",
+                "type": "string"
+              },
+              {
+                "name": "data",
+                "type": "string"
+              },
+              {
+                "name": "sheet_id",
+                "type": "string"
+              },
+              {
+                "name": "find",
+                "type": "string"
+              },
+              {
+                "name": "replace",
+                "type": "string"
+              },
+              {
+                "name": "match_case",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-auth",
+        "name": "Get Google Auth",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          470,
+          300
+        ],
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "S8GWoOTCaSqyc5bj"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "slack_user_id": "={{ $json.slack_user_id }}",
+              "scopes": "https://www.googleapis.com/auth/spreadsheets"
+            }
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "merge-context",
+        "name": "Merge Input Context",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          690,
+          300
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "action",
+                "name": "action",
+                "value": "={{ $('Workflow Input').item.json.action }}",
+                "type": "string"
+              },
+              {
+                "id": "success",
+                "name": "auth_success",
+                "value": "={{ $json.success }}",
+                "type": "boolean"
+              },
+              {
+                "id": "access_token",
+                "name": "access_token",
+                "value": "={{ $json.access_token }}",
+                "type": "string"
+              },
+              {
+                "id": "user_email",
+                "name": "user_email",
+                "value": "={{ $json.user_email }}",
+                "type": "string"
+              },
+              {
+                "id": "error",
+                "name": "auth_error",
+                "value": "={{ $json.error }}",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $('Workflow Input').item.json.spreadsheet_id }}",
+                "type": "string"
+              },
+              {
+                "id": "range",
+                "name": "range",
+                "value": "={{ $('Workflow Input').item.json.range }}",
+                "type": "string"
+              },
+              {
+                "id": "values",
+                "name": "values",
+                "value": "={{ $('Workflow Input').item.json.values }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $('Workflow Input').item.json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "sheet_name",
+                "name": "sheet_name",
+                "value": "={{ $('Workflow Input').item.json.sheet_name }}",
+                "type": "string"
+              },
+              {
+                "id": "ranges",
+                "name": "ranges",
+                "value": "={{ $('Workflow Input').item.json.ranges }}",
+                "type": "string"
+              },
+              {
+                "id": "data",
+                "name": "data",
+                "value": "={{ $('Workflow Input').item.json.data }}",
+                "type": "string"
+              },
+              {
+                "id": "sheet_id",
+                "name": "sheet_id",
+                "value": "={{ $('Workflow Input').item.json.sheet_id }}",
+                "type": "string"
+              },
+              {
+                "id": "find",
+                "name": "find",
+                "value": "={{ $('Workflow Input').item.json.find }}",
+                "type": "string"
+              },
+              {
+                "id": "replace",
+                "name": "replace",
+                "value": "={{ $('Workflow Input').item.json.replace }}",
+                "type": "string"
+              },
+              {
+                "id": "match_case",
+                "name": "match_case",
+                "value": "={{ $('Workflow Input').item.json.match_case }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "check-auth",
+        "name": "Check Auth Success",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          910,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-auth",
+                "leftValue": "={{ $json.auth_success }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "auth-failed",
+        "name": "Auth Failed Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1130,
+          900
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "={{ $json.auth_error || 'Google authentication failed' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "is-read-range",
+        "name": "Is Read Range?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1130,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "read_range",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-write-range",
+        "name": "Is Write Range?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1350,
+          380
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "write_range",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-append-rows",
+        "name": "Is Append Rows?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1570,
+          460
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "append_rows",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-create-spreadsheet",
+        "name": "Is Create Spreadsheet?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1790,
+          540
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "create_spreadsheet",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-get-spreadsheet",
+        "name": "Is Get Spreadsheet?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2010,
+          620
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "get_spreadsheet",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-clear-range",
+        "name": "Is Clear Range?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2230,
+          700
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "clear_range",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-create-sheet",
+        "name": "Is Create Sheet?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2450,
+          780
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "create_sheet",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-delete-sheet",
+        "name": "Is Delete Sheet?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2670,
+          860
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "delete_sheet",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-batch-get",
+        "name": "Is Batch Get?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2890,
+          940
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "batch_get",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-batch-update",
+        "name": "Is Batch Update?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          3110,
+          1020
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "batch_update",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "is-find-replace",
+        "name": "Is Find Replace?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          3330,
+          1100
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-action",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "find_replace",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "read-range",
+        "name": "Read Range API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1350,
+          140
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-read-range",
+        "name": "Format Read Range",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1570,
+          140
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "read_range",
+                "type": "string"
+              },
+              {
+                "id": "range",
+                "name": "range",
+                "value": "={{ $json.range }}",
+                "type": "string"
+              },
+              {
+                "id": "values",
+                "name": "values",
+                "value": "={{ $json.values || [] }}",
+                "type": "array"
+              },
+              {
+                "id": "row_count",
+                "name": "row_count",
+                "value": "={{ ($json.values || []).length }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "write-range",
+        "name": "Write Range API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1570,
+          300
+        ],
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "USER_ENTERED"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "values",
+                "value": "={{ JSON.parse($json.values) }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-write-range",
+        "name": "Format Write Range",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1790,
+          300
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "write_range",
+                "type": "string"
+              },
+              {
+                "id": "updated_range",
+                "name": "updated_range",
+                "value": "={{ $json.updatedRange }}",
+                "type": "string"
+              },
+              {
+                "id": "updated_rows",
+                "name": "updated_rows",
+                "value": "={{ $json.updatedRows }}",
+                "type": "number"
+              },
+              {
+                "id": "updated_columns",
+                "name": "updated_columns",
+                "value": "={{ $json.updatedColumns }}",
+                "type": "number"
+              },
+              {
+                "id": "updated_cells",
+                "name": "updated_cells",
+                "value": "={{ $json.updatedCells }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "append-rows",
+        "name": "Append Rows API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1790,
+          380
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range || 'Sheet1') }}:append",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "USER_ENTERED"
+              },
+              {
+                "name": "insertDataOption",
+                "value": "INSERT_ROWS"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "values",
+                "value": "={{ JSON.parse($json.values) }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-append-rows",
+        "name": "Format Append Rows",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2010,
+          380
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "append_rows",
+                "type": "string"
+              },
+              {
+                "id": "updated_range",
+                "name": "updated_range",
+                "value": "={{ $json.updates?.updatedRange }}",
+                "type": "string"
+              },
+              {
+                "id": "appended_rows",
+                "name": "appended_rows",
+                "value": "={{ $json.updates?.updatedRows }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "create-spreadsheet",
+        "name": "Create Spreadsheet API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2010,
+          460
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "properties",
+                "value": "={{ { title: $json.title || 'Untitled Spreadsheet' } }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-create-spreadsheet",
+        "name": "Format Create Spreadsheet",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2230,
+          460
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "create_spreadsheet",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $json.properties?.title }}",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_url",
+                "name": "spreadsheet_url",
+                "value": "={{ $json.spreadsheetUrl }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "get-spreadsheet",
+        "name": "Get Spreadsheet API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2230,
+          540
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "fields",
+                "value": "spreadsheetId,properties,sheets.properties"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-get-spreadsheet",
+        "name": "Format Get Spreadsheet",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2450,
+          540
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "get_spreadsheet",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "name": "title",
+                "value": "={{ $json.properties?.title }}",
+                "type": "string"
+              },
+              {
+                "id": "sheets",
+                "name": "sheets",
+                "value": "={{ ($json.sheets || []).map(s => ({ sheet_id: s.properties?.sheetId, title: s.properties?.title, row_count: s.properties?.gridProperties?.rowCount, column_count: s.properties?.gridProperties?.columnCount })) }}",
+                "type": "array"
+              },
+              {
+                "id": "spreadsheet_url",
+                "name": "spreadsheet_url",
+                "value": "=https://docs.google.com/spreadsheets/d/{{ $json.spreadsheetId }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "clear-range",
+        "name": "Clear Range API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2450,
+          620
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values/{{ encodeURIComponent($json.range) }}:clear",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-clear-range",
+        "name": "Format Clear Range",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2670,
+          620
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "clear_range",
+                "type": "string"
+              },
+              {
+                "id": "cleared_range",
+                "name": "cleared_range",
+                "value": "={{ $json.clearedRange }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "create-sheet",
+        "name": "Create Sheet API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2670,
+          700
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "requests",
+                "value": "={{ [{ addSheet: { properties: { title: $json.sheet_name } } }] }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-create-sheet",
+        "name": "Format Create Sheet",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2890,
+          700
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "create_sheet",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "sheet_id",
+                "name": "sheet_id",
+                "value": "={{ $json.replies?.[0]?.addSheet?.properties?.sheetId }}",
+                "type": "number"
+              },
+              {
+                "id": "sheet_name",
+                "name": "sheet_name",
+                "value": "={{ $json.replies?.[0]?.addSheet?.properties?.title }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "delete-sheet",
+        "name": "Delete Sheet API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2890,
+          780
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "requests",
+                "value": "={{ [{ deleteSheet: { sheetId: Number($json.sheet_id) } }] }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-delete-sheet",
+        "name": "Format Delete Sheet",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3110,
+          780
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "delete_sheet",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "deleted_sheet_id",
+                "name": "deleted_sheet_id",
+                "value": "={{ $('Merge Input Context').item.json.sheet_id }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "batch-get",
+        "name": "Batch Get API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3110,
+          860
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values:batchGet",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "ranges",
+                "value": "={{ JSON.parse($json.ranges).join(',') }}"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-batch-get",
+        "name": "Format Batch Get",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3330,
+          860
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "batch_get",
+                "type": "string"
+              },
+              {
+                "id": "spreadsheet_id",
+                "name": "spreadsheet_id",
+                "value": "={{ $json.spreadsheetId }}",
+                "type": "string"
+              },
+              {
+                "id": "value_ranges",
+                "name": "value_ranges",
+                "value": "={{ ($json.valueRanges || []).map(vr => ({ range: vr.range, values: vr.values || [] })) }}",
+                "type": "array"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "batch-update",
+        "name": "Batch Update API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3330,
+          940
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}/values:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "USER_ENTERED"
+              },
+              {
+                "name": "data",
+                "value": "={{ JSON.parse($json.data) }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-batch-update",
+        "name": "Format Batch Update",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3550,
+          940
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "batch_update",
+                "type": "string"
+              },
+              {
+                "id": "total_updated_rows",
+                "name": "total_updated_rows",
+                "value": "={{ $json.totalUpdatedRows }}",
+                "type": "number"
+              },
+              {
+                "id": "total_updated_columns",
+                "name": "total_updated_columns",
+                "value": "={{ $json.totalUpdatedColumns }}",
+                "type": "number"
+              },
+              {
+                "id": "total_updated_cells",
+                "name": "total_updated_cells",
+                "value": "={{ $json.totalUpdatedCells }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "find-replace",
+        "name": "Find Replace API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3550,
+          1020
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $json.spreadsheet_id }}:batchUpdate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $json.access_token }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "requests",
+                "value": "={{ [{ findReplace: { find: $json.find, replacement: $json.replace, matchCase: $json.match_case === 'true', allSheets: !$json.sheet_id, sheetId: $json.sheet_id ? Number($json.sheet_id) : undefined } }] }}"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "format-find-replace",
+        "name": "Format Find Replace",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3770,
+          1020
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": true,
+                "type": "boolean"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "find_replace",
+                "type": "string"
+              },
+              {
+                "id": "occurrences_changed",
+                "name": "occurrences_changed",
+                "value": "={{ $json.replies?.[0]?.findReplace?.occurrencesChanged || 0 }}",
+                "type": "number"
+              },
+              {
+                "id": "sheets_changed",
+                "name": "sheets_changed",
+                "value": "={{ $json.replies?.[0]?.findReplace?.sheetsChanged || 0 }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3550,
+          1180
+        ],
+        "parameters": {
+          "mode": "manual",
+          "assignments": {
+            "assignments": [
+              {
+                "id": "success",
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
+              {
+                "id": "error",
+                "name": "error",
+                "value": "=Invalid action '{{ $json.action }}'. Valid actions: read_range, write_range, append_rows, create_spreadsheet, get_spreadsheet, clear_range, create_sheet, delete_sheet, batch_get, batch_update, find_replace",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Google Auth": {
+        "main": [
+          [
+            {
+              "node": "Merge Input Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Input Context": {
+        "main": [
+          [
+            {
+              "node": "Check Auth Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Auth Success": {
+        "main": [
+          [
+            {
+              "node": "Is Read Range?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Read Range?": {
+        "main": [
+          [
+            {
+              "node": "Read Range API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Write Range?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Write Range?": {
+        "main": [
+          [
+            {
+              "node": "Write Range API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Append Rows?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Append Rows?": {
+        "main": [
+          [
+            {
+              "node": "Append Rows API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Create Spreadsheet?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Create Spreadsheet?": {
+        "main": [
+          [
+            {
+              "node": "Create Spreadsheet API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Get Spreadsheet?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Get Spreadsheet?": {
+        "main": [
+          [
+            {
+              "node": "Get Spreadsheet API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Clear Range?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Clear Range?": {
+        "main": [
+          [
+            {
+              "node": "Clear Range API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Create Sheet?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Create Sheet?": {
+        "main": [
+          [
+            {
+              "node": "Create Sheet API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Delete Sheet?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Delete Sheet?": {
+        "main": [
+          [
+            {
+              "node": "Delete Sheet API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Batch Get?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Batch Get?": {
+        "main": [
+          [
+            {
+              "node": "Batch Get API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Batch Update?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Batch Update?": {
+        "main": [
+          [
+            {
+              "node": "Batch Update API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Find Replace?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Find Replace?": {
+        "main": [
+          [
+            {
+              "node": "Find Replace API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Range API": {
+        "main": [
+          [
+            {
+              "node": "Format Read Range",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Range API": {
+        "main": [
+          [
+            {
+              "node": "Format Write Range",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Append Rows API": {
+        "main": [
+          [
+            {
+              "node": "Format Append Rows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Spreadsheet API": {
+        "main": [
+          [
+            {
+              "node": "Format Create Spreadsheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Spreadsheet API": {
+        "main": [
+          [
+            {
+              "node": "Format Get Spreadsheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Clear Range API": {
+        "main": [
+          [
+            {
+              "node": "Format Clear Range",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Sheet API": {
+        "main": [
+          [
+            {
+              "node": "Format Create Sheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete Sheet API": {
+        "main": [
+          [
+            {
+              "node": "Format Delete Sheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Batch Get API": {
+        "main": [
+          [
+            {
+              "node": "Format Batch Get",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Batch Update API": {
+        "main": [
+          [
+            {
+              "node": "Format Batch Update",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Find Replace API": {
+        "main": [
+          [
+            {
+              "node": "Format Find Replace",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-05T14:13:58.947Z",
+        "id": 282,
+        "workflowId": "tWgJgDHdIHBhCOr0",
+        "versionId": "d127e3c4-c375-406e-861f-b6a733bef098",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
   }
 }

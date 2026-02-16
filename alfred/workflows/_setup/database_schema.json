@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-03T23:46:00.114Z",
-  "createdAt": "2026-02-03T10:31:08.133Z",
   "id": "eaZaG81eMN0XJioM",
-  "name": "🔧 Setup | Alfred Database Schema",
+  "name": "\ud83d\udd27 Setup | Alfred Database Schema",
   "description": null,
   "active": false,
   "isArchived": false,
@@ -12,7 +10,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "parameters": {}
     },
     {
@@ -20,14 +21,20 @@
       "name": "Create Alfred Schema",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [450, 300],
+      "position": [
+        450,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "CREATE SCHEMA IF NOT EXISTS alfred;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -35,14 +42,20 @@
       "name": "Create Users Table",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [650, 300],
+      "position": [
+        650,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "CREATE TABLE IF NOT EXISTS alfred.users (\n    id SERIAL PRIMARY KEY,\n    slack_user_id VARCHAR(20) UNIQUE NOT NULL,\n    slack_username VARCHAR(100) NOT NULL,\n    email VARCHAR(255) NOT NULL,\n    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('admin', 'member', 'guest')),\n    google_calendar_credential_id VARCHAR(50),\n    gmail_credential_id VARCHAR(50),\n    google_docs_credential_id VARCHAR(50),\n    google_sheets_credential_id VARCHAR(50),\n    google_drive_credential_id VARCHAR(50),\n    notion_credential_id VARCHAR(50),\n    calendar_ids JSONB DEFAULT '[]'::jsonb,\n    preferences JSONB DEFAULT '{}'::jsonb,\n    is_active BOOLEAN DEFAULT true,\n    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\nCREATE INDEX IF NOT EXISTS idx_alfred_users_slack_id ON alfred.users(slack_user_id);\nCREATE INDEX IF NOT EXISTS idx_alfred_users_active ON alfred.users(is_active);\nCREATE INDEX IF NOT EXISTS idx_alfred_users_role ON alfred.users(role);",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -50,14 +63,20 @@
       "name": "Create Role Permissions Table",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [850, 300],
+      "position": [
+        850,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "CREATE TABLE IF NOT EXISTS alfred.role_permissions (\n    role VARCHAR(20) PRIMARY KEY,\n    permissions JSONB NOT NULL,\n    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -65,14 +84,20 @@
       "name": "Create Audit Log Table",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1050, 300],
+      "position": [
+        1050,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "CREATE TABLE IF NOT EXISTS alfred.audit_log (\n    id SERIAL PRIMARY KEY,\n    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n    slack_user_id VARCHAR(20) NOT NULL,\n    action VARCHAR(100) NOT NULL,\n    resource VARCHAR(255),\n    permitted BOOLEAN NOT NULL,\n    denial_reason TEXT,\n    request_summary TEXT,\n    metadata JSONB DEFAULT '{}'::jsonb\n);\n\nCREATE INDEX IF NOT EXISTS idx_audit_log_user ON alfred.audit_log(slack_user_id);\nCREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON alfred.audit_log(timestamp);\nCREATE INDEX IF NOT EXISTS idx_audit_log_action ON alfred.audit_log(action);\nCREATE INDEX IF NOT EXISTS idx_audit_log_permitted ON alfred.audit_log(permitted);",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -80,14 +105,20 @@
       "name": "Seed Role Permissions",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1250, 300],
+      "position": [
+        1250,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO alfred.role_permissions (role, permissions) VALUES\n('admin', '{\n    \"calendar_read\": true, \"calendar_write\": true,\n    \"email_read\": true, \"email_send\": true, \"email_delete\": true,\n    \"docs_read\": true, \"docs_write\": true, \"docs_create\": true,\n    \"sheets_read\": true, \"sheets_write\": true,\n    \"drive_read\": true, \"drive_write\": true, \"drive_share\": true,\n    \"tasks_read\": true, \"tasks_write\": true,\n    \"research_web\": true,\n    \"workflows_view\": true, \"workflows_create\": true,\n    \"workflows_activate\": true, \"workflows_delete\": true,\n    \"admin_manage_users\": true, \"admin_view_all_data\": true\n}'::jsonb),\n('member', '{\n    \"calendar_read\": true, \"calendar_write\": true,\n    \"email_read\": true, \"email_send\": true, \"email_delete\": false,\n    \"docs_read\": true, \"docs_write\": true, \"docs_create\": true,\n    \"sheets_read\": true, \"sheets_write\": true,\n    \"drive_read\": true, \"drive_write\": true, \"drive_share\": false,\n    \"tasks_read\": true, \"tasks_write\": true,\n    \"research_web\": true,\n    \"workflows_view\": true, \"workflows_create\": false,\n    \"workflows_activate\": false, \"workflows_delete\": false,\n    \"admin_manage_users\": false, \"admin_view_all_data\": false\n}'::jsonb),\n('guest', '{\n    \"calendar_read\": true, \"calendar_write\": false,\n    \"email_read\": false, \"email_send\": false, \"email_delete\": false,\n    \"docs_read\": true, \"docs_write\": false, \"docs_create\": false,\n    \"sheets_read\": true, \"sheets_write\": false,\n    \"drive_read\": true, \"drive_write\": false, \"drive_share\": false,\n    \"tasks_read\": true, \"tasks_write\": false,\n    \"research_web\": true,\n    \"workflows_view\": false, \"workflows_create\": false,\n    \"workflows_activate\": false, \"workflows_delete\": false,\n    \"admin_manage_users\": false, \"admin_view_all_data\": false\n}'::jsonb)\nON CONFLICT (role) DO NOTHING;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -95,14 +126,20 @@
       "name": "Seed Spencer (Admin)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1450, 300],
+      "position": [
+        1450,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO alfred.users (\n    slack_user_id, slack_username, email, role,\n    google_calendar_credential_id, gmail_credential_id, google_docs_credential_id,\n    calendar_ids, preferences, is_active\n) VALUES (\n    'U02TE7SKU3X', 'spencermarx', 'spencer@aclarify.com', 'admin',\n    'yBNZEWLXitD9cSiU', 'v2wjW0tm9a1TxnZP', 'yBNZEWLXitD9cSiU',\n    '[\"spencer@aclarify.com\", \"spencer.s.marx@gmail.com\"]'::jsonb,\n    '{\"timezone\":\"America/Chicago\",\"daily_briefing\":true,\"briefing_time\":\"08:15\",\"personality\":\"jarvis-inspired\"}'::jsonb,\n    true\n)\nON CONFLICT (slack_user_id) DO NOTHING;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -110,14 +147,20 @@
       "name": "Verify Setup",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1650, 300],
+      "position": [
+        1650,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT \n  (SELECT COUNT(*) FROM alfred.users) as users_count,\n  (SELECT COUNT(*) FROM alfred.role_permissions) as roles_count,\n  (SELECT role FROM alfred.users WHERE slack_user_id = 'U02TE7SKU3X') as spencer_role;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -125,23 +168,45 @@
       "name": "Create Daily Schedule Log",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1850, 300],
+      "position": [
+        1850,
+        300
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "CREATE TABLE IF NOT EXISTS alfred.daily_schedule_log (\n    id SERIAL PRIMARY KEY,\n    user_id INTEGER REFERENCES alfred.users(id),\n    sent_date DATE NOT NULL,\n    sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n    channels_sent JSONB DEFAULT '[]'::jsonb,\n    UNIQUE(user_id, sent_date)\n);\n\nCREATE INDEX IF NOT EXISTS idx_daily_schedule_log_date ON alfred.daily_schedule_log(sent_date);\n\nSELECT 'daily_schedule_log created' as result;",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     }
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "Create Alfred Schema", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Create Alfred Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Alfred Schema": {
-      "main": [[{ "node": "Create Users Table", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Create Users Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Users Table": {
       "main": [
@@ -156,23 +221,57 @@
     },
     "Create Role Permissions Table": {
       "main": [
-        [{ "node": "Create Audit Log Table", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Audit Log Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create Audit Log Table": {
       "main": [
-        [{ "node": "Seed Role Permissions", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Seed Role Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Seed Role Permissions": {
-      "main": [[{ "node": "Seed Spencer (Admin)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Seed Spencer (Admin)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Seed Spencer (Admin)": {
-      "main": [[{ "node": "Verify Setup", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Verify Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verify Setup": {
       "main": [
-        [{ "node": "Create Daily Schedule Log", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Daily Schedule Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -182,66 +281,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "versionId": "1ed2734f-8bed-4dd5-bbc2-2393b3a85218",
   "activeVersionId": null,
   "versionCounter": 11,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-03T10:31:08.133Z",
-      "createdAt": "2026-02-03T10:31:08.133Z",
-      "role": "workflow:owner",
-      "workflowId": "eaZaG81eMN0XJioM",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": null
 }

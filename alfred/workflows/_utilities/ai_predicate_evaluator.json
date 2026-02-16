@@ -1,402 +1,340 @@
 {
-    "updatedAt": "2026-02-11T17:01:03.006Z",
-    "createdAt": "2026-02-05T09:56:33.755Z",
-    "id": "Rw7786cYTYOTQhH9",
-    "name": "\ud83d\udd27 Utility | AI Predicate Evaluator",
-    "description": null,
-    "active": true,
-    "isArchived": false,
-    "nodes": [
-        {
-            "parameters": {
-                "workflowInputs": {
-                    "values": [
-                        {
-                            "name": "predicate"
-                        },
-                        {
-                            "name": "context"
-                        },
-                        {
-                            "name": "fallback"
-                        }
-                    ]
-                }
+  "id": "Rw7786cYTYOTQhH9",
+  "name": "\ud83d\udd27 Utility | AI Predicate Evaluator",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "predicate"
             },
-            "id": "trigger",
-            "name": "Workflow Input",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "typeVersion": 1.1,
-            "position": [
-                240,
-                304
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "const input = $input.first().json;\n\nconst predicate = input.predicate || '';\nconst context = typeof input.context === 'string' ? input.context : JSON.stringify(input.context, null, 2);\n\nconst prompt = `You are a binary classifier. Evaluate the following predicate against the provided context and return a JSON response.\n\nPREDICATE TO EVALUATE:\n${predicate}\n\nCONTEXT:\n${context}\n\nRESPOND WITH ONLY VALID JSON IN THIS EXACT FORMAT:\n{\"result\": true} or {\"result\": false}\n\nRules:\n- Return {\"result\": true} if the predicate is TRUE based on the context\n- Return {\"result\": false} if the predicate is FALSE based on the context\n- Do not include any explanation, only the JSON object\n- Do not wrap in markdown code blocks`;\n\nreturn [{\n  json: {\n    prompt,\n    predicate,\n    context\n  }\n}];"
+            {
+              "name": "context"
             },
-            "id": "build-prompt",
-            "name": "Build Classification Prompt",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                464,
-                304
-            ]
-        },
-        {
-            "parameters": {
-                "model": {
-                    "__rl": true,
-                    "value": "claude-haiku-4-5-20251001",
-                    "mode": "list",
-                    "cachedResultName": "Claude Haiku 4.5"
-                },
-                "options": {
-                    "maxTokensToSample": 50,
-                    "temperature": 0
-                }
-            },
-            "id": "classifier-model",
-            "name": "Haiku Classifier",
-            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-            "typeVersion": 1.3,
-            "position": [
-                688,
-                480
-            ],
-            "credentials": {
-                "anthropicApi": {
-                    "id": "iKUsIHimnjBUibjJ",
-                    "name": "Anthropic account"
-                }
+            {
+              "name": "fallback"
             }
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "={{ $json.prompt }}"
-            },
-            "id": "llm-chain",
-            "name": "Classify",
-            "type": "@n8n/n8n-nodes-langchain.chainLlm",
-            "typeVersion": 1.4,
-            "position": [
-                688,
-                304
-            ],
-            "retryOnFail": true,
-            "maxTries": 2,
-            "waitBetweenTries": 1000,
-            "continueOnFail": true
-        },
-        {
-            "parameters": {
-                "jsCode": "const input = $input.first().json;\nconst originalInput = $('Workflow Input').first().json;\n\n// Resolve the fallback value (handles string \"true\"/\"false\", boolean, or undefined)\nconst fallbackRaw = originalInput.fallback;\nconst fallbackValue = fallbackRaw === true || fallbackRaw === 'true';\n\n// ERROR PATH: Classify node failed (continueOnFail passes error downstream)\nif (input.error) {\n  return [{\n    json: {\n      result: fallbackValue,\n      raw_response: null,\n      predicate: originalInput.predicate,\n      parse_error: null,\n      used_fallback: true,\n      fallback_reason: typeof input.error === 'string'\n        ? input.error\n        : (input.error?.message || 'LLM classification failed')\n    }\n  }];\n}\n\n// HAPPY PATH: Parse the LLM response\nlet response = input.text || input.response || '';\nlet result = false;\nlet parseError = null;\n\ntry {\n  response = response.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const parsed = JSON.parse(response);\n  result = parsed.result === true;\n} catch (e) {\n  parseError = e.message;\n  const lower = response.toLowerCase();\n  if (lower.includes('\"result\": true') || lower.includes('\"result\":true')) {\n    result = true;\n  } else if (lower.includes('\"result\": false') || lower.includes('\"result\":false')) {\n    result = false;\n  } else if (lower.includes('true') && !lower.includes('false')) {\n    result = true;\n  } else if (!lower.includes('true') && !lower.includes('false')) {\n    // Completely unparseable \u2014 use fallback\n    return [{\n      json: {\n        result: fallbackValue,\n        raw_response: response,\n        predicate: originalInput.predicate,\n        parse_error: parseError,\n        used_fallback: true,\n        fallback_reason: 'LLM response could not be parsed as boolean'\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    result,\n    raw_response: response,\n    predicate: originalInput.predicate,\n    parse_error: parseError,\n    used_fallback: false,\n    fallback_reason: null\n  }\n}];"
-            },
-            "id": "parse-result",
-            "name": "Parse Result",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1024,
-                304
-            ]
+          ]
         }
+      },
+      "id": "trigger",
+      "name": "Workflow Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst predicate = input.predicate || '';\nconst context = typeof input.context === 'string' ? input.context : JSON.stringify(input.context, null, 2);\n\nconst prompt = `You are a binary classifier. Evaluate the following predicate against the provided context and return a JSON response.\n\nPREDICATE TO EVALUATE:\n${predicate}\n\nCONTEXT:\n${context}\n\nRESPOND WITH ONLY VALID JSON IN THIS EXACT FORMAT:\n{\"result\": true} or {\"result\": false}\n\nRules:\n- Return {\"result\": true} if the predicate is TRUE based on the context\n- Return {\"result\": false} if the predicate is FALSE based on the context\n- Do not include any explanation, only the JSON object\n- Do not wrap in markdown code blocks`;\n\nreturn [{\n  json: {\n    prompt,\n    predicate,\n    context\n  }\n}];"
+      },
+      "id": "build-prompt",
+      "name": "Build Classification Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 4.5"
+        },
+        "options": {
+          "maxTokensToSample": 50,
+          "temperature": 0
+        }
+      },
+      "id": "classifier-model",
+      "name": "Haiku Classifier",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        688,
+        480
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "iKUsIHimnjBUibjJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}"
+      },
+      "id": "llm-chain",
+      "name": "Classify",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        688,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst originalInput = $('Workflow Input').first().json;\n\n// Resolve the fallback value (handles string \"true\"/\"false\", boolean, or undefined)\nconst fallbackRaw = originalInput.fallback;\nconst fallbackValue = fallbackRaw === true || fallbackRaw === 'true';\n\n// ERROR PATH: Classify node failed (continueOnFail passes error downstream)\nif (input.error) {\n  return [{\n    json: {\n      result: fallbackValue,\n      raw_response: null,\n      predicate: originalInput.predicate,\n      parse_error: null,\n      used_fallback: true,\n      fallback_reason: typeof input.error === 'string'\n        ? input.error\n        : (input.error?.message || 'LLM classification failed')\n    }\n  }];\n}\n\n// HAPPY PATH: Parse the LLM response\nlet response = input.text || input.response || '';\nlet result = false;\nlet parseError = null;\n\ntry {\n  response = response.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const parsed = JSON.parse(response);\n  result = parsed.result === true;\n} catch (e) {\n  parseError = e.message;\n  const lower = response.toLowerCase();\n  if (lower.includes('\"result\": true') || lower.includes('\"result\":true')) {\n    result = true;\n  } else if (lower.includes('\"result\": false') || lower.includes('\"result\":false')) {\n    result = false;\n  } else if (lower.includes('true') && !lower.includes('false')) {\n    result = true;\n  } else if (!lower.includes('true') && !lower.includes('false')) {\n    // Completely unparseable \u2014 use fallback\n    return [{\n      json: {\n        result: fallbackValue,\n        raw_response: response,\n        predicate: originalInput.predicate,\n        parse_error: parseError,\n        used_fallback: true,\n        fallback_reason: 'LLM response could not be parsed as boolean'\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    result,\n    raw_response: response,\n    predicate: originalInput.predicate,\n    parse_error: parseError,\n    used_fallback: false,\n    fallback_reason: null\n  }\n}];"
+      },
+      "id": "parse-result",
+      "name": "Parse Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input": {
+      "main": [
+        [
+          {
+            "node": "Build Classification Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classification Prompt": {
+      "main": [
+        [
+          {
+            "node": "Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Haiku Classifier": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify": {
+      "main": [
+        [
+          {
+            "node": "Parse Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {
+    "Workflow Input": [
+      {
+        "json": {
+          "predicate": "The AI response contains actionable information that should be delivered to the user. This includes: meeting reminders, task confirmations, requested information, answers to questions, or any substantive response. Return FALSE if the response indicates no action was taken, no events were found, nothing to report, or the AI explicitly decided not to notify the user.",
+          "context": "No action taken - the event starts in 15 minutes, which is outside the 15-30 minute window you specified."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "activeVersionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
+  "versionCounter": 21,
+  "triggerCount": 0,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-11T17:01:03.009Z",
+    "createdAt": "2026-02-11T17:01:03.009Z",
+    "versionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
+    "workflowId": "Rw7786cYTYOTQhH9",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "predicate"
+              },
+              {
+                "name": "context"
+              },
+              {
+                "name": "fallback"
+              }
+            ]
+          }
+        },
+        "id": "trigger",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nconst predicate = input.predicate || '';\nconst context = typeof input.context === 'string' ? input.context : JSON.stringify(input.context, null, 2);\n\nconst prompt = `You are a binary classifier. Evaluate the following predicate against the provided context and return a JSON response.\n\nPREDICATE TO EVALUATE:\n${predicate}\n\nCONTEXT:\n${context}\n\nRESPOND WITH ONLY VALID JSON IN THIS EXACT FORMAT:\n{\"result\": true} or {\"result\": false}\n\nRules:\n- Return {\"result\": true} if the predicate is TRUE based on the context\n- Return {\"result\": false} if the predicate is FALSE based on the context\n- Do not include any explanation, only the JSON object\n- Do not wrap in markdown code blocks`;\n\nreturn [{\n  json: {\n    prompt,\n    predicate,\n    context\n  }\n}];"
+        },
+        "id": "build-prompt",
+        "name": "Build Classification Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          464,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "claude-haiku-4-5-20251001",
+            "mode": "list",
+            "cachedResultName": "Claude Haiku 4.5"
+          },
+          "options": {
+            "maxTokensToSample": 50,
+            "temperature": 0
+          }
+        },
+        "id": "classifier-model",
+        "name": "Haiku Classifier",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          688,
+          480
+        ],
+        "credentials": {
+          "anthropicApi": {
+            "id": "iKUsIHimnjBUibjJ",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.prompt }}"
+        },
+        "id": "llm-chain",
+        "name": "Classify",
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.4,
+        "position": [
+          688,
+          304
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst originalInput = $('Workflow Input').first().json;\n\n// Resolve the fallback value (handles string \"true\"/\"false\", boolean, or undefined)\nconst fallbackRaw = originalInput.fallback;\nconst fallbackValue = fallbackRaw === true || fallbackRaw === 'true';\n\n// ERROR PATH: Classify node failed (continueOnFail passes error downstream)\nif (input.error) {\n  return [{\n    json: {\n      result: fallbackValue,\n      raw_response: null,\n      predicate: originalInput.predicate,\n      parse_error: null,\n      used_fallback: true,\n      fallback_reason: typeof input.error === 'string'\n        ? input.error\n        : (input.error?.message || 'LLM classification failed')\n    }\n  }];\n}\n\n// HAPPY PATH: Parse the LLM response\nlet response = input.text || input.response || '';\nlet result = false;\nlet parseError = null;\n\ntry {\n  response = response.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const parsed = JSON.parse(response);\n  result = parsed.result === true;\n} catch (e) {\n  parseError = e.message;\n  const lower = response.toLowerCase();\n  if (lower.includes('\"result\": true') || lower.includes('\"result\":true')) {\n    result = true;\n  } else if (lower.includes('\"result\": false') || lower.includes('\"result\":false')) {\n    result = false;\n  } else if (lower.includes('true') && !lower.includes('false')) {\n    result = true;\n  } else if (!lower.includes('true') && !lower.includes('false')) {\n    // Completely unparseable \u2014 use fallback\n    return [{\n      json: {\n        result: fallbackValue,\n        raw_response: response,\n        predicate: originalInput.predicate,\n        parse_error: parseError,\n        used_fallback: true,\n        fallback_reason: 'LLM response could not be parsed as boolean'\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    result,\n    raw_response: response,\n    predicate: originalInput.predicate,\n    parse_error: parseError,\n    used_fallback: false,\n    fallback_reason: null\n  }\n}];"
+        },
+        "id": "parse-result",
+        "name": "Parse Result",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1024,
+          304
+        ]
+      }
     ],
     "connections": {
-        "Workflow Input": {
-            "main": [
-                [
-                    {
-                        "node": "Build Classification Prompt",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Build Classification Prompt": {
-            "main": [
-                [
-                    {
-                        "node": "Classify",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Haiku Classifier": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Classify",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Classify": {
-            "main": [
-                [
-                    {
-                        "node": "Parse Result",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
-    },
-    "settings": {
-        "executionOrder": "v1",
-        "callerPolicy": "workflowsFromSameOwner",
-        "availableInMCP": false
-    },
-    "staticData": null,
-    "meta": null,
-    "pinData": {
-        "Workflow Input": [
+      "Workflow Input": {
+        "main": [
+          [
             {
-                "json": {
-                    "predicate": "The AI response contains actionable information that should be delivered to the user. This includes: meeting reminders, task confirmations, requested information, answers to questions, or any substantive response. Return FALSE if the response indicates no action was taken, no events were found, nothing to report, or the AI explicitly decided not to notify the user.",
-                    "context": "No action taken - the event starts in 15 minutes, which is outside the 15-30 minute window you specified."
-                },
-                "pairedItem": {
-                    "item": 0
-                }
+              "node": "Build Classification Prompt",
+              "type": "main",
+              "index": 0
             }
+          ]
         ]
-    },
-    "versionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
-    "activeVersionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
-    "versionCounter": 21,
-    "triggerCount": 0,
-    "shared": [
-        {
-            "updatedAt": "2026-02-05T09:56:33.755Z",
-            "createdAt": "2026-02-05T09:56:33.755Z",
-            "role": "workflow:owner",
-            "workflowId": "Rw7786cYTYOTQhH9",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "project": {
-                "updatedAt": "2026-02-02T12:27:52.037Z",
-                "createdAt": "2026-02-02T12:20:35.714Z",
-                "id": "Jd992SEPuokf8o5Z",
-                "name": "Spencer Marx <spencer@aclarify.com>",
-                "type": "personal",
-                "icon": null,
-                "description": null,
-                "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-                "projectRelations": [
-                    {
-                        "updatedAt": "2026-02-02T12:20:35.714Z",
-                        "createdAt": "2026-02-02T12:20:35.714Z",
-                        "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-                        "projectId": "Jd992SEPuokf8o5Z",
-                        "user": {
-                            "updatedAt": "2026-02-11T15:20:23.001Z",
-                            "createdAt": "2026-02-02T12:20:29.217Z",
-                            "id": "e498ff06-ba9d-4721-8454-492195be8229",
-                            "email": "spencer@aclarify.com",
-                            "firstName": "Spencer",
-                            "lastName": "Marx",
-                            "personalizationAnswers": {
-                                "version": "v4",
-                                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                                "personalization_survey_n8n_version": "2.6.2",
-                                "companySize": "<20",
-                                "companyType": "saas",
-                                "role": "business-owner",
-                                "reportedSource": "friend"
-                            },
-                            "settings": {
-                                "userActivated": true,
-                                "easyAIWorkflowOnboarded": true,
-                                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                                "userActivatedAt": 1770049275864,
-                                "npsSurvey": {
-                                    "responded": true,
-                                    "lastShownAt": 1770325854784
-                                }
-                            },
-                            "disabled": false,
-                            "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-11",
-                            "isPending": false
-                        }
-                    }
-                ]
+      },
+      "Build Classification Prompt": {
+        "main": [
+          [
+            {
+              "node": "Classify",
+              "type": "main",
+              "index": 0
             }
-        }
-    ],
-    "tags": [],
-    "activeVersion": {
-        "updatedAt": "2026-02-11T17:01:03.009Z",
-        "createdAt": "2026-02-11T17:01:03.009Z",
-        "versionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
+          ]
+        ]
+      },
+      "Haiku Classifier": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Classify",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Classify": {
+        "main": [
+          [
+            {
+              "node": "Parse Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-11T17:01:03.126Z",
+        "id": 592,
         "workflowId": "Rw7786cYTYOTQhH9",
-        "nodes": [
-            {
-                "parameters": {
-                    "workflowInputs": {
-                        "values": [
-                            {
-                                "name": "predicate"
-                            },
-                            {
-                                "name": "context"
-                            },
-                            {
-                                "name": "fallback"
-                            }
-                        ]
-                    }
-                },
-                "id": "trigger",
-                "name": "Workflow Input",
-                "type": "n8n-nodes-base.executeWorkflowTrigger",
-                "typeVersion": 1.1,
-                "position": [
-                    240,
-                    304
-                ]
-            },
-            {
-                "parameters": {
-                    "jsCode": "const input = $input.first().json;\n\nconst predicate = input.predicate || '';\nconst context = typeof input.context === 'string' ? input.context : JSON.stringify(input.context, null, 2);\n\nconst prompt = `You are a binary classifier. Evaluate the following predicate against the provided context and return a JSON response.\n\nPREDICATE TO EVALUATE:\n${predicate}\n\nCONTEXT:\n${context}\n\nRESPOND WITH ONLY VALID JSON IN THIS EXACT FORMAT:\n{\"result\": true} or {\"result\": false}\n\nRules:\n- Return {\"result\": true} if the predicate is TRUE based on the context\n- Return {\"result\": false} if the predicate is FALSE based on the context\n- Do not include any explanation, only the JSON object\n- Do not wrap in markdown code blocks`;\n\nreturn [{\n  json: {\n    prompt,\n    predicate,\n    context\n  }\n}];"
-                },
-                "id": "build-prompt",
-                "name": "Build Classification Prompt",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    464,
-                    304
-                ]
-            },
-            {
-                "parameters": {
-                    "model": {
-                        "__rl": true,
-                        "value": "claude-haiku-4-5-20251001",
-                        "mode": "list",
-                        "cachedResultName": "Claude Haiku 4.5"
-                    },
-                    "options": {
-                        "maxTokensToSample": 50,
-                        "temperature": 0
-                    }
-                },
-                "id": "classifier-model",
-                "name": "Haiku Classifier",
-                "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-                "typeVersion": 1.3,
-                "position": [
-                    688,
-                    480
-                ],
-                "credentials": {
-                    "anthropicApi": {
-                        "id": "iKUsIHimnjBUibjJ",
-                        "name": "Anthropic account"
-                    }
-                }
-            },
-            {
-                "parameters": {
-                    "promptType": "define",
-                    "text": "={{ $json.prompt }}"
-                },
-                "id": "llm-chain",
-                "name": "Classify",
-                "type": "@n8n/n8n-nodes-langchain.chainLlm",
-                "typeVersion": 1.4,
-                "position": [
-                    688,
-                    304
-                ],
-                "retryOnFail": true,
-                "maxTries": 2,
-                "waitBetweenTries": 1000,
-                "continueOnFail": true
-            },
-            {
-                "parameters": {
-                    "jsCode": "const input = $input.first().json;\nconst originalInput = $('Workflow Input').first().json;\n\n// Resolve the fallback value (handles string \"true\"/\"false\", boolean, or undefined)\nconst fallbackRaw = originalInput.fallback;\nconst fallbackValue = fallbackRaw === true || fallbackRaw === 'true';\n\n// ERROR PATH: Classify node failed (continueOnFail passes error downstream)\nif (input.error) {\n  return [{\n    json: {\n      result: fallbackValue,\n      raw_response: null,\n      predicate: originalInput.predicate,\n      parse_error: null,\n      used_fallback: true,\n      fallback_reason: typeof input.error === 'string'\n        ? input.error\n        : (input.error?.message || 'LLM classification failed')\n    }\n  }];\n}\n\n// HAPPY PATH: Parse the LLM response\nlet response = input.text || input.response || '';\nlet result = false;\nlet parseError = null;\n\ntry {\n  response = response.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const parsed = JSON.parse(response);\n  result = parsed.result === true;\n} catch (e) {\n  parseError = e.message;\n  const lower = response.toLowerCase();\n  if (lower.includes('\"result\": true') || lower.includes('\"result\":true')) {\n    result = true;\n  } else if (lower.includes('\"result\": false') || lower.includes('\"result\":false')) {\n    result = false;\n  } else if (lower.includes('true') && !lower.includes('false')) {\n    result = true;\n  } else if (!lower.includes('true') && !lower.includes('false')) {\n    // Completely unparseable \u2014 use fallback\n    return [{\n      json: {\n        result: fallbackValue,\n        raw_response: response,\n        predicate: originalInput.predicate,\n        parse_error: parseError,\n        used_fallback: true,\n        fallback_reason: 'LLM response could not be parsed as boolean'\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    result,\n    raw_response: response,\n    predicate: originalInput.predicate,\n    parse_error: parseError,\n    used_fallback: false,\n    fallback_reason: null\n  }\n}];"
-                },
-                "id": "parse-result",
-                "name": "Parse Result",
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "position": [
-                    1024,
-                    304
-                ]
-            }
-        ],
-        "connections": {
-            "Workflow Input": {
-                "main": [
-                    [
-                        {
-                            "node": "Build Classification Prompt",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Build Classification Prompt": {
-                "main": [
-                    [
-                        {
-                            "node": "Classify",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Haiku Classifier": {
-                "ai_languageModel": [
-                    [
-                        {
-                            "node": "Classify",
-                            "type": "ai_languageModel",
-                            "index": 0
-                        }
-                    ]
-                ]
-            },
-            "Classify": {
-                "main": [
-                    [
-                        {
-                            "node": "Parse Result",
-                            "type": "main",
-                            "index": 0
-                        }
-                    ]
-                ]
-            }
-        },
-        "authors": "Spencer Marx",
-        "name": null,
-        "description": null,
-        "autosaved": false,
-        "workflowPublishHistory": [
-            {
-                "createdAt": "2026-02-11T17:01:03.126Z",
-                "id": 592,
-                "workflowId": "Rw7786cYTYOTQhH9",
-                "versionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
-                "event": "activated",
-                "userId": "e498ff06-ba9d-4721-8454-492195be8229"
-            }
-        ]
-    }
+        "versionId": "60430c1a-ce98-42ae-83bd-180859e0232b",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

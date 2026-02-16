@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-04T15:01:11.555Z",
-  "createdAt": "2026-02-04T14:53:26.891Z",
   "id": "xbFJVyUFvGfUbY4s",
-  "name": "🔧 Utility | Slack Service",
+  "name": "\ud83d\udd27 Utility | Slack Service",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -12,19 +10,49 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [200, 300],
+      "position": [
+        200,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "action", "type": "string" },
-            { "name": "channel_id", "type": "string" },
-            { "name": "user_id", "type": "string" },
-            { "name": "thread_ts", "type": "string" },
-            { "name": "message_ts", "type": "string" },
-            { "name": "text", "type": "string" },
-            { "name": "blocks", "type": "object" },
-            { "name": "unfurl_links", "type": "boolean" },
-            { "name": "unfurl_media", "type": "boolean" }
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "channel_id",
+              "type": "string"
+            },
+            {
+              "name": "user_id",
+              "type": "string"
+            },
+            {
+              "name": "thread_ts",
+              "type": "string"
+            },
+            {
+              "name": "message_ts",
+              "type": "string"
+            },
+            {
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "name": "blocks",
+              "type": "object"
+            },
+            {
+              "name": "unfurl_links",
+              "type": "boolean"
+            },
+            {
+              "name": "unfurl_media",
+              "type": "boolean"
+            }
           ]
         }
       }
@@ -34,7 +62,10 @@
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [420, 300],
+      "position": [
+        420,
+        300
+      ],
       "parameters": {
         "rules": {
           "values": [
@@ -52,7 +83,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "post_message",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -71,7 +105,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "post_thread",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -90,7 +127,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "update_message",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -109,14 +149,19 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "get_user_info",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       }
     },
     {
@@ -124,7 +169,10 @@
       "name": "Post Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 100],
+      "position": [
+        680,
+        100
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.postMessage",
@@ -144,7 +192,10 @@
         "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id || $json.user_id, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}), unfurl_links: $json.unfurl_links !== undefined ? $json.unfurl_links : false, unfurl_media: $json.unfurl_media !== undefined ? $json.unfurl_media : false }) }}"
       },
       "credentials": {
-        "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
       }
     },
     {
@@ -152,7 +203,10 @@
       "name": "Post Thread Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 250],
+      "position": [
+        680,
+        250
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.postMessage",
@@ -172,7 +226,10 @@
         "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id, thread_ts: $json.thread_ts, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}), unfurl_links: $json.unfurl_links !== undefined ? $json.unfurl_links : false, unfurl_media: $json.unfurl_media !== undefined ? $json.unfurl_media : false }) }}"
       },
       "credentials": {
-        "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
       }
     },
     {
@@ -180,7 +237,10 @@
       "name": "Update Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.update",
@@ -200,7 +260,10 @@
         "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id, ts: $json.message_ts, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}) }) }}"
       },
       "credentials": {
-        "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
       }
     },
     {
@@ -208,7 +271,10 @@
       "name": "Get User Info",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 550],
+      "position": [
+        680,
+        550
+      ],
       "parameters": {
         "method": "GET",
         "url": "https://slack.com/api/users.info",
@@ -216,11 +282,19 @@
         "nodeCredentialType": "slackApi",
         "sendQuery": true,
         "queryParameters": {
-          "parameters": [{ "name": "user", "value": "={{ $json.user_id }}" }]
+          "parameters": [
+            {
+              "name": "user",
+              "value": "={{ $json.user_id }}"
+            }
+          ]
         }
       },
       "credentials": {
-        "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+        "slackApi": {
+          "id": "apG1iXE1E50lr9RH",
+          "name": "Slack account"
+        }
       }
     },
     {
@@ -228,7 +302,10 @@
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [920, 300],
+      "position": [
+        920,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $('Workflow Input').first().json;\nconst result = $input.first().json;\n\n// Slack API returns ok: true/false\nif (result.ok === false) {\n  return [{\n    json: {\n      success: false,\n      action: input.action,\n      error: result.error || 'Unknown Slack API error',\n      error_detail: result.response_metadata?.messages || null\n    }\n  }];\n}\n\n// Format successful response based on action\nconst response = {\n  success: true,\n  action: input.action\n};\n\nswitch (input.action) {\n  case 'post_message':\n  case 'post_thread':\n    response.channel = result.channel;\n    response.ts = result.ts;\n    response.message = result.message;\n    break;\n  case 'update_message':\n    response.channel = result.channel;\n    response.ts = result.ts;\n    break;\n  case 'get_user_info':\n    response.user = result.user;\n    break;\n}\n\nreturn [{ json: response }];"
       }
@@ -238,7 +315,10 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 700],
+      "position": [
+        680,
+        700
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Invalid action: ${input.action}`,\n    valid_actions: ['post_message', 'post_thread', 'update_message', 'get_user_info']\n  }\n}];"
       }
@@ -246,28 +326,98 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Route by Action": {
       "main": [
-        [{ "node": "Post Message", "type": "main", "index": 0 }],
-        [{ "node": "Post Thread Reply", "type": "main", "index": 0 }],
-        [{ "node": "Update Message", "type": "main", "index": 0 }],
-        [{ "node": "Get User Info", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Post Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Thread Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get User Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Post Message": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Post Thread Reply": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Message": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get User Info": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -276,66 +426,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "versionId": "e0b35aae-723b-411c-95c5-62782ff386b4",
   "activeVersionId": "e0b35aae-723b-411c-95c5-62782ff386b4",
-  "versionCounter": 12,
+  "versionCounter": 21,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-04T14:53:26.891Z",
-      "createdAt": "2026-02-04T14:53:26.891Z",
-      "role": "workflow:owner",
-      "workflowId": "xbFJVyUFvGfUbY4s",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-04T15:01:11.556Z",
@@ -348,19 +442,49 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [200, 300],
+        "position": [
+          200,
+          300
+        ],
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "action", "type": "string" },
-              { "name": "channel_id", "type": "string" },
-              { "name": "user_id", "type": "string" },
-              { "name": "thread_ts", "type": "string" },
-              { "name": "message_ts", "type": "string" },
-              { "name": "text", "type": "string" },
-              { "name": "blocks", "type": "object" },
-              { "name": "unfurl_links", "type": "boolean" },
-              { "name": "unfurl_media", "type": "boolean" }
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "channel_id",
+                "type": "string"
+              },
+              {
+                "name": "user_id",
+                "type": "string"
+              },
+              {
+                "name": "thread_ts",
+                "type": "string"
+              },
+              {
+                "name": "message_ts",
+                "type": "string"
+              },
+              {
+                "name": "text",
+                "type": "string"
+              },
+              {
+                "name": "blocks",
+                "type": "object"
+              },
+              {
+                "name": "unfurl_links",
+                "type": "boolean"
+              },
+              {
+                "name": "unfurl_media",
+                "type": "boolean"
+              }
             ]
           }
         }
@@ -370,7 +494,10 @@
         "name": "Route by Action",
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
-        "position": [420, 300],
+        "position": [
+          420,
+          300
+        ],
         "parameters": {
           "rules": {
             "values": [
@@ -388,7 +515,10 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "post_message",
-                      "operator": { "type": "string", "operation": "equals" }
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
                     }
                   ]
                 }
@@ -407,7 +537,10 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "post_thread",
-                      "operator": { "type": "string", "operation": "equals" }
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
                     }
                   ]
                 }
@@ -426,7 +559,10 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "update_message",
-                      "operator": { "type": "string", "operation": "equals" }
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
                     }
                   ]
                 }
@@ -445,14 +581,19 @@
                     {
                       "leftValue": "={{ $json.action }}",
                       "rightValue": "get_user_info",
-                      "operator": { "type": "string", "operation": "equals" }
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
                     }
                   ]
                 }
               }
             ]
           },
-          "options": { "fallbackOutput": "extra" }
+          "options": {
+            "fallbackOutput": "extra"
+          }
         }
       },
       {
@@ -460,7 +601,10 @@
         "name": "Post Message",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [680, 100],
+        "position": [
+          680,
+          100
+        ],
         "parameters": {
           "method": "POST",
           "url": "https://slack.com/api/chat.postMessage",
@@ -480,7 +624,10 @@
           "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id || $json.user_id, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}), unfurl_links: $json.unfurl_links !== undefined ? $json.unfurl_links : false, unfurl_media: $json.unfurl_media !== undefined ? $json.unfurl_media : false }) }}"
         },
         "credentials": {
-          "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
         }
       },
       {
@@ -488,7 +635,10 @@
         "name": "Post Thread Reply",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [680, 250],
+        "position": [
+          680,
+          250
+        ],
         "parameters": {
           "method": "POST",
           "url": "https://slack.com/api/chat.postMessage",
@@ -508,7 +658,10 @@
           "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id, thread_ts: $json.thread_ts, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}), unfurl_links: $json.unfurl_links !== undefined ? $json.unfurl_links : false, unfurl_media: $json.unfurl_media !== undefined ? $json.unfurl_media : false }) }}"
         },
         "credentials": {
-          "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
         }
       },
       {
@@ -516,7 +669,10 @@
         "name": "Update Message",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [680, 400],
+        "position": [
+          680,
+          400
+        ],
         "parameters": {
           "method": "POST",
           "url": "https://slack.com/api/chat.update",
@@ -536,7 +692,10 @@
           "jsonBody": "={{ JSON.stringify({ channel: $json.channel_id, ts: $json.message_ts, text: $json.text || '', ...($json.blocks ? { blocks: $json.blocks } : {}) }) }}"
         },
         "credentials": {
-          "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
         }
       },
       {
@@ -544,7 +703,10 @@
         "name": "Get User Info",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [680, 550],
+        "position": [
+          680,
+          550
+        ],
         "parameters": {
           "method": "GET",
           "url": "https://slack.com/api/users.info",
@@ -552,11 +714,19 @@
           "nodeCredentialType": "slackApi",
           "sendQuery": true,
           "queryParameters": {
-            "parameters": [{ "name": "user", "value": "={{ $json.user_id }}" }]
+            "parameters": [
+              {
+                "name": "user",
+                "value": "={{ $json.user_id }}"
+              }
+            ]
           }
         },
         "credentials": {
-          "slackApi": { "id": "apG1iXE1E50lr9RH", "name": "Slack account" }
+          "slackApi": {
+            "id": "apG1iXE1E50lr9RH",
+            "name": "Slack account"
+          }
         }
       },
       {
@@ -564,7 +734,10 @@
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [920, 300],
+        "position": [
+          920,
+          300
+        ],
         "parameters": {
           "jsCode": "const input = $('Workflow Input').first().json;\nconst result = $input.first().json;\n\n// Slack API returns ok: true/false\nif (result.ok === false) {\n  return [{\n    json: {\n      success: false,\n      action: input.action,\n      error: result.error || 'Unknown Slack API error',\n      error_detail: result.response_metadata?.messages || null\n    }\n  }];\n}\n\n// Format successful response based on action\nconst response = {\n  success: true,\n  action: input.action\n};\n\nswitch (input.action) {\n  case 'post_message':\n  case 'post_thread':\n    response.channel = result.channel;\n    response.ts = result.ts;\n    response.message = result.message;\n    break;\n  case 'update_message':\n    response.channel = result.channel;\n    response.ts = result.ts;\n    break;\n  case 'get_user_info':\n    response.user = result.user;\n    break;\n}\n\nreturn [{ json: response }];"
         }
@@ -574,7 +747,10 @@
         "name": "Invalid Action",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [680, 700],
+        "position": [
+          680,
+          700
+        ],
         "parameters": {
           "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Invalid action: ${input.action}`,\n    valid_actions: ['post_message', 'post_thread', 'update_message', 'get_user_info']\n  }\n}];"
         }
@@ -582,28 +758,98 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Route by Action": {
         "main": [
-          [{ "node": "Post Message", "type": "main", "index": 0 }],
-          [{ "node": "Post Thread Reply", "type": "main", "index": 0 }],
-          [{ "node": "Update Message", "type": "main", "index": 0 }],
-          [{ "node": "Get User Info", "type": "main", "index": 0 }],
-          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Post Message",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Post Thread Reply",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Update Message",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get User Info",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Post Message": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Post Thread Reply": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Update Message": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get User Info": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Spencer Marx",

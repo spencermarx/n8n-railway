@@ -1,20 +1,42 @@
 {
+  "id": "YEsW3AOvJZpR1jJS",
   "name": "Utility | DB Manager",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "id": "workflow-input",
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [200, 300],
+      "position": [
+        200,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "action", "type": "string" },
-            { "name": "config_key", "type": "string" },
-            { "name": "config_keys", "type": "array" },
-            { "name": "config_value", "type": "string" },
-            { "name": "log_data", "type": "object" }
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "config_key",
+              "type": "string"
+            },
+            {
+              "name": "config_keys",
+              "type": "array"
+            },
+            {
+              "name": "config_value",
+              "type": "string"
+            },
+            {
+              "name": "log_data",
+              "type": "object"
+            }
           ]
         }
       }
@@ -24,7 +46,10 @@
       "name": "Route by Action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [420, 300],
+      "position": [
+        420,
+        300
+      ],
       "parameters": {
         "rules": {
           "values": [
@@ -41,7 +66,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "get_config",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -59,7 +87,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "get_configs",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -77,7 +108,10 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "set_config",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
@@ -95,14 +129,19 @@
                   {
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "log_execution",
-                    "operator": { "type": "string", "operation": "equals" }
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ]
               }
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       }
     },
     {
@@ -110,14 +149,22 @@
       "name": "Get Config",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [680, 100],
+      "position": [
+        680,
+        100
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT config_key, config_value, description FROM alfred.system_config WHERE config_key = $1",
-        "options": { "queryReplacement": "={{ $json.config_key }}" }
+        "options": {
+          "queryReplacement": "={{ $json.config_key }}"
+        }
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -125,44 +172,12 @@
       "name": "Format Get Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 100],
+      "position": [
+        900,
+        100
+      ],
       "parameters": {
         "jsCode": "const input = $('Workflow Input').first().json;\nconst result = $input.all();\n\nif (result.length > 0 && result[0].json.config_key) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      config_key: row.config_key,\n      value: row.config_value,\n      description: row.description,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      config_key: input.config_key,\n      value: null,\n      error: `Config key not found: ${input.config_key}`\n    }\n  }];\n}"
-      }
-    },
-    {
-      "id": "prepare-get-configs",
-      "name": "Prepare Get Configs",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [680, -50],
-      "parameters": {
-        "jsCode": "const input = $input.first().json;\nlet keys = input.config_keys || [];\n\n// Handle if passed as JSON string\nif (typeof keys === 'string') {\n  try { keys = JSON.parse(keys); } catch (e) { keys = []; }\n}\n\nif (!Array.isArray(keys) || keys.length === 0) {\n  throw new Error('config_keys must be a non-empty array');\n}\n\n// Build SQL with proper escaping - no parameterization issues\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\n// Build IN clause: WHERE config_key IN ('key1', 'key2', ...)\nconst inClause = keys.map(k => sqlEscape(k)).join(', ');\nconst query = `SELECT config_key, config_value, description FROM alfred.system_config WHERE config_key IN (${inClause})`;\n\nreturn [{ json: { keys, keyCount: keys.length, query } }];"
-      }
-    },
-    {
-      "id": "get-configs-batch",
-      "name": "Get Configs Batch",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [900, -50],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.query }}",
-        "options": {}
-      },
-      "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
-      }
-    },
-    {
-      "id": "format-get-configs-response",
-      "name": "Format Get Configs Response",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1120, -50],
-      "parameters": {
-        "jsCode": "const prepared = $('Prepare Get Configs').first().json;\nconst results = $input.all();\nconst requestedKeys = prepared.keys;\n\n// Build map of found configs\nconst configs = {};\nconst found = [];\n\nfor (const item of results) {\n  if (item.json.config_key) {\n    const key = item.json.config_key;\n    let value = item.json.config_value;\n    if (typeof value === 'string') {\n      value = value.replace(/^\\\"|\\\"$/g, '');\n    }\n    configs[key] = value;\n    found.push(key);\n  }\n}\n\nconst missing = requestedKeys.filter(k => !found.includes(k));\n\nif (missing.length > 0) {\n  return [{\n    json: {\n      success: false,\n      configs: configs,\n      found: found,\n      missing: missing,\n      error: `Missing config keys: ${missing.join(', ')}`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    configs: configs,\n    found: found,\n    missing: [],\n    error: null\n  }\n}];"
       }
     },
     {
@@ -170,7 +185,10 @@
       "name": "Prepare Set Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 250],
+      "position": [
+        680,
+        250
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nlet configValue;\ntry {\n  if (typeof input.config_value === 'string') {\n    JSON.parse(input.config_value);\n    configValue = input.config_value;\n  } else {\n    configValue = JSON.stringify(input.config_value);\n  }\n} catch (e) {\n  configValue = JSON.stringify(input.config_value);\n}\n\nconst sql = `INSERT INTO alfred.system_config (config_key, config_value, updated_at)\nVALUES (${sqlEscape(input.config_key)}, ${sqlEscape(configValue)}::jsonb, NOW())\nON CONFLICT (config_key) DO UPDATE SET\n  config_value = EXCLUDED.config_value,\n  updated_at = NOW()\nRETURNING config_key, config_value;`;\n\nreturn [{ json: { query: sql, config_key: input.config_key } }];"
       }
@@ -180,14 +198,20 @@
       "name": "Set Config",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 250],
+      "position": [
+        900,
+        250
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "={{ $json.query }}",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -195,7 +219,10 @@
       "name": "Format Set Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 250],
+      "position": [
+        1120,
+        250
+      ],
       "parameters": {
         "jsCode": "const preparedData = $('Prepare Set Config').first().json;\nconst result = $input.all();\n\nif (result.length > 0 && result[0].json.config_key) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      config_key: row.config_key,\n      value: row.config_value,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      config_key: preparedData.config_key,\n      value: null,\n      error: 'Failed to set config value'\n    }\n  }];\n}"
       }
@@ -205,7 +232,10 @@
       "name": "Prepare Log Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst logData = input.log_data || {};\n\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';\n  if (typeof val === 'number') return String(val);\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nconst executionId = logData.execution_id || 'unknown';\nconst teamName = logData.team_name || 'unknown';\nconst managerWorkflowId = logData.manager_workflow_id || null;\nconst taskSummary = logData.task_summary || null;\nconst totalIterations = logData.total_iterations || 0;\nconst maxIterationsReached = logData.max_iterations_reached || false;\nconst workersInvoked = logData.workers_invoked ? JSON.stringify(logData.workers_invoked) : '[]';\nconst finalStatus = logData.final_status || 'completed';\nconst errorMessage = logData.error_message || null;\n\nconst sql = `INSERT INTO alfred.team_execution_logs \n  (execution_id, team_name, manager_workflow_id, task_summary, total_iterations, max_iterations_reached, workers_invoked, final_status, error_message, completed_at)\nVALUES \n  (${sqlEscape(executionId)}, ${sqlEscape(teamName)}, ${managerWorkflowId ? sqlEscape(managerWorkflowId) : 'NULL'}, ${taskSummary ? sqlEscape(taskSummary) : 'NULL'}, ${totalIterations}, ${maxIterationsReached}, ${sqlEscape(workersInvoked)}::jsonb, ${sqlEscape(finalStatus)}, ${errorMessage ? sqlEscape(errorMessage) : 'NULL'}, NOW())\nRETURNING id, created_at;`;\n\nreturn [{ json: { query: sql } }];"
       }
@@ -215,14 +245,20 @@
       "name": "Log Execution",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 400],
+      "position": [
+        900,
+        400
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "={{ $json.query }}",
         "options": {}
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -230,7 +266,10 @@
       "name": "Format Log Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 400],
+      "position": [
+        1120,
+        400
+      ],
       "parameters": {
         "jsCode": "const result = $input.all();\n\nif (result.length > 0 && result[0].json.id) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      log_id: row.id,\n      created_at: row.created_at,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      log_id: null,\n      error: 'Failed to insert execution log'\n    }\n  }];\n}"
       }
@@ -240,45 +279,189 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 550],
+      "position": [
+        680,
+        550
+      ],
       "parameters": {
-        "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Invalid action: ${input.action}`,\n    valid_actions: ['get_config', 'get_configs', 'set_config', 'log_execution']\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Invalid action: ${input.action}`,\n    valid_actions: ['get_config', 'set_config', 'log_execution']\n  }\n}];"
+      }
+    },
+    {
+      "id": "prepare-get-configs",
+      "name": "Prepare Get Configs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -50
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet keys = input.config_keys || [];\n\n// Handle if passed as JSON string\nif (typeof keys === 'string') {\n  try { keys = JSON.parse(keys); } catch (e) { keys = []; }\n}\n\nif (!Array.isArray(keys) || keys.length === 0) {\n  throw new Error('config_keys must be a non-empty array');\n}\n\n// Build SQL with proper escaping - no parameterization issues\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\n// Build IN clause: WHERE config_key IN ('key1', 'key2', ...)\nconst inClause = keys.map(k => sqlEscape(k)).join(', ');\nconst query = `SELECT config_key, config_value, description FROM alfred.system_config WHERE config_key IN (${inClause})`;\n\nreturn [{ json: { keys, keyCount: keys.length, query } }];"
+      }
+    },
+    {
+      "id": "get-configs-batch",
+      "name": "Get Configs Batch",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        900,
+        -50
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.query }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "format-get-configs-response",
+      "name": "Format Get Configs Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -50
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Get Configs').first().json;\nconst results = $input.all();\nconst requestedKeys = prepared.keys;\n\n// Build map of found configs\nconst configs = {};\nconst found = [];\n\nfor (const item of results) {\n  if (item.json.config_key) {\n    const key = item.json.config_key;\n    let value = item.json.config_value;\n    if (typeof value === 'string') {\n      value = value.replace(/^\\\"|\\\"$/g, '');\n    }\n    configs[key] = value;\n    found.push(key);\n  }\n}\n\nconst missing = requestedKeys.filter(k => !found.includes(k));\n\nif (missing.length > 0) {\n  return [{\n    json: {\n      success: false,\n      configs: configs,\n      found: found,\n      missing: missing,\n      error: `Missing config keys: ${missing.join(', ')}`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    configs: configs,\n    found: found,\n    missing: [],\n    error: null\n  }\n}];"
       }
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Route by Action", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Route by Action": {
       "main": [
-        [{ "node": "Get Config", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Get Configs", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Set Config", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Log Data", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Get Configs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Set Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Config": {
-      "main": [[{ "node": "Format Get Response", "type": "main", "index": 0 }]]
-    },
-    "Prepare Get Configs": {
-      "main": [[{ "node": "Get Configs Batch", "type": "main", "index": 0 }]]
-    },
-    "Get Configs Batch": {
-      "main": [[{ "node": "Format Get Configs Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Get Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Prepare Set Config": {
-      "main": [[{ "node": "Set Config", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Set Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Set Config": {
-      "main": [[{ "node": "Format Set Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Set Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Prepare Log Data": {
-      "main": [[{ "node": "Log Execution", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Log Execution": {
-      "main": [[{ "node": "Format Log Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Log Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Get Configs": {
+      "main": [
+        [
+          {
+            "node": "Get Configs Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Configs Batch": {
+      "main": [
+        [
+          {
+            "node": "Format Get Configs Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -287,7 +470,489 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "tags": []
+  "activeVersionId": "9550e633-13fb-4afa-a91c-bb8020482291",
+  "versionCounter": 19,
+  "triggerCount": 0,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-05T19:11:05.917Z",
+    "createdAt": "2026-02-05T19:11:05.917Z",
+    "versionId": "9550e633-13fb-4afa-a91c-bb8020482291",
+    "workflowId": "YEsW3AOvJZpR1jJS",
+    "nodes": [
+      {
+        "id": "workflow-input",
+        "name": "Workflow Input",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          200,
+          300
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "config_key",
+                "type": "string"
+              },
+              {
+                "name": "config_keys",
+                "type": "array"
+              },
+              {
+                "name": "config_value",
+                "type": "string"
+              },
+              {
+                "name": "log_data",
+                "type": "object"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "route-action",
+        "name": "Route by Action",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          420,
+          300
+        ],
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "outputKey": "get_config",
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "get_config",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "outputKey": "get_configs",
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "get_configs",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "outputKey": "set_config",
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "set_config",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "outputKey": "log_execution",
+                "conditions": {
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.action }}",
+                      "rightValue": "log_execution",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        }
+      },
+      {
+        "id": "get-config",
+        "name": "Get Config",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          680,
+          100
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT config_key, config_value, description FROM alfred.system_config WHERE config_key = $1",
+          "options": {
+            "queryReplacement": "={{ $json.config_key }}"
+          }
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-get-response",
+        "name": "Format Get Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          900,
+          100
+        ],
+        "parameters": {
+          "jsCode": "const input = $('Workflow Input').first().json;\nconst result = $input.all();\n\nif (result.length > 0 && result[0].json.config_key) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      config_key: row.config_key,\n      value: row.config_value,\n      description: row.description,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      config_key: input.config_key,\n      value: null,\n      error: `Config key not found: ${input.config_key}`\n    }\n  }];\n}"
+        }
+      },
+      {
+        "id": "prepare-set-config",
+        "name": "Prepare Set Config",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          680,
+          250
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nlet configValue;\ntry {\n  if (typeof input.config_value === 'string') {\n    JSON.parse(input.config_value);\n    configValue = input.config_value;\n  } else {\n    configValue = JSON.stringify(input.config_value);\n  }\n} catch (e) {\n  configValue = JSON.stringify(input.config_value);\n}\n\nconst sql = `INSERT INTO alfred.system_config (config_key, config_value, updated_at)\nVALUES (${sqlEscape(input.config_key)}, ${sqlEscape(configValue)}::jsonb, NOW())\nON CONFLICT (config_key) DO UPDATE SET\n  config_value = EXCLUDED.config_value,\n  updated_at = NOW()\nRETURNING config_key, config_value;`;\n\nreturn [{ json: { query: sql, config_key: input.config_key } }];"
+        }
+      },
+      {
+        "id": "set-config",
+        "name": "Set Config",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          250
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.query }}",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-set-response",
+        "name": "Format Set Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          250
+        ],
+        "parameters": {
+          "jsCode": "const preparedData = $('Prepare Set Config').first().json;\nconst result = $input.all();\n\nif (result.length > 0 && result[0].json.config_key) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      config_key: row.config_key,\n      value: row.config_value,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      config_key: preparedData.config_key,\n      value: null,\n      error: 'Failed to set config value'\n    }\n  }];\n}"
+        }
+      },
+      {
+        "id": "prepare-log",
+        "name": "Prepare Log Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          680,
+          400
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst logData = input.log_data || {};\n\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';\n  if (typeof val === 'number') return String(val);\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\nconst executionId = logData.execution_id || 'unknown';\nconst teamName = logData.team_name || 'unknown';\nconst managerWorkflowId = logData.manager_workflow_id || null;\nconst taskSummary = logData.task_summary || null;\nconst totalIterations = logData.total_iterations || 0;\nconst maxIterationsReached = logData.max_iterations_reached || false;\nconst workersInvoked = logData.workers_invoked ? JSON.stringify(logData.workers_invoked) : '[]';\nconst finalStatus = logData.final_status || 'completed';\nconst errorMessage = logData.error_message || null;\n\nconst sql = `INSERT INTO alfred.team_execution_logs \n  (execution_id, team_name, manager_workflow_id, task_summary, total_iterations, max_iterations_reached, workers_invoked, final_status, error_message, completed_at)\nVALUES \n  (${sqlEscape(executionId)}, ${sqlEscape(teamName)}, ${managerWorkflowId ? sqlEscape(managerWorkflowId) : 'NULL'}, ${taskSummary ? sqlEscape(taskSummary) : 'NULL'}, ${totalIterations}, ${maxIterationsReached}, ${sqlEscape(workersInvoked)}::jsonb, ${sqlEscape(finalStatus)}, ${errorMessage ? sqlEscape(errorMessage) : 'NULL'}, NOW())\nRETURNING id, created_at;`;\n\nreturn [{ json: { query: sql } }];"
+        }
+      },
+      {
+        "id": "log-execution",
+        "name": "Log Execution",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          400
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.query }}",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-log-response",
+        "name": "Format Log Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          400
+        ],
+        "parameters": {
+          "jsCode": "const result = $input.all();\n\nif (result.length > 0 && result[0].json.id) {\n  const row = result[0].json;\n  return [{\n    json: {\n      success: true,\n      log_id: row.id,\n      created_at: row.created_at,\n      error: null\n    }\n  }];\n} else {\n  return [{\n    json: {\n      success: false,\n      log_id: null,\n      error: 'Failed to insert execution log'\n    }\n  }];\n}"
+        }
+      },
+      {
+        "id": "invalid-action",
+        "name": "Invalid Action",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          680,
+          550
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nreturn [{\n  json: {\n    success: false,\n    error: `Invalid action: ${input.action}`,\n    valid_actions: ['get_config', 'set_config', 'log_execution']\n  }\n}];"
+        }
+      },
+      {
+        "id": "prepare-get-configs",
+        "name": "Prepare Get Configs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          680,
+          -50
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nlet keys = input.config_keys || [];\n\n// Handle if passed as JSON string\nif (typeof keys === 'string') {\n  try { keys = JSON.parse(keys); } catch (e) { keys = []; }\n}\n\nif (!Array.isArray(keys) || keys.length === 0) {\n  throw new Error('config_keys must be a non-empty array');\n}\n\n// Build SQL with proper escaping - no parameterization issues\nfunction sqlEscape(val) {\n  if (val === null || val === undefined) return 'NULL';\n  return \"'\" + String(val).replace(/'/g, \"''\") + \"'\";\n}\n\n// Build IN clause: WHERE config_key IN ('key1', 'key2', ...)\nconst inClause = keys.map(k => sqlEscape(k)).join(', ');\nconst query = `SELECT config_key, config_value, description FROM alfred.system_config WHERE config_key IN (${inClause})`;\n\nreturn [{ json: { keys, keyCount: keys.length, query } }];"
+        }
+      },
+      {
+        "id": "get-configs-batch",
+        "name": "Get Configs Batch",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          900,
+          -50
+        ],
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.query }}",
+          "options": {}
+        },
+        "credentials": {
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "id": "format-get-configs-response",
+        "name": "Format Get Configs Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          -50
+        ],
+        "parameters": {
+          "jsCode": "const prepared = $('Prepare Get Configs').first().json;\nconst results = $input.all();\nconst requestedKeys = prepared.keys;\n\n// Build map of found configs\nconst configs = {};\nconst found = [];\n\nfor (const item of results) {\n  if (item.json.config_key) {\n    const key = item.json.config_key;\n    let value = item.json.config_value;\n    if (typeof value === 'string') {\n      value = value.replace(/^\\\"|\\\"$/g, '');\n    }\n    configs[key] = value;\n    found.push(key);\n  }\n}\n\nconst missing = requestedKeys.filter(k => !found.includes(k));\n\nif (missing.length > 0) {\n  return [{\n    json: {\n      success: false,\n      configs: configs,\n      found: found,\n      missing: missing,\n      error: `Missing config keys: ${missing.join(', ')}`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    success: true,\n    configs: configs,\n    found: found,\n    missing: [],\n    error: null\n  }\n}];"
+        }
+      }
+    ],
+    "connections": {
+      "Workflow Input": {
+        "main": [
+          [
+            {
+              "node": "Route by Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route by Action": {
+        "main": [
+          [
+            {
+              "node": "Get Config",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prepare Get Configs",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prepare Set Config",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prepare Log Data",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Config": {
+        "main": [
+          [
+            {
+              "node": "Format Get Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Set Config": {
+        "main": [
+          [
+            {
+              "node": "Set Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Config": {
+        "main": [
+          [
+            {
+              "node": "Format Set Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Log Data": {
+        "main": [
+          [
+            {
+              "node": "Log Execution",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Log Execution": {
+        "main": [
+          [
+            {
+              "node": "Format Log Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Get Configs": {
+        "main": [
+          [
+            {
+              "node": "Get Configs Batch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Configs Batch": {
+        "main": [
+          [
+            {
+              "node": "Format Get Configs Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Spencer Marx",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-05T19:11:06.071Z",
+        "id": 369,
+        "workflowId": "YEsW3AOvJZpR1jJS",
+        "versionId": "9550e633-13fb-4afa-a91c-bb8020482291",
+        "event": "activated",
+        "userId": "e498ff06-ba9d-4721-8454-492195be8229"
+      }
+    ]
+  }
 }

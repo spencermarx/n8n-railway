@@ -1,38 +1,48 @@
 {
-  "updatedAt": "2026-02-04T20:57:20.289Z",
-  "createdAt": "2026-02-03T12:37:03.098Z",
   "id": "ZUMZ7oNUzDRDnFft",
-  "name": "📄 Tool | Google Docs",
+  "name": "\ud83d\udcc4 Tool | Google Docs",
   "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
     {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "slack_user_id"
+            },
+            {
+              "name": "action"
+            },
+            {
+              "name": "document_id"
+            },
+            {
+              "name": "title"
+            },
+            {
+              "name": "content"
+            },
+            {
+              "name": "folder_id"
+            },
+            {
+              "name": "position"
+            }
+          ]
+        }
+      },
       "id": "trigger",
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300],
-      "parameters": {
-        "workflowInputs": {
-          "values": [
-            { "name": "slack_user_id", "type": "string" },
-            { "name": "action", "type": "string" },
-            { "name": "document_id", "type": "string" },
-            { "name": "title", "type": "string" },
-            { "name": "content", "type": "string" },
-            { "name": "folder_id", "type": "string" },
-            { "name": "position", "type": "string" }
-          ]
-        }
-      }
+      "position": [
+        256,
+        304
+      ]
     },
     {
-      "id": "get-auth",
-      "name": "Get Google Auth",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [470, 300],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -44,19 +54,44 @@
           "value": {
             "slack_user_id": "={{ $json.slack_user_id }}",
             "scopes": "https://www.googleapis.com/auth/documents"
-          }
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "slack_user_id",
+              "displayName": "slack_user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "scopes",
+              "displayName": "scopes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
         },
         "options": {}
-      }
+      },
+      "id": "get-auth",
+      "name": "Get Google Auth",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        304
+      ]
     },
     {
-      "id": "merge-context",
-      "name": "Merge Input Context",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [690, 300],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -122,14 +157,17 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "merge-context",
+      "name": "Merge Input Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        304
+      ]
     },
     {
-      "id": "check-auth",
-      "name": "Check Auth Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [910, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -144,20 +182,26 @@
               "id": "cond-auth",
               "leftValue": "={{ $json.auth_success }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
+        },
+        "options": {}
+      },
+      "id": "check-auth",
+      "name": "Check Auth Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        912,
+        304
+      ]
     },
     {
-      "id": "auth-failed",
-      "name": "Auth Failed Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1130, 520],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -175,14 +219,17 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "auth-failed",
+      "name": "Auth Failed Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        528
+      ]
     },
     {
-      "id": "is-get-document",
-      "name": "Is Get Document?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [1130, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -197,18 +244,25 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "get_document",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
-    },
-    {
-      "id": "is-create-document",
-      "name": "Is Create Document?",
+        },
+        "options": {}
+      },
+      "id": "is-get-document",
+      "name": "Is Get Document?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1350, 380],
+      "position": [
+        1136,
+        304
+      ]
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -223,18 +277,25 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "create_document",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
-    },
-    {
-      "id": "is-append-text",
-      "name": "Is Append Text?",
+        },
+        "options": {}
+      },
+      "id": "is-create-document",
+      "name": "Is Create Document?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1570, 460],
+      "position": [
+        1360,
+        384
+      ]
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -249,18 +310,25 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "append_text",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
-    },
-    {
-      "id": "is-update-document",
-      "name": "Is Update Document?",
+        },
+        "options": {}
+      },
+      "id": "is-append-text",
+      "name": "Is Append Text?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1790, 540],
+      "position": [
+        1584,
+        464
+      ]
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -275,18 +343,25 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "update_document",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
-    },
-    {
-      "id": "is-insert-text",
-      "name": "Is Insert Text?",
+        },
+        "options": {}
+      },
+      "id": "is-update-document",
+      "name": "Is Update Document?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2010, 620],
+      "position": [
+        1792,
+        544
+      ]
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -301,18 +376,25 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "insert_text",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
-    },
-    {
-      "id": "is-get-metadata",
-      "name": "Is Get Metadata?",
+        },
+        "options": {}
+      },
+      "id": "is-insert-text",
+      "name": "Is Insert Text?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2230, 700],
+      "position": [
+        2016,
+        624
+      ]
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -327,20 +409,26 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "get_metadata",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
-      }
+        },
+        "options": {}
+      },
+      "id": "is-get-metadata",
+      "name": "Is Get Metadata?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        704
+      ]
     },
     {
-      "id": "get-document",
-      "name": "Get Document API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1350, 140],
       "parameters": {
-        "method": "GET",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
         "sendHeaders": true,
         "headerParameters": {
@@ -352,24 +440,30 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "get-document",
+      "name": "Get Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        144
+      ]
     },
     {
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\n\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
+      },
       "id": "format-get-document",
       "name": "Format Get Document",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1570, 140],
-      "parameters": {
-        "jsCode": "const doc = $input.first().json;\n\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
-      }
+      "position": [
+        1584,
+        144
+      ]
     },
     {
-      "id": "create-document",
-      "name": "Create Document API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1570, 300],
       "parameters": {
         "method": "POST",
         "url": "https://docs.googleapis.com/v1/documents",
@@ -380,11 +474,13 @@
               "name": "Authorization",
               "value": "=Bearer {{ $json.access_token }}"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
-        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
@@ -394,14 +490,17 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "create-document",
+      "name": "Create Document API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        304
+      ]
     },
     {
-      "id": "add-initial-content",
-      "name": "Add Initial Content?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [1790, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -416,18 +515,25 @@
               "id": "cond-content",
               "leftValue": "={{ $('Merge Input Context').item.json.content }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEquals" }
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
             }
           ]
-        }
-      }
+        },
+        "options": {}
+      },
+      "id": "add-initial-content",
+      "name": "Add Initial Content?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        304
+      ]
     },
     {
-      "id": "append-initial-content",
-      "name": "Append Initial Content",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2010, 240],
       "parameters": {
         "method": "POST",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
@@ -438,11 +544,13 @@
               "name": "Authorization",
               "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
-        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
@@ -452,16 +560,18 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "append-initial-content",
+      "name": "Append Initial Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        240
+      ]
     },
     {
-      "id": "format-create-document",
-      "name": "Format Create Document",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [2230, 300],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -497,16 +607,18 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "format-create-document",
+      "name": "Format Create Document",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        304
+      ]
     },
     {
-      "id": "get-doc-for-append",
-      "name": "Get Doc End Index",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1790, 460],
       "parameters": {
-        "method": "GET",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
         "sendHeaders": true,
         "headerParameters": {
@@ -518,14 +630,17 @@
           ]
         },
         "options": {}
-      }
-    },
-    {
-      "id": "append-text",
-      "name": "Append Text API",
+      },
+      "id": "get-doc-for-append",
+      "name": "Get Doc End Index",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2010, 460],
+      "position": [
+        1792,
+        464
+      ]
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
@@ -536,11 +651,13 @@
               "name": "Authorization",
               "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
-        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
@@ -550,16 +667,18 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "append-text",
+      "name": "Append Text API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        464
+      ]
     },
     {
-      "id": "format-append-text",
-      "name": "Format Append Text",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [2230, 460],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -589,47 +708,54 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "format-append-text",
+      "name": "Format Append Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        464
+      ]
     },
     {
+      "parameters": {
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
       "id": "get-doc-for-update",
       "name": "Get Doc For Update",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2010, 540],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.access_token }}"
-            }
-          ]
-        },
-        "options": {}
-      }
+      "position": [
+        2016,
+        544
+      ]
     },
     {
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\n// Find end index from document body\nlet endIndex = 1;\nif (doc.body?.content) {\n  const lastElement = doc.body.content[doc.body.content.length - 1];\n  if (lastElement?.endIndex) {\n    endIndex = lastElement.endIndex;\n  }\n}\n\nconst previousLength = endIndex - 1;\nconst newContent = context.content;\n\n// Build requests array - delete existing content then insert new\nconst requests = [];\n\n// Only delete if there's content to delete (endIndex > 2 means there's actual content)\nif (endIndex > 2) {\n  requests.push({\n    deleteContentRange: {\n      range: {\n        startIndex: 1,\n        endIndex: endIndex - 1\n      }\n    }\n  });\n}\n\n// Insert new content\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: newContent\n  }\n});\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_document',\n    document_id: context.document_id,\n    document_url: `https://docs.google.com/document/d/${context.document_id}/edit`,\n    previous_length: previousLength,\n    new_length: newContent.length\n  }\n}];"
+      },
       "id": "update-document-api",
       "name": "Update Document API",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2230, 540],
-      "parameters": {
-        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\n// Find end index from document body\nlet endIndex = 1;\nif (doc.body?.content) {\n  const lastElement = doc.body.content[doc.body.content.length - 1];\n  if (lastElement?.endIndex) {\n    endIndex = lastElement.endIndex;\n  }\n}\n\nconst previousLength = endIndex - 1;\nconst newContent = context.content;\n\n// Build requests array - delete existing content then insert new\nconst requests = [];\n\n// Only delete if there's content to delete (endIndex > 2 means there's actual content)\nif (endIndex > 2) {\n  requests.push({\n    deleteContentRange: {\n      range: {\n        startIndex: 1,\n        endIndex: endIndex - 1\n      }\n    }\n  });\n}\n\n// Insert new content\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: newContent\n  }\n});\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_document',\n    document_id: context.document_id,\n    document_url: `https://docs.google.com/document/d/${context.document_id}/edit`,\n    previous_length: previousLength,\n    new_length: newContent.length\n  }\n}];"
-      }
+      "position": [
+        2240,
+        544
+      ]
     },
     {
-      "id": "get-doc-for-insert",
-      "name": "Get Doc For Insert",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2230, 620],
       "parameters": {
-        "method": "GET",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
         "sendHeaders": true,
         "headerParameters": {
@@ -641,26 +767,31 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "get-doc-for-insert",
+      "name": "Get Doc For Insert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        624
+      ]
     },
     {
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\nconst content = context.content;\nconst position = context.position || 'start';\n\n// Determine insertion location\nlet insertRequest;\nlet insertedAt;\n\nif (position === 'end') {\n  // Use endOfSegmentLocation for end insertion\n  insertRequest = {\n    insertText: {\n      endOfSegmentLocation: {},\n      text: content\n    }\n  };\n  insertedAt = 'end';\n} else if (position === 'start') {\n  // Insert at beginning (index 1)\n  insertRequest = {\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  };\n  insertedAt = 1;\n} else {\n  // Numeric index\n  const index = parseInt(position, 10);\n  insertRequest = {\n    insertText: {\n      location: { index: index },\n      text: content\n    }\n  };\n  insertedAt = index;\n}\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests: [insertRequest] }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'insert_text',\n    document_id: context.document_id,\n    inserted_at: insertedAt,\n    character_count: content.length\n  }\n}];"
+      },
       "id": "insert-text-api",
       "name": "Insert Text API",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2450, 620],
-      "parameters": {
-        "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\nconst content = context.content;\nconst position = context.position || 'start';\n\n// Determine insertion location\nlet insertRequest;\nlet insertedAt;\n\nif (position === 'end') {\n  // Use endOfSegmentLocation for end insertion\n  insertRequest = {\n    insertText: {\n      endOfSegmentLocation: {},\n      text: content\n    }\n  };\n  insertedAt = 'end';\n} else if (position === 'start') {\n  // Insert at beginning (index 1)\n  insertRequest = {\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  };\n  insertedAt = 1;\n} else {\n  // Numeric index\n  const index = parseInt(position, 10);\n  insertRequest = {\n    insertText: {\n      location: { index: index },\n      text: content\n    }\n  };\n  insertedAt = index;\n}\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests: [insertRequest] }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'insert_text',\n    document_id: context.document_id,\n    inserted_at: insertedAt,\n    character_count: content.length\n  }\n}];"
-      }
+      "position": [
+        2464,
+        624
+      ]
     },
     {
-      "id": "get-metadata-api",
-      "name": "Get Metadata API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2450, 700],
       "parameters": {
-        "method": "GET",
         "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}?fields=documentId,title,revisionId",
         "sendHeaders": true,
         "headerParameters": {
@@ -672,16 +803,18 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "get-metadata-api",
+      "name": "Get Metadata API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        704
+      ]
     },
     {
-      "id": "format-get-metadata",
-      "name": "Format Get Metadata",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [2670, 700],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -723,16 +856,18 @@
           ]
         },
         "options": {}
-      }
-    },
-    {
-      "id": "invalid-action",
-      "name": "Invalid Action",
+      },
+      "id": "format-get-metadata",
+      "name": "Format Get Metadata",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2450, 780],
+      "position": [
+        2672,
+        704
+      ]
+    },
+    {
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
@@ -750,92 +885,282 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "invalid-action",
+      "name": "Invalid Action",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2464,
+        784
+      ]
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Google Auth": {
-      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Merge Input Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Merge Input Context": {
-      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Auth Success": {
       "main": [
-        [{ "node": "Is Get Document?", "type": "main", "index": 0 }],
-        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Is Get Document?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Get Document?": {
       "main": [
-        [{ "node": "Get Document API", "type": "main", "index": 0 }],
-        [{ "node": "Is Create Document?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Document API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Create Document?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Create Document?": {
       "main": [
-        [{ "node": "Create Document API", "type": "main", "index": 0 }],
-        [{ "node": "Is Append Text?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Document API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Append Text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Append Text?": {
       "main": [
-        [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
-        [{ "node": "Is Update Document?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Doc End Index",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Update Document?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Update Document?": {
       "main": [
-        [{ "node": "Get Doc For Update", "type": "main", "index": 0 }],
-        [{ "node": "Is Insert Text?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Doc For Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Insert Text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Insert Text?": {
       "main": [
-        [{ "node": "Get Doc For Insert", "type": "main", "index": 0 }],
-        [{ "node": "Is Get Metadata?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Doc For Insert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Get Metadata?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Get Metadata?": {
       "main": [
-        [{ "node": "Get Metadata API", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Metadata API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Document API": {
-      "main": [[{ "node": "Format Get Document", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Get Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Document API": {
-      "main": [[{ "node": "Add Initial Content?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Add Initial Content?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Add Initial Content?": {
       "main": [
-        [{ "node": "Append Initial Content", "type": "main", "index": 0 }],
-        [{ "node": "Format Create Document", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Append Initial Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Create Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Append Initial Content": {
       "main": [
-        [{ "node": "Format Create Document", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Create Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Doc End Index": {
-      "main": [[{ "node": "Append Text API", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Append Text API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Append Text API": {
-      "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Append Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Doc For Update": {
-      "main": [[{ "node": "Update Document API", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update Document API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Doc For Insert": {
-      "main": [[{ "node": "Insert Text API", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Insert Text API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Metadata API": {
-      "main": [[{ "node": "Format Get Metadata", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Get Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -844,71 +1169,29 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
-  "pinData": null,
-  "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
-  "activeVersionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
-  "versionCounter": 30,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-03T12:37:03.098Z",
-      "createdAt": "2026-02-03T12:37:03.098Z",
-      "role": "workflow:owner",
-      "workflowId": "ZUMZ7oNUzDRDnFft",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
+  "pinData": {
+    "Workflow Input": [
+      {
+        "json": {
+          "success": true,
+          "brand_guide_doc_id": "14_iOMjdagXCd9vX_wviQm4ruaMxRQOblUj9VL_2tZYY",
+          "content_strategy_doc_id": "1A-9IPf6UN4Vn-vdwivvRTJt6oFnB_KDTDOuVGzO66_U",
+          "content_calendar_sheet_id": "1Txc5v1Eeitm5-xvHleKvtEbH-KhxUk3hyxrBcr89rI0",
+          "content_calendar_sheet_name": "Content Tracker",
+          "error": null,
+          "missing": []
+        }
       }
-    }
-  ],
+    ]
+  },
+  "activeVersionId": "126234c9-fe67-4247-b3f5-815fe4400e2f",
+  "versionCounter": 42,
+  "triggerCount": 0,
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-02-04T20:57:20.294Z",
-    "createdAt": "2026-02-04T20:57:20.294Z",
-    "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
+    "updatedAt": "2026-02-05T14:12:36.071Z",
+    "createdAt": "2026-02-05T14:12:36.071Z",
+    "versionId": "126234c9-fe67-4247-b3f5-815fe4400e2f",
     "workflowId": "ZUMZ7oNUzDRDnFft",
     "nodes": [
       {
@@ -916,17 +1199,41 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [250, 300],
+        "position": [
+          250,
+          300
+        ],
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "slack_user_id", "type": "string" },
-              { "name": "action", "type": "string" },
-              { "name": "document_id", "type": "string" },
-              { "name": "title", "type": "string" },
-              { "name": "content", "type": "string" },
-              { "name": "folder_id", "type": "string" },
-              { "name": "position", "type": "string" }
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "document_id",
+                "type": "string"
+              },
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "name": "content",
+                "type": "string"
+              },
+              {
+                "name": "folder_id",
+                "type": "string"
+              },
+              {
+                "name": "position",
+                "type": "string"
+              }
             ]
           }
         }
@@ -936,7 +1243,10 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [470, 300],
+        "position": [
+          470,
+          300
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -958,7 +1268,10 @@
         "name": "Merge Input Context",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [690, 300],
+        "position": [
+          690,
+          300
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1033,7 +1346,10 @@
         "name": "Check Auth Success",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [910, 300],
+        "position": [
+          910,
+          300
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1048,7 +1364,10 @@
                 "id": "cond-auth",
                 "leftValue": "={{ $json.auth_success }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1059,7 +1378,10 @@
         "name": "Auth Failed Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1130, 520],
+        "position": [
+          1130,
+          520
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1086,7 +1408,10 @@
         "name": "Is Get Document?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1130, 300],
+        "position": [
+          1130,
+          300
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1101,7 +1426,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "get_document",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1112,7 +1440,10 @@
         "name": "Is Create Document?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1350, 380],
+        "position": [
+          1350,
+          380
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1127,7 +1458,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "create_document",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1138,7 +1472,10 @@
         "name": "Is Append Text?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1570, 460],
+        "position": [
+          1570,
+          460
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1153,7 +1490,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "append_text",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1164,7 +1504,10 @@
         "name": "Is Update Document?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1790, 540],
+        "position": [
+          1790,
+          540
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1179,7 +1522,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "update_document",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1190,7 +1536,10 @@
         "name": "Is Insert Text?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [2010, 620],
+        "position": [
+          2010,
+          620
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1205,7 +1554,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "insert_text",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1216,7 +1568,10 @@
         "name": "Is Get Metadata?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [2230, 700],
+        "position": [
+          2230,
+          700
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1231,7 +1586,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "get_metadata",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -1242,7 +1600,10 @@
         "name": "Get Document API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1350, 140],
+        "position": [
+          1350,
+          140
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
@@ -1263,7 +1624,10 @@
         "name": "Format Get Document",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1570, 140],
+        "position": [
+          1570,
+          140
+        ],
         "parameters": {
           "jsCode": "const doc = $input.first().json;\n\nlet text = '';\nif (doc.body?.content) {\n  for (const element of doc.body.content) {\n    if (element.paragraph?.elements) {\n      for (const textElement of element.paragraph.elements) {\n        if (textElement.textRun?.content) {\n          text += textElement.textRun.content;\n        }\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_document',\n    document_id: doc.documentId,\n    title: doc.title,\n    text: text.trim(),\n    revision_id: doc.revisionId,\n    document_url: `https://docs.google.com/document/d/${doc.documentId}/edit`\n  }\n}];"
         }
@@ -1273,7 +1637,10 @@
         "name": "Create Document API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1570, 300],
+        "position": [
+          1570,
+          300
+        ],
         "parameters": {
           "method": "POST",
           "url": "https://docs.googleapis.com/v1/documents",
@@ -1284,7 +1651,10 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $json.access_token }}"
               },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           },
           "sendBody": true,
@@ -1305,7 +1675,10 @@
         "name": "Add Initial Content?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1790, 300],
+        "position": [
+          1790,
+          300
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -1320,7 +1693,10 @@
                 "id": "cond-content",
                 "leftValue": "={{ $('Merge Input Context').item.json.content }}",
                 "rightValue": "",
-                "operator": { "type": "string", "operation": "notEquals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
               }
             ]
           }
@@ -1331,7 +1707,10 @@
         "name": "Append Initial Content",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [2010, 240],
+        "position": [
+          2010,
+          240
+        ],
         "parameters": {
           "method": "POST",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Document API').item.json.documentId }}:batchUpdate",
@@ -1342,7 +1721,10 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
               },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           },
           "sendBody": true,
@@ -1363,7 +1745,10 @@
         "name": "Format Create Document",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2230, 300],
+        "position": [
+          2230,
+          300
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1408,7 +1793,10 @@
         "name": "Get Doc End Index",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1790, 460],
+        "position": [
+          1790,
+          460
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
@@ -1429,7 +1817,10 @@
         "name": "Append Text API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [2010, 460],
+        "position": [
+          2010,
+          460
+        ],
         "parameters": {
           "method": "POST",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $('Merge Input Context').item.json.document_id }}:batchUpdate",
@@ -1440,7 +1831,10 @@
                 "name": "Authorization",
                 "value": "=Bearer {{ $('Merge Input Context').item.json.access_token }}"
               },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           },
           "sendBody": true,
@@ -1461,7 +1855,10 @@
         "name": "Format Append Text",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2230, 460],
+        "position": [
+          2230,
+          460
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1500,7 +1897,10 @@
         "name": "Get Doc For Update",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [2010, 540],
+        "position": [
+          2010,
+          540
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
@@ -1521,7 +1921,10 @@
         "name": "Update Document API",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2230, 540],
+        "position": [
+          2230,
+          540
+        ],
         "parameters": {
           "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\n// Find end index from document body\nlet endIndex = 1;\nif (doc.body?.content) {\n  const lastElement = doc.body.content[doc.body.content.length - 1];\n  if (lastElement?.endIndex) {\n    endIndex = lastElement.endIndex;\n  }\n}\n\nconst previousLength = endIndex - 1;\nconst newContent = context.content;\n\n// Build requests array - delete existing content then insert new\nconst requests = [];\n\n// Only delete if there's content to delete (endIndex > 2 means there's actual content)\nif (endIndex > 2) {\n  requests.push({\n    deleteContentRange: {\n      range: {\n        startIndex: 1,\n        endIndex: endIndex - 1\n      }\n    }\n  });\n}\n\n// Insert new content\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: newContent\n  }\n});\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'update_document',\n    document_id: context.document_id,\n    document_url: `https://docs.google.com/document/d/${context.document_id}/edit`,\n    previous_length: previousLength,\n    new_length: newContent.length\n  }\n}];"
         }
@@ -1531,7 +1934,10 @@
         "name": "Get Doc For Insert",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [2230, 620],
+        "position": [
+          2230,
+          620
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}",
@@ -1552,7 +1958,10 @@
         "name": "Insert Text API",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2450, 620],
+        "position": [
+          2450,
+          620
+        ],
         "parameters": {
           "jsCode": "const doc = $input.first().json;\nconst context = $('Merge Input Context').item.json;\n\nconst content = context.content;\nconst position = context.position || 'start';\n\n// Determine insertion location\nlet insertRequest;\nlet insertedAt;\n\nif (position === 'end') {\n  // Use endOfSegmentLocation for end insertion\n  insertRequest = {\n    insertText: {\n      endOfSegmentLocation: {},\n      text: content\n    }\n  };\n  insertedAt = 'end';\n} else if (position === 'start') {\n  // Insert at beginning (index 1)\n  insertRequest = {\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  };\n  insertedAt = 1;\n} else {\n  // Numeric index\n  const index = parseInt(position, 10);\n  insertRequest = {\n    insertText: {\n      location: { index: index },\n      text: content\n    }\n  };\n  insertedAt = index;\n}\n\n// Make the batchUpdate API call\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://docs.googleapis.com/v1/documents/${context.document_id}:batchUpdate`,\n  headers: {\n    'Authorization': `Bearer ${context.access_token}`,\n    'Content-Type': 'application/json'\n  },\n  body: { requests: [insertRequest] }\n});\n\nreturn [{\n  json: {\n    success: true,\n    action: 'insert_text',\n    document_id: context.document_id,\n    inserted_at: insertedAt,\n    character_count: content.length\n  }\n}];"
         }
@@ -1562,7 +1971,10 @@
         "name": "Get Metadata API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [2450, 700],
+        "position": [
+          2450,
+          700
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}?fields=documentId,title,revisionId",
@@ -1583,7 +1995,10 @@
         "name": "Format Get Metadata",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2670, 700],
+        "position": [
+          2670,
+          700
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1634,7 +2049,10 @@
         "name": "Invalid Action",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2450, 780],
+        "position": [
+          2450,
+          780
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1659,93 +2077,269 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Google Auth": {
         "main": [
-          [{ "node": "Merge Input Context", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Merge Input Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Merge Input Context": {
-        "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check Auth Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check Auth Success": {
         "main": [
-          [{ "node": "Is Get Document?", "type": "main", "index": 0 }],
-          [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Is Get Document?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Get Document?": {
         "main": [
-          [{ "node": "Get Document API", "type": "main", "index": 0 }],
-          [{ "node": "Is Create Document?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Document API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Create Document?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Create Document?": {
         "main": [
-          [{ "node": "Create Document API", "type": "main", "index": 0 }],
-          [{ "node": "Is Append Text?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Create Document API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Append Text?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Append Text?": {
         "main": [
-          [{ "node": "Get Doc End Index", "type": "main", "index": 0 }],
-          [{ "node": "Is Update Document?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Doc End Index",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Update Document?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Update Document?": {
         "main": [
-          [{ "node": "Get Doc For Update", "type": "main", "index": 0 }],
-          [{ "node": "Is Insert Text?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Doc For Update",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Insert Text?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Insert Text?": {
         "main": [
-          [{ "node": "Get Doc For Insert", "type": "main", "index": 0 }],
-          [{ "node": "Is Get Metadata?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Doc For Insert",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Get Metadata?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Get Metadata?": {
         "main": [
-          [{ "node": "Get Metadata API", "type": "main", "index": 0 }],
-          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Metadata API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Get Document API": {
         "main": [
-          [{ "node": "Format Get Document", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Get Document",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Create Document API": {
         "main": [
-          [{ "node": "Add Initial Content?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Add Initial Content?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Add Initial Content?": {
         "main": [
-          [{ "node": "Append Initial Content", "type": "main", "index": 0 }],
-          [{ "node": "Format Create Document", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Append Initial Content",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Format Create Document",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Append Initial Content": {
         "main": [
-          [{ "node": "Format Create Document", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Create Document",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Get Doc End Index": {
-        "main": [[{ "node": "Append Text API", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Append Text API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Append Text API": {
-        "main": [[{ "node": "Format Append Text", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Append Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Doc For Update": {
-        "main": [[{ "node": "Update Document API", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Update Document API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Doc For Insert": {
-        "main": [[{ "node": "Insert Text API", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Insert Text API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Metadata API": {
-        "main": [[{ "node": "Format Get Metadata", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Get Metadata",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Spencer Marx",
@@ -1754,10 +2348,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-04T20:57:20.411Z",
-        "id": 252,
+        "createdAt": "2026-02-05T14:12:36.254Z",
+        "id": 281,
         "workflowId": "ZUMZ7oNUzDRDnFft",
-        "versionId": "40c2dc68-ed1e-486d-a43d-d1125bb8907b",
+        "versionId": "126234c9-fe67-4247-b3f5-815fe4400e2f",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }

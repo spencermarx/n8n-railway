@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-04T19:12:01.302Z",
-  "createdAt": "2026-02-03T20:24:23.328Z",
   "id": "B7vIQscroN53icOa",
-  "name": "📢 Tool | Slack Message",
+  "name": "\ud83d\udce2 Tool | Slack Message",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -12,14 +10,29 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [256, 192],
+      "position": [
+        256,
+        192
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "channel", "type": "string" },
-            { "name": "message", "type": "string" },
-            { "name": "thread_ts", "type": "string" },
-            { "name": "slack_user_id", "type": "string" }
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "message",
+              "type": "string"
+            },
+            {
+              "name": "thread_ts",
+              "type": "string"
+            },
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            }
           ]
         }
       }
@@ -29,7 +42,10 @@
       "name": "Validate Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 192],
+      "position": [
+        480,
+        192
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\n\nconst channel = input.channel;\nconst message = input.message;\nconst threadTs = input.thread_ts || null;\nconst slackUserId = input.slack_user_id;\n\n// Validate required fields\nif (!channel) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Channel is required. Provide a channel name (e.g., #general) or channel ID.',\n      action: 'send_message'\n    }\n  }];\n}\n\nif (!message) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Message content is required.',\n      action: 'send_message'\n    }\n  }];\n}\n\n// Clean channel name - remove # if present\nlet cleanChannel = channel.trim();\nif (cleanChannel.startsWith('#')) {\n  cleanChannel = cleanChannel.substring(1);\n}\n\nreturn [{\n  json: {\n    valid: true,\n    channel: cleanChannel,\n    message: message,\n    thread_ts: threadTs,\n    slack_user_id: slackUserId\n  }\n}];"
       }
@@ -39,7 +55,10 @@
       "name": "Check Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [704, 192],
+      "position": [
+        704,
+        192
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -53,7 +72,10 @@
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -66,7 +88,10 @@
       "name": "Format for Slack",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [928, 96],
+      "position": [
+        928,
+        96
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -75,7 +100,9 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": { "text": "={{ $json.message }}" }
+          "value": {
+            "text": "={{ $json.message }}"
+          }
         },
         "options": {}
       }
@@ -85,7 +112,10 @@
       "name": "Prepare Message",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1152, 96],
+      "position": [
+        1152,
+        96
+      ],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -123,7 +153,10 @@
       "name": "Check Thread",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1376, 96],
+      "position": [
+        1376,
+        96
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -137,7 +170,10 @@
               "id": "thread-check",
               "leftValue": "={{ $json.thread_ts }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
             }
           ],
           "combinator": "and"
@@ -150,7 +186,10 @@
       "name": "Format Thread Success",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1824, 0],
+      "position": [
+        1824,
+        0
+      ],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -200,7 +239,10 @@
       "name": "Format Success",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1824, 192],
+      "position": [
+        1824,
+        192
+      ],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -244,7 +286,10 @@
       "name": "Error Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [928, 288],
+      "position": [
+        928,
+        288
+      ],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -264,7 +309,10 @@
       "name": "Send Threaded Message",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [1600, 0],
+      "position": [
+        1600,
+        0
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -288,7 +336,10 @@
       "name": "Send Slack Message",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [1600, 192],
+      "position": [
+        1600,
+        192
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -309,36 +360,106 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate Input": {
-      "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Valid": {
       "main": [
-        [{ "node": "Format for Slack", "type": "main", "index": 0 }],
-        [{ "node": "Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format for Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Format for Slack": {
-      "main": [[{ "node": "Prepare Message", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Prepare Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Prepare Message": {
-      "main": [[{ "node": "Check Thread", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Thread": {
       "main": [
-        [{ "node": "Send Threaded Message", "type": "main", "index": 0 }],
-        [{ "node": "Send Slack Message", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Send Threaded Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Send Threaded Message": {
       "main": [
-        [{ "node": "Format Thread Success", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Thread Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Send Slack Message": {
-      "main": [[{ "node": "Format Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -347,66 +468,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "versionId": "10ac8f9d-7b9b-4dc0-9540-4bbbddd61e16",
   "activeVersionId": "10ac8f9d-7b9b-4dc0-9540-4bbbddd61e16",
-  "versionCounter": 31,
+  "versionCounter": 38,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-03T20:24:23.328Z",
-      "createdAt": "2026-02-03T20:24:23.328Z",
-      "role": "workflow:owner",
-      "workflowId": "B7vIQscroN53icOa",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-04T19:12:01.305Z",
@@ -419,14 +484,29 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [256, 192],
+        "position": [
+          256,
+          192
+        ],
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "channel", "type": "string" },
-              { "name": "message", "type": "string" },
-              { "name": "thread_ts", "type": "string" },
-              { "name": "slack_user_id", "type": "string" }
+              {
+                "name": "channel",
+                "type": "string"
+              },
+              {
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "name": "thread_ts",
+                "type": "string"
+              },
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              }
             ]
           }
         }
@@ -436,7 +516,10 @@
         "name": "Validate Input",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [480, 192],
+        "position": [
+          480,
+          192
+        ],
         "parameters": {
           "jsCode": "const input = $input.first().json;\n\nconst channel = input.channel;\nconst message = input.message;\nconst threadTs = input.thread_ts || null;\nconst slackUserId = input.slack_user_id;\n\n// Validate required fields\nif (!channel) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Channel is required. Provide a channel name (e.g., #general) or channel ID.',\n      action: 'send_message'\n    }\n  }];\n}\n\nif (!message) {\n  return [{\n    json: {\n      valid: false,\n      error: 'Message content is required.',\n      action: 'send_message'\n    }\n  }];\n}\n\n// Clean channel name - remove # if present\nlet cleanChannel = channel.trim();\nif (cleanChannel.startsWith('#')) {\n  cleanChannel = cleanChannel.substring(1);\n}\n\nreturn [{\n  json: {\n    valid: true,\n    channel: cleanChannel,\n    message: message,\n    thread_ts: threadTs,\n    slack_user_id: slackUserId\n  }\n}];"
         }
@@ -446,7 +529,10 @@
         "name": "Check Valid",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [704, 192],
+        "position": [
+          704,
+          192
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -460,7 +546,10 @@
                 "id": "valid-check",
                 "leftValue": "={{ $json.valid }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ],
             "combinator": "and"
@@ -473,7 +562,10 @@
         "name": "Format for Slack",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [928, 96],
+        "position": [
+          928,
+          96
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -482,7 +574,9 @@
           },
           "workflowInputs": {
             "mappingMode": "defineBelow",
-            "value": { "text": "={{ $json.message }}" }
+            "value": {
+              "text": "={{ $json.message }}"
+            }
           },
           "options": {}
         }
@@ -492,7 +586,10 @@
         "name": "Prepare Message",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1152, 96],
+        "position": [
+          1152,
+          96
+        ],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -530,7 +627,10 @@
         "name": "Check Thread",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [1376, 96],
+        "position": [
+          1376,
+          96
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -544,7 +644,10 @@
                 "id": "thread-check",
                 "leftValue": "={{ $json.thread_ts }}",
                 "rightValue": "",
-                "operator": { "type": "string", "operation": "notEmpty" }
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                }
               }
             ],
             "combinator": "and"
@@ -557,7 +660,10 @@
         "name": "Format Thread Success",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1824, 0],
+        "position": [
+          1824,
+          0
+        ],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -607,7 +713,10 @@
         "name": "Format Success",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1824, 192],
+        "position": [
+          1824,
+          192
+        ],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -651,7 +760,10 @@
         "name": "Error Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [928, 288],
+        "position": [
+          928,
+          288
+        ],
         "parameters": {
           "assignments": {
             "assignments": [
@@ -671,7 +783,10 @@
         "name": "Send Threaded Message",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [1600, 0],
+        "position": [
+          1600,
+          0
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -695,7 +810,10 @@
         "name": "Send Slack Message",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [1600, 192],
+        "position": [
+          1600,
+          192
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -716,36 +834,106 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Validate Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Validate Input": {
-        "main": [[{ "node": "Check Valid", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check Valid",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check Valid": {
         "main": [
-          [{ "node": "Format for Slack", "type": "main", "index": 0 }],
-          [{ "node": "Error Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format for Slack",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Error Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Format for Slack": {
-        "main": [[{ "node": "Prepare Message", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Prepare Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Prepare Message": {
-        "main": [[{ "node": "Check Thread", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check Thread",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check Thread": {
         "main": [
-          [{ "node": "Send Threaded Message", "type": "main", "index": 0 }],
-          [{ "node": "Send Slack Message", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Send Threaded Message",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Send Slack Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Send Threaded Message": {
         "main": [
-          [{ "node": "Format Thread Success", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Thread Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Send Slack Message": {
-        "main": [[{ "node": "Format Success", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Spencer Marx",

@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-04T20:59:21.151Z",
-  "createdAt": "2026-02-03T12:36:28.340Z",
   "id": "4o06kwV3LGoZjGY9",
-  "name": "📧 Tool | Gmail",
+  "name": "\ud83d\udce7 Tool | Gmail",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -12,22 +10,61 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "slack_user_id", "type": "string" },
-            { "name": "action", "type": "string" },
-            { "name": "query", "type": "string" },
-            { "name": "message_id", "type": "string" },
-            { "name": "to", "type": "string" },
-            { "name": "subject", "type": "string" },
-            { "name": "body", "type": "string" },
-            { "name": "cc", "type": "string" },
-            { "name": "bcc", "type": "string" },
-            { "name": "max_results", "type": "string" },
-            { "name": "channel_id", "type": "string" },
-            { "name": "thread_ts", "type": "string" }
+            {
+              "name": "slack_user_id",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "query",
+              "type": "string"
+            },
+            {
+              "name": "message_id",
+              "type": "string"
+            },
+            {
+              "name": "to",
+              "type": "string"
+            },
+            {
+              "name": "subject",
+              "type": "string"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            },
+            {
+              "name": "cc",
+              "type": "string"
+            },
+            {
+              "name": "bcc",
+              "type": "string"
+            },
+            {
+              "name": "max_results",
+              "type": "string"
+            },
+            {
+              "name": "channel_id",
+              "type": "string"
+            },
+            {
+              "name": "thread_ts",
+              "type": "string"
+            }
           ]
         }
       }
@@ -37,7 +74,10 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [470, 300],
+      "position": [
+        470,
+        300
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -59,7 +99,10 @@
       "name": "Merge Input Context",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [690, 300],
+      "position": [
+        690,
+        300
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -164,7 +207,10 @@
       "name": "Check Auth Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [910, 300],
+      "position": [
+        910,
+        300
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -178,7 +224,10 @@
             {
               "leftValue": "={{ $json.auth_success }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" },
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
               "id": "condition-auth"
             }
           ]
@@ -190,7 +239,10 @@
       "name": "Auth Failed Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1130, 520],
+      "position": [
+        1130,
+        520
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -217,7 +269,10 @@
       "name": "Is List Messages?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1130, 300],
+      "position": [
+        1130,
+        300
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -232,7 +287,10 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "list_messages",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         }
@@ -243,7 +301,10 @@
       "name": "Is Get Message?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1350, 380],
+      "position": [
+        1350,
+        380
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -258,7 +319,10 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "get_message",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         }
@@ -269,7 +333,10 @@
       "name": "Is Send Email?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [1570, 460],
+      "position": [
+        1570,
+        460
+      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -284,7 +351,10 @@
               "id": "cond-action",
               "leftValue": "={{ $json.action }}",
               "rightValue": "send_email",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         }
@@ -295,14 +365,20 @@
       "name": "List Messages API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1350, 140],
+      "position": [
+        1350,
+        140
+      ],
       "parameters": {
         "method": "GET",
         "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "q", "value": "={{ $json.query || 'in:inbox' }}" },
+            {
+              "name": "q",
+              "value": "={{ $json.query || 'in:inbox' }}"
+            },
             {
               "name": "maxResults",
               "value": "={{ $json.max_results || '10' }}"
@@ -326,7 +402,10 @@
       "name": "Format List Messages",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1570, 140],
+      "position": [
+        1570,
+        140
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -371,13 +450,21 @@
       "name": "Get Message API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1570, 300],
+      "position": [
+        1570,
+        300
+      ],
       "parameters": {
         "method": "GET",
         "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.message_id }}",
         "sendQuery": true,
         "queryParameters": {
-          "parameters": [{ "name": "format", "value": "full" }]
+          "parameters": [
+            {
+              "name": "format",
+              "value": "full"
+            }
+          ]
         },
         "sendHeaders": true,
         "headerParameters": {
@@ -396,7 +483,10 @@
       "name": "Format Get Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1790, 300],
+      "position": [
+        1790,
+        300
+      ],
       "parameters": {
         "jsCode": "const message = $input.first().json;\n\nconst headers = message.payload?.headers || [];\nconst getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n\nlet body = '';\nif (message.payload?.body?.data) {\n  body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n} else if (message.payload?.parts) {\n  const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n  if (textPart?.body?.data) {\n    body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_message',\n    message_id: message.id,\n    thread_id: message.threadId,\n    from: getHeader('From'),\n    to: getHeader('To'),\n    subject: getHeader('Subject'),\n    date: getHeader('Date'),\n    snippet: message.snippet,\n    body: body,\n    labels: message.labelIds || []\n  }\n}];"
       }
@@ -406,7 +496,10 @@
       "name": "Format Email",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [1790, 460],
+      "position": [
+        1790,
+        460
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -430,7 +523,10 @@
       "name": "Build Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2010, 460],
+      "position": [
+        2010,
+        460
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst routeData = $('Merge Input Context').first().json;\n\nconst to = routeData.to;\nconst subject = input.subject || routeData.subject;\nconst bodyPlain = input.body_plain || routeData.body;\nconst bodyHtml = input.body_html;\nconst cc = routeData.cc || '';\nconst bcc = routeData.bcc || '';\nconst accessToken = routeData.access_token;\n\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = 'To: ' + to + '\\n';\nif (cc) mimeMessage += 'Cc: ' + cc + '\\n';\nif (bcc) mimeMessage += 'Bcc: ' + bcc + '\\n';\nmimeMessage += 'Subject: ' + subject + '\\n';\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += 'Content-Type: multipart/alternative; boundary=\"' + boundary + '\"\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += bodyPlain + '\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\nmimeMessage += bodyHtml + '\\n\\n';\nmimeMessage += '--' + boundary + '--';\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    raw: encoded,\n    access_token: accessToken\n  }\n}];"
       }
@@ -440,7 +536,10 @@
       "name": "Lookup User for Approval",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [2230, 460],
+      "position": [
+        2230,
+        460
+      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT id, slack_user_id, preferences->'email_settings'->>'approval_expiry_minutes' as expiry_minutes FROM alfred.users WHERE slack_user_id = $1;",
@@ -449,7 +548,10 @@
         }
       },
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
@@ -457,7 +559,10 @@
       "name": "Prepare Approval Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2450, 460],
+      "position": [
+        2450,
+        460
+      ],
       "parameters": {
         "jsCode": "const routeData = $('Merge Input Context').first().json;\nconst formatResult = $('Format Email').first().json;\nconst userResult = $input.first().json;\n\nreturn [{\n  json: {\n    action_type: 'email_send',\n    user_id: userResult.id,\n    slack_user_id: userResult.slack_user_id,\n    slack_channel_id: routeData.channel_id || '',\n    slack_thread_ts: routeData.thread_ts || '',\n    payload: {\n      to: routeData.to,\n      cc: routeData.cc || '',\n      bcc: routeData.bcc || '',\n      subject: formatResult.subject || routeData.subject,\n      body_plain: formatResult.body_plain || routeData.body,\n      body_html: formatResult.body_html || '',\n      user_email: routeData.user_email\n    },\n    expiry_minutes: parseInt(userResult.expiry_minutes) || 60\n  }\n}];"
       }
@@ -467,7 +572,10 @@
       "name": "Call Approval Guard",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [2670, 460],
+      "position": [
+        2670,
+        460
+      ],
       "parameters": {
         "workflowId": {
           "__rl": true,
@@ -494,7 +602,10 @@
       "name": "Format Approval Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2890, 460],
+      "position": [
+        2890,
+        460
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -545,7 +656,10 @@
       "name": "Invalid Action",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1790, 600],
+      "position": [
+        1790,
+        600
+      ],
       "parameters": {
         "mode": "manual",
         "assignments": {
@@ -570,63 +684,185 @@
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Google Auth": {
-      "main": [[{ "node": "Merge Input Context", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Merge Input Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Merge Input Context": {
-      "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Auth Success": {
       "main": [
-        [{ "node": "Is List Messages?", "type": "main", "index": 0 }],
-        [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Is List Messages?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is List Messages?": {
       "main": [
-        [{ "node": "List Messages API", "type": "main", "index": 0 }],
-        [{ "node": "Is Get Message?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "List Messages API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Get Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Get Message?": {
       "main": [
-        [{ "node": "Get Message API", "type": "main", "index": 0 }],
-        [{ "node": "Is Send Email?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Message API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Send Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Send Email?": {
       "main": [
-        [{ "node": "Format Email", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "List Messages API": {
-      "main": [[{ "node": "Format List Messages", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format List Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Message API": {
-      "main": [[{ "node": "Format Get Message", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Get Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Email": {
-      "main": [[{ "node": "Build Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Email": {
       "main": [
-        [{ "node": "Lookup User for Approval", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Lookup User for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Lookup User for Approval": {
       "main": [
-        [{ "node": "Prepare Approval Payload", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Prepare Approval Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Prepare Approval Payload": {
-      "main": [[{ "node": "Call Approval Guard", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Call Approval Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Call Approval Guard": {
       "main": [
-        [{ "node": "Format Approval Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Approval Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -636,66 +872,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": null,
-  "versionId": "37fd039f-6920-43bb-a9f8-ff74f7e26c28",
   "activeVersionId": "37fd039f-6920-43bb-a9f8-ff74f7e26c28",
-  "versionCounter": 61,
+  "versionCounter": 70,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-03T12:36:28.340Z",
-      "createdAt": "2026-02-03T12:36:28.340Z",
-      "role": "workflow:owner",
-      "workflowId": "4o06kwV3LGoZjGY9",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-04T20:59:21.149Z",
@@ -708,22 +888,61 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [250, 300],
+        "position": [
+          250,
+          300
+        ],
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "slack_user_id", "type": "string" },
-              { "name": "action", "type": "string" },
-              { "name": "query", "type": "string" },
-              { "name": "message_id", "type": "string" },
-              { "name": "to", "type": "string" },
-              { "name": "subject", "type": "string" },
-              { "name": "body", "type": "string" },
-              { "name": "cc", "type": "string" },
-              { "name": "bcc", "type": "string" },
-              { "name": "max_results", "type": "string" },
-              { "name": "channel_id", "type": "string" },
-              { "name": "thread_ts", "type": "string" }
+              {
+                "name": "slack_user_id",
+                "type": "string"
+              },
+              {
+                "name": "action",
+                "type": "string"
+              },
+              {
+                "name": "query",
+                "type": "string"
+              },
+              {
+                "name": "message_id",
+                "type": "string"
+              },
+              {
+                "name": "to",
+                "type": "string"
+              },
+              {
+                "name": "subject",
+                "type": "string"
+              },
+              {
+                "name": "body",
+                "type": "string"
+              },
+              {
+                "name": "cc",
+                "type": "string"
+              },
+              {
+                "name": "bcc",
+                "type": "string"
+              },
+              {
+                "name": "max_results",
+                "type": "string"
+              },
+              {
+                "name": "channel_id",
+                "type": "string"
+              },
+              {
+                "name": "thread_ts",
+                "type": "string"
+              }
             ]
           }
         }
@@ -733,7 +952,10 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [470, 300],
+        "position": [
+          470,
+          300
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -755,7 +977,10 @@
         "name": "Merge Input Context",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [690, 300],
+        "position": [
+          690,
+          300
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -860,7 +1085,10 @@
         "name": "Check Auth Success",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [910, 300],
+        "position": [
+          910,
+          300
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -874,7 +1102,10 @@
               {
                 "leftValue": "={{ $json.auth_success }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" },
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                },
                 "id": "condition-auth"
               }
             ]
@@ -886,7 +1117,10 @@
         "name": "Auth Failed Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1130, 520],
+        "position": [
+          1130,
+          520
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -913,7 +1147,10 @@
         "name": "Is List Messages?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1130, 300],
+        "position": [
+          1130,
+          300
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -928,7 +1165,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "list_messages",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -939,7 +1179,10 @@
         "name": "Is Get Message?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1350, 380],
+        "position": [
+          1350,
+          380
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -954,7 +1197,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "get_message",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -965,7 +1211,10 @@
         "name": "Is Send Email?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.3,
-        "position": [1570, 460],
+        "position": [
+          1570,
+          460
+        ],
         "parameters": {
           "conditions": {
             "options": {
@@ -980,7 +1229,10 @@
                 "id": "cond-action",
                 "leftValue": "={{ $json.action }}",
                 "rightValue": "send_email",
-                "operator": { "type": "string", "operation": "equals" }
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
               }
             ]
           }
@@ -991,14 +1243,20 @@
         "name": "List Messages API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1350, 140],
+        "position": [
+          1350,
+          140
+        ],
         "parameters": {
           "method": "GET",
           "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages",
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
-              { "name": "q", "value": "={{ $json.query || 'in:inbox' }}" },
+              {
+                "name": "q",
+                "value": "={{ $json.query || 'in:inbox' }}"
+              },
               {
                 "name": "maxResults",
                 "value": "={{ $json.max_results || '10' }}"
@@ -1022,7 +1280,10 @@
         "name": "Format List Messages",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1570, 140],
+        "position": [
+          1570,
+          140
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1067,13 +1328,21 @@
         "name": "Get Message API",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1570, 300],
+        "position": [
+          1570,
+          300
+        ],
         "parameters": {
           "method": "GET",
           "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.message_id }}",
           "sendQuery": true,
           "queryParameters": {
-            "parameters": [{ "name": "format", "value": "full" }]
+            "parameters": [
+              {
+                "name": "format",
+                "value": "full"
+              }
+            ]
           },
           "sendHeaders": true,
           "headerParameters": {
@@ -1092,7 +1361,10 @@
         "name": "Format Get Message",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1790, 300],
+        "position": [
+          1790,
+          300
+        ],
         "parameters": {
           "jsCode": "const message = $input.first().json;\n\nconst headers = message.payload?.headers || [];\nconst getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n\nlet body = '';\nif (message.payload?.body?.data) {\n  body = Buffer.from(message.payload.body.data, 'base64').toString('utf8');\n} else if (message.payload?.parts) {\n  const textPart = message.payload.parts.find(p => p.mimeType === 'text/plain');\n  if (textPart?.body?.data) {\n    body = Buffer.from(textPart.body.data, 'base64').toString('utf8');\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    action: 'get_message',\n    message_id: message.id,\n    thread_id: message.threadId,\n    from: getHeader('From'),\n    to: getHeader('To'),\n    subject: getHeader('Subject'),\n    date: getHeader('Date'),\n    snippet: message.snippet,\n    body: body,\n    labels: message.labelIds || []\n  }\n}];"
         }
@@ -1102,7 +1374,10 @@
         "name": "Format Email",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [1790, 460],
+        "position": [
+          1790,
+          460
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -1126,7 +1401,10 @@
         "name": "Build Email",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2010, 460],
+        "position": [
+          2010,
+          460
+        ],
         "parameters": {
           "jsCode": "const input = $input.first().json;\nconst routeData = $('Merge Input Context').first().json;\n\nconst to = routeData.to;\nconst subject = input.subject || routeData.subject;\nconst bodyPlain = input.body_plain || routeData.body;\nconst bodyHtml = input.body_html;\nconst cc = routeData.cc || '';\nconst bcc = routeData.bcc || '';\nconst accessToken = routeData.access_token;\n\nconst boundary = 'boundary_' + Date.now();\n\nlet mimeMessage = 'To: ' + to + '\\n';\nif (cc) mimeMessage += 'Cc: ' + cc + '\\n';\nif (bcc) mimeMessage += 'Bcc: ' + bcc + '\\n';\nmimeMessage += 'Subject: ' + subject + '\\n';\nmimeMessage += 'MIME-Version: 1.0\\n';\nmimeMessage += 'Content-Type: multipart/alternative; boundary=\"' + boundary + '\"\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/plain; charset=utf-8\\n\\n';\nmimeMessage += bodyPlain + '\\n\\n';\nmimeMessage += '--' + boundary + '\\n';\nmimeMessage += 'Content-Type: text/html; charset=utf-8\\n\\n';\nmimeMessage += bodyHtml + '\\n\\n';\nmimeMessage += '--' + boundary + '--';\n\nconst encoded = Buffer.from(mimeMessage)\n  .toString('base64')\n  .replace(/\\+/g, '-')\n  .replace(/\\//g, '_')\n  .replace(/=+$/, '');\n\nreturn [{\n  json: {\n    raw: encoded,\n    access_token: accessToken\n  }\n}];"
         }
@@ -1136,7 +1414,10 @@
         "name": "Lookup User for Approval",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [2230, 460],
+        "position": [
+          2230,
+          460
+        ],
         "parameters": {
           "operation": "executeQuery",
           "query": "SELECT id, slack_user_id, preferences->'email_settings'->>'approval_expiry_minutes' as expiry_minutes FROM alfred.users WHERE slack_user_id = $1;",
@@ -1145,7 +1426,10 @@
           }
         },
         "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
         }
       },
       {
@@ -1153,7 +1437,10 @@
         "name": "Prepare Approval Payload",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2450, 460],
+        "position": [
+          2450,
+          460
+        ],
         "parameters": {
           "jsCode": "const routeData = $('Merge Input Context').first().json;\nconst formatResult = $('Format Email').first().json;\nconst userResult = $input.first().json;\n\nreturn [{\n  json: {\n    action_type: 'email_send',\n    user_id: userResult.id,\n    slack_user_id: userResult.slack_user_id,\n    slack_channel_id: routeData.channel_id || '',\n    slack_thread_ts: routeData.thread_ts || '',\n    payload: {\n      to: routeData.to,\n      cc: routeData.cc || '',\n      bcc: routeData.bcc || '',\n      subject: formatResult.subject || routeData.subject,\n      body_plain: formatResult.body_plain || routeData.body,\n      body_html: formatResult.body_html || '',\n      user_email: routeData.user_email\n    },\n    expiry_minutes: parseInt(userResult.expiry_minutes) || 60\n  }\n}];"
         }
@@ -1163,7 +1450,10 @@
         "name": "Call Approval Guard",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [2670, 460],
+        "position": [
+          2670,
+          460
+        ],
         "parameters": {
           "workflowId": {
             "__rl": true,
@@ -1190,7 +1480,10 @@
         "name": "Format Approval Response",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2890, 460],
+        "position": [
+          2890,
+          460
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1241,7 +1534,10 @@
         "name": "Invalid Action",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [1790, 600],
+        "position": [
+          1790,
+          600
+        ],
         "parameters": {
           "mode": "manual",
           "assignments": {
@@ -1266,69 +1562,185 @@
     ],
     "connections": {
       "Workflow Input": {
-        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Google Auth": {
         "main": [
-          [{ "node": "Merge Input Context", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Merge Input Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Merge Input Context": {
-        "main": [[{ "node": "Check Auth Success", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check Auth Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check Auth Success": {
         "main": [
-          [{ "node": "Is List Messages?", "type": "main", "index": 0 }],
-          [{ "node": "Auth Failed Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Is List Messages?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is List Messages?": {
         "main": [
-          [{ "node": "List Messages API", "type": "main", "index": 0 }],
-          [{ "node": "Is Get Message?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "List Messages API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Get Message?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Get Message?": {
         "main": [
-          [{ "node": "Get Message API", "type": "main", "index": 0 }],
-          [{ "node": "Is Send Email?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Get Message API",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Is Send Email?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Is Send Email?": {
         "main": [
-          [{ "node": "Format Email", "type": "main", "index": 0 }],
-          [{ "node": "Invalid Action", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Email",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Invalid Action",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "List Messages API": {
         "main": [
-          [{ "node": "Format List Messages", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format List Messages",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Get Message API": {
-        "main": [[{ "node": "Format Get Message", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Get Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Format Email": {
-        "main": [[{ "node": "Build Email", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Build Email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Build Email": {
         "main": [
-          [{ "node": "Lookup User for Approval", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Lookup User for Approval",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Lookup User for Approval": {
         "main": [
-          [{ "node": "Prepare Approval Payload", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Prepare Approval Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Prepare Approval Payload": {
         "main": [
-          [{ "node": "Call Approval Guard", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Call Approval Guard",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Call Approval Guard": {
         "main": [
-          [{ "node": "Format Approval Response", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Format Approval Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       }
     },

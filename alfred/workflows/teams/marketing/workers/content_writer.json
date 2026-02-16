@@ -1,6 +1,4 @@
 {
-  "updatedAt": "2026-02-10T11:15:25.648Z",
-  "createdAt": "2026-02-05T13:47:27.044Z",
   "id": "U5C3B4S9SIyXNGtH",
   "name": "Worker | Content Writer",
   "description": null,
@@ -332,70 +330,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": {},
-  "versionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
   "activeVersionId": "c87af9a2-a97f-4f41-9e33-f65c2f13acfb",
-  "versionCounter": 91,
+  "versionCounter": 93,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-05T13:47:27.044Z",
-      "createdAt": "2026-02-05T13:47:27.044Z",
-      "role": "workflow:owner",
-      "workflowId": "U5C3B4S9SIyXNGtH",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-10T09:40:41.292Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864,
-                "npsSurvey": {
-                  "responded": true,
-                  "lastShownAt": 1770325854784
-                }
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-10",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-10T11:15:25.648Z",

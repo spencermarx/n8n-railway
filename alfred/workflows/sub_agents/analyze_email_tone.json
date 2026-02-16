@@ -1,8 +1,6 @@
 {
-  "updatedAt": "2026-02-04T14:11:27.922Z",
-  "createdAt": "2026-02-04T13:57:45.078Z",
   "id": "LSlDQ7mxMjxUddfa",
-  "name": "🎨 Tool | Analyze Email Tone",
+  "name": "\ud83c\udfa8 Tool | Analyze Email Tone",
   "description": null,
   "active": true,
   "isArchived": false,
@@ -11,10 +9,19 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "slack_user_id" },
-            { "name": "mode" },
-            { "name": "count", "type": "number" },
-            { "name": "message_ids" }
+            {
+              "name": "slack_user_id"
+            },
+            {
+              "name": "mode"
+            },
+            {
+              "name": "count",
+              "type": "number"
+            },
+            {
+              "name": "message_ids"
+            }
           ]
         }
       },
@@ -22,7 +29,10 @@
       "name": "Workflow Input",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [208, 304]
+      "position": [
+        208,
+        304
+      ]
     },
     {
       "parameters": {
@@ -44,7 +54,10 @@
       "name": "Get Google Auth",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [432, 304]
+      "position": [
+        432,
+        304
+      ]
     },
     {
       "parameters": {
@@ -61,7 +74,10 @@
               "id": "auth-check",
               "leftValue": "={{ $json.success }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ]
         },
@@ -71,13 +87,20 @@
       "name": "Check Auth",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [640, 304]
+      "position": [
+        640,
+        304
+      ]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "name": "success", "value": false, "type": "boolean" },
+            {
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
             {
               "name": "error",
               "value": "={{ $json.error || 'Google authentication failed' }}",
@@ -91,7 +114,10 @@
       "name": "Auth Failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [864, 464]
+      "position": [
+        864,
+        464
+      ]
     },
     {
       "parameters": {
@@ -101,7 +127,10 @@
       "name": "Prepare Fetch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [864, 208]
+      "position": [
+        864,
+        208
+      ]
     },
     {
       "parameters": {
@@ -109,8 +138,14 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "q", "value": "in:sent" },
-            { "name": "maxResults", "value": "={{ $json.count }}" }
+            {
+              "name": "q",
+              "value": "in:sent"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $json.count }}"
+            }
           ]
         },
         "sendHeaders": true,
@@ -128,7 +163,10 @@
       "name": "List Sent Emails",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1088, 208]
+      "position": [
+        1088,
+        208
+      ]
     },
     {
       "parameters": {
@@ -138,7 +176,10 @@
       "name": "Extract Message IDs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1312, 208]
+      "position": [
+        1312,
+        208
+      ]
     },
     {
       "parameters": {
@@ -148,7 +189,10 @@
       "name": "Fetch Email Contents",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 208]
+      "position": [
+        1520,
+        208
+      ]
     },
     {
       "parameters": {
@@ -158,7 +202,10 @@
       "name": "Prepare AI Analysis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1744, 208]
+      "position": [
+        1744,
+        208
+      ]
     },
     {
       "parameters": {
@@ -175,7 +222,10 @@
               "id": "ready-check",
               "leftValue": "={{ $json.ready }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ]
         },
@@ -185,13 +235,20 @@
       "name": "Ready for Analysis?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1968, 208]
+      "position": [
+        1968,
+        208
+      ]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "name": "success", "value": false, "type": "boolean" },
+            {
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
             {
               "name": "error",
               "value": "={{ $json.error }}",
@@ -210,11 +267,18 @@
       "name": "Not Enough Emails",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2192, 352]
+      "position": [
+        2192,
+        352
+      ]
     },
     {
       "parameters": {
-        "modelId": { "__rl": true, "mode": "list", "value": "gpt-4o" },
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
         "messages": {
           "values": [
             {
@@ -222,15 +286,24 @@
             }
           ]
         },
-        "options": { "maxTokens": 4000, "temperature": 0.3 }
+        "options": {
+          "maxTokens": 4000,
+          "temperature": 0.3
+        }
       },
       "id": "ai-analysis",
       "name": "AI Tone Analysis",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
-      "position": [2016, -48],
+      "position": [
+        2016,
+        -48
+      ],
       "credentials": {
-        "openAiApi": { "id": "CJqdVmJ3kVvMHRk5", "name": "OpenAI API" }
+        "openAiApi": {
+          "id": "CJqdVmJ3kVvMHRk5",
+          "name": "OpenAI API"
+        }
       }
     },
     {
@@ -241,7 +314,10 @@
       "name": "Validate & Format Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2400, 112]
+      "position": [
+        2400,
+        112
+      ]
     },
     {
       "parameters": {
@@ -255,68 +331,177 @@
       "name": "Save to User Preferences",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [2624, 112],
+      "position": [
+        2624,
+        112
+      ],
       "credentials": {
-        "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+        "postgres": {
+          "id": "8nTSHxonyIBczkvN",
+          "name": "Postgres account"
+        }
       }
     },
     {
       "parameters": {
-        "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `• **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `• **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `• **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `• \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
+        "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `\u2022 **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `\u2022 **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `\u2022 **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `\u2022 \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
       },
       "id": "format-response",
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2848, 112]
+      "position": [
+        2848,
+        112
+      ]
     }
   ],
   "connections": {
     "Workflow Input": {
-      "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Google Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Google Auth": {
-      "main": [[{ "node": "Check Auth", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Auth": {
       "main": [
-        [{ "node": "Prepare Fetch", "type": "main", "index": 0 }],
-        [{ "node": "Auth Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Prepare Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Prepare Fetch": {
-      "main": [[{ "node": "List Sent Emails", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "List Sent Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "List Sent Emails": {
-      "main": [[{ "node": "Extract Message IDs", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract Message IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract Message IDs": {
-      "main": [[{ "node": "Fetch Email Contents", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Email Contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Email Contents": {
-      "main": [[{ "node": "Prepare AI Analysis", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Prepare AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Prepare AI Analysis": {
-      "main": [[{ "node": "Ready for Analysis?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Ready for Analysis?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ready for Analysis?": {
       "main": [
-        [{ "node": "AI Tone Analysis", "type": "main", "index": 0 }],
-        [{ "node": "Not Enough Emails", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "AI Tone Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Enough Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "AI Tone Analysis": {
       "main": [
-        [{ "node": "Validate & Format Output", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Validate & Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Validate & Format Output": {
       "main": [
-        [{ "node": "Save to User Preferences", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Save to User Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Save to User Preferences": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -325,66 +510,10 @@
     "availableInMCP": false
   },
   "staticData": null,
-  "meta": null,
   "pinData": {},
-  "versionId": "27eb1cb0-b099-4967-a483-729b03469af0",
   "activeVersionId": "27eb1cb0-b099-4967-a483-729b03469af0",
-  "versionCounter": 15,
+  "versionCounter": 22,
   "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-02-04T13:57:45.078Z",
-      "createdAt": "2026-02-04T13:57:45.078Z",
-      "role": "workflow:owner",
-      "workflowId": "LSlDQ7mxMjxUddfa",
-      "projectId": "Jd992SEPuokf8o5Z",
-      "project": {
-        "updatedAt": "2026-02-02T12:27:52.037Z",
-        "createdAt": "2026-02-02T12:20:35.714Z",
-        "id": "Jd992SEPuokf8o5Z",
-        "name": "Spencer Marx <spencer@aclarify.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "e498ff06-ba9d-4721-8454-492195be8229",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-02T12:20:35.714Z",
-            "createdAt": "2026-02-02T12:20:35.714Z",
-            "userId": "e498ff06-ba9d-4721-8454-492195be8229",
-            "projectId": "Jd992SEPuokf8o5Z",
-            "user": {
-              "updatedAt": "2026-02-04T21:36:26.759Z",
-              "createdAt": "2026-02-02T12:20:29.217Z",
-              "id": "e498ff06-ba9d-4721-8454-492195be8229",
-              "email": "spencer@aclarify.com",
-              "firstName": "Spencer",
-              "lastName": "Marx",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-02T12:28:04.495Z",
-                "personalization_survey_n8n_version": "2.6.2",
-                "companySize": "<20",
-                "companyType": "saas",
-                "role": "business-owner",
-                "reportedSource": "friend"
-              },
-              "settings": {
-                "userActivated": true,
-                "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "KwXRQi320-E6cSKEUFTol",
-                "userActivatedAt": 1770049275864
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-04",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
   "tags": [],
   "activeVersion": {
     "updatedAt": "2026-02-04T14:11:46.629Z",
@@ -396,10 +525,19 @@
         "parameters": {
           "workflowInputs": {
             "values": [
-              { "name": "slack_user_id" },
-              { "name": "mode" },
-              { "name": "count", "type": "number" },
-              { "name": "message_ids" }
+              {
+                "name": "slack_user_id"
+              },
+              {
+                "name": "mode"
+              },
+              {
+                "name": "count",
+                "type": "number"
+              },
+              {
+                "name": "message_ids"
+              }
             ]
           }
         },
@@ -407,7 +545,10 @@
         "name": "Workflow Input",
         "type": "n8n-nodes-base.executeWorkflowTrigger",
         "typeVersion": 1.1,
-        "position": [208, 304]
+        "position": [
+          208,
+          304
+        ]
       },
       {
         "parameters": {
@@ -429,7 +570,10 @@
         "name": "Get Google Auth",
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
-        "position": [432, 304]
+        "position": [
+          432,
+          304
+        ]
       },
       {
         "parameters": {
@@ -446,7 +590,10 @@
                 "id": "auth-check",
                 "leftValue": "={{ $json.success }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ]
           },
@@ -456,13 +603,20 @@
         "name": "Check Auth",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [640, 304]
+        "position": [
+          640,
+          304
+        ]
       },
       {
         "parameters": {
           "assignments": {
             "assignments": [
-              { "name": "success", "value": false, "type": "boolean" },
+              {
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
               {
                 "name": "error",
                 "value": "={{ $json.error || 'Google authentication failed' }}",
@@ -476,7 +630,10 @@
         "name": "Auth Failed",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [864, 464]
+        "position": [
+          864,
+          464
+        ]
       },
       {
         "parameters": {
@@ -486,7 +643,10 @@
         "name": "Prepare Fetch",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [864, 208]
+        "position": [
+          864,
+          208
+        ]
       },
       {
         "parameters": {
@@ -494,8 +654,14 @@
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
-              { "name": "q", "value": "in:sent" },
-              { "name": "maxResults", "value": "={{ $json.count }}" }
+              {
+                "name": "q",
+                "value": "in:sent"
+              },
+              {
+                "name": "maxResults",
+                "value": "={{ $json.count }}"
+              }
             ]
           },
           "sendHeaders": true,
@@ -513,7 +679,10 @@
         "name": "List Sent Emails",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
-        "position": [1088, 208]
+        "position": [
+          1088,
+          208
+        ]
       },
       {
         "parameters": {
@@ -523,7 +692,10 @@
         "name": "Extract Message IDs",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1312, 208]
+        "position": [
+          1312,
+          208
+        ]
       },
       {
         "parameters": {
@@ -533,7 +705,10 @@
         "name": "Fetch Email Contents",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1520, 208]
+        "position": [
+          1520,
+          208
+        ]
       },
       {
         "parameters": {
@@ -543,7 +718,10 @@
         "name": "Prepare AI Analysis",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [1744, 208]
+        "position": [
+          1744,
+          208
+        ]
       },
       {
         "parameters": {
@@ -560,7 +738,10 @@
                 "id": "ready-check",
                 "leftValue": "={{ $json.ready }}",
                 "rightValue": true,
-                "operator": { "type": "boolean", "operation": "equals" }
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
               }
             ]
           },
@@ -570,13 +751,20 @@
         "name": "Ready for Analysis?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
-        "position": [1968, 208]
+        "position": [
+          1968,
+          208
+        ]
       },
       {
         "parameters": {
           "assignments": {
             "assignments": [
-              { "name": "success", "value": false, "type": "boolean" },
+              {
+                "name": "success",
+                "value": false,
+                "type": "boolean"
+              },
               {
                 "name": "error",
                 "value": "={{ $json.error }}",
@@ -595,11 +783,18 @@
         "name": "Not Enough Emails",
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
-        "position": [2192, 352]
+        "position": [
+          2192,
+          352
+        ]
       },
       {
         "parameters": {
-          "modelId": { "__rl": true, "mode": "list", "value": "gpt-4o" },
+          "modelId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4o"
+          },
           "messages": {
             "values": [
               {
@@ -607,15 +802,24 @@
               }
             ]
           },
-          "options": { "maxTokens": 4000, "temperature": 0.3 }
+          "options": {
+            "maxTokens": 4000,
+            "temperature": 0.3
+          }
         },
         "id": "ai-analysis",
         "name": "AI Tone Analysis",
         "type": "@n8n/n8n-nodes-langchain.openAi",
         "typeVersion": 1.8,
-        "position": [2016, -48],
+        "position": [
+          2016,
+          -48
+        ],
         "credentials": {
-          "openAiApi": { "id": "CJqdVmJ3kVvMHRk5", "name": "OpenAI API" }
+          "openAiApi": {
+            "id": "CJqdVmJ3kVvMHRk5",
+            "name": "OpenAI API"
+          }
         }
       },
       {
@@ -626,7 +830,10 @@
         "name": "Validate & Format Output",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2400, 112]
+        "position": [
+          2400,
+          112
+        ]
       },
       {
         "parameters": {
@@ -640,76 +847,177 @@
         "name": "Save to User Preferences",
         "type": "n8n-nodes-base.postgres",
         "typeVersion": 2.5,
-        "position": [2624, 112],
+        "position": [
+          2624,
+          112
+        ],
         "credentials": {
-          "postgres": { "id": "8nTSHxonyIBczkvN", "name": "Postgres account" }
+          "postgres": {
+            "id": "8nTSHxonyIBczkvN",
+            "name": "Postgres account"
+          }
         }
       },
       {
         "parameters": {
-          "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `• **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `• **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `• **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `• \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
+          "jsCode": "const validated = $('Validate & Format Output').first().json;\nconst dbResult = $input.first().json;\n\n// Build a concise summary for Slack (the full profile is saved in DB)\nconst summary = validated.summary || {};\nconst emailsAnalyzed = validated.emails_analyzed || 0;\nconst dateRange = validated.date_range || '';\n\n// Extract key highlights for display\nlet slackSummary = '';\n\nif (validated.success) {\n  slackSummary = `## Email Writing Style Profile Created\\n\\n`;\n  slackSummary += `**Emails Analyzed:** ${emailsAnalyzed} emails from ${dateRange}\\n\\n`;\n  \n  slackSummary += `### Key Characteristics\\n`;\n  slackSummary += `\u2022 **Tone:** ${summary.overall_tone || 'Determined'}\\n`;\n  slackSummary += `\u2022 **Formality:** ${summary.formality_level || 'Analyzed'}\\n`;\n  slackSummary += `\u2022 **Examples Captured:** ${summary.example_count || 0} reference emails\\n\\n`;\n  \n  if (summary.signature_phrases && summary.signature_phrases.length > 0) {\n    slackSummary += `### Your Signature Phrases\\n`;\n    for (const phrase of summary.signature_phrases.slice(0, 3)) {\n      slackSummary += `\u2022 \"${phrase}\"\\n`;\n    }\n    slackSummary += `\\n`;\n  }\n  \n  slackSummary += `---\\n`;\n  slackSummary += `Your writing style profile has been saved and will be used when drafting emails on your behalf. `;\n  slackSummary += `Try it out by asking me to compose an email!`;\n} else {\n  slackSummary = `## Email Analysis Completed\\n\\n`;\n  slackSummary += `Analyzed ${emailsAnalyzed} emails from ${dateRange}.\\n\\n`;\n  slackSummary += `**Note:** ${(validated.validation_issues || []).join('; ')}\\n\\n`;\n  slackSummary += `The profile has been saved but may need refinement. Try sending a few more emails and run the analysis again.`;\n}\n\nreturn [{\n  json: {\n    success: validated.success,\n    // Return concise summary for Slack display\n    response_text: slackSummary,\n    // Include metadata\n    emails_analyzed: emailsAnalyzed,\n    date_range: dateRange,\n    summary: summary,\n    saved: dbResult.slack_user_id ? true : false,\n    // Message field for backwards compatibility\n    message: validated.success \n      ? `Successfully analyzed ${emailsAnalyzed} emails and created your writing style profile.`\n      : `Analysis completed with some issues: ${(validated.validation_issues || []).join(', ')}`\n  }\n}];"
         },
         "id": "format-response",
         "name": "Format Response",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
-        "position": [2848, 112]
+        "position": [
+          2848,
+          112
+        ]
       }
     ],
     "connections": {
       "Workflow Input": {
-        "main": [[{ "node": "Get Google Auth", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Get Google Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Get Google Auth": {
-        "main": [[{ "node": "Check Auth", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Check Auth",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "Check Auth": {
         "main": [
-          [{ "node": "Prepare Fetch", "type": "main", "index": 0 }],
-          [{ "node": "Auth Failed", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Prepare Fetch",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Auth Failed",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Prepare Fetch": {
-        "main": [[{ "node": "List Sent Emails", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "List Sent Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
       "List Sent Emails": {
         "main": [
-          [{ "node": "Extract Message IDs", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Extract Message IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Extract Message IDs": {
         "main": [
-          [{ "node": "Fetch Email Contents", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Fetch Email Contents",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Fetch Email Contents": {
         "main": [
-          [{ "node": "Prepare AI Analysis", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Prepare AI Analysis",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Prepare AI Analysis": {
         "main": [
-          [{ "node": "Ready for Analysis?", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Ready for Analysis?",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Ready for Analysis?": {
         "main": [
-          [{ "node": "AI Tone Analysis", "type": "main", "index": 0 }],
-          [{ "node": "Not Enough Emails", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "AI Tone Analysis",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Not Enough Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "AI Tone Analysis": {
         "main": [
-          [{ "node": "Validate & Format Output", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Validate & Format Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Validate & Format Output": {
         "main": [
-          [{ "node": "Save to User Preferences", "type": "main", "index": 0 }]
+          [
+            {
+              "node": "Save to User Preferences",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
       },
       "Save to User Preferences": {
-        "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+        "main": [
+          [
+            {
+              "node": "Format Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Spencer Marx",
