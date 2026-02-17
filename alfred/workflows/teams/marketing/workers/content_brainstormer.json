@@ -448,7 +448,6 @@
           "cachedResultName": "Claude Sonnet 4.5"
         },
         "options": {
-          "maxTokensToSample": 2000,
           "temperature": 0.5
         }
       },
@@ -504,7 +503,7 @@
       "parameters": {
         "schemaType": "manual",
         "inputSchema": "{\"type\": \"object\", \"properties\": {\"winning_idea\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}, \"trend_score\": {\"type\": \"number\"}, \"brand_alignment_score\": {\"type\": \"number\"}}, \"required\": [\"topic\", \"angle\", \"rationale\"]}, \"content_brief\": {\"type\": \"object\", \"properties\": {\"key_message\": {\"type\": \"string\"}, \"target_audience\": {\"type\": \"string\"}, \"content_type\": {\"type\": \"string\"}, \"channel_specs\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}, \"char_limit\": {\"type\": \"number\"}, \"tone\": {\"type\": \"string\"}, \"format\": {\"type\": \"string\"}, \"cta\": {\"type\": \"string\"}, \"hashtag_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}}}}, \"content_requirements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"what_to_avoid\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"success_criteria\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"research_guidance\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"key_message\", \"target_audience\", \"content_type\", \"channel_specs\", \"content_requirements\", \"success_criteria\"]}, \"runner_up_ideas\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}}}}}, \"required\": [\"winning_idea\", \"content_brief\"]}",
-        "autoFix": true
+        "autoFix": false
       },
       "id": "structured-output-parser",
       "name": "Brainstormer Output Schema",
@@ -901,14 +900,14 @@
   },
   "staticData": null,
   "pinData": {},
-  "activeVersionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
-  "versionCounter": 113,
+  "activeVersionId": "f11a50f8-78ae-49aa-89ae-7116d5bfb29d",
+  "versionCounter": 120,
   "triggerCount": 0,
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-02-10T11:15:26.481Z",
-    "createdAt": "2026-02-10T11:15:26.481Z",
-    "versionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+    "updatedAt": "2026-02-17T13:30:59.425Z",
+    "createdAt": "2026-02-17T13:30:59.425Z",
+    "versionId": "f11a50f8-78ae-49aa-89ae-7116d5bfb29d",
     "workflowId": "G0qNvT8YxYwH8XqV",
     "nodes": [
       {
@@ -1354,7 +1353,6 @@
             "cachedResultName": "Claude Sonnet 4.5"
           },
           "options": {
-            "maxTokensToSample": 2000,
             "temperature": 0.5
           }
         },
@@ -1410,7 +1408,7 @@
         "parameters": {
           "schemaType": "manual",
           "inputSchema": "{\"type\": \"object\", \"properties\": {\"winning_idea\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}, \"trend_score\": {\"type\": \"number\"}, \"brand_alignment_score\": {\"type\": \"number\"}}, \"required\": [\"topic\", \"angle\", \"rationale\"]}, \"content_brief\": {\"type\": \"object\", \"properties\": {\"key_message\": {\"type\": \"string\"}, \"target_audience\": {\"type\": \"string\"}, \"content_type\": {\"type\": \"string\"}, \"channel_specs\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"word_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}, \"char_limit\": {\"type\": \"number\"}, \"tone\": {\"type\": \"string\"}, \"format\": {\"type\": \"string\"}, \"cta\": {\"type\": \"string\"}, \"hashtag_count_range\": {\"type\": \"array\", \"items\": {\"type\": \"number\"}}}}}, \"content_requirements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"what_to_avoid\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"success_criteria\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"research_guidance\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"key_message\", \"target_audience\", \"content_type\", \"channel_specs\", \"content_requirements\", \"success_criteria\"]}, \"runner_up_ideas\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"angle\": {\"type\": \"string\"}, \"rationale\": {\"type\": \"string\"}}}}}, \"required\": [\"winning_idea\", \"content_brief\"]}",
-          "autoFix": true
+          "autoFix": false
         },
         "id": "structured-output-parser",
         "name": "Brainstormer Output Schema",
@@ -1806,10 +1804,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-10T11:15:26.654Z",
-        "id": 579,
+        "createdAt": "2026-02-17T13:30:59.847Z",
+        "id": 620,
         "workflowId": "G0qNvT8YxYwH8XqV",
-        "versionId": "ff1a9512-6fdc-4c7f-96a6-ec2cecf42838",
+        "versionId": "f11a50f8-78ae-49aa-89ae-7116d5bfb29d",
         "event": "activated",
         "userId": "e498ff06-ba9d-4721-8454-492195be8229"
       }
