@@ -80,7 +80,7 @@ const classificationInput = {
 ```
 
 **Rationale**:
-- Leverages existing infrastructure (Predicate Evaluator uses Claude Haiku for fast, cheap classification)
+- Leverages existing infrastructure (Predicate Evaluator uses Gemini 3 Flash for fast, cheap classification)
 - AI-based classification is more robust than regex patterns
 - Context-aware: can understand nuance and intent
 - Easy to tune: just update the complexity_criteria without code changes

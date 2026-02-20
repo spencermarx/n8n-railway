@@ -462,26 +462,21 @@
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "claude-3-5-haiku-20241022",
-          "cachedResultName": "Claude 3.5 Haiku"
-        },
+        "modelName": "models/gemini-3-flash-preview",
         "options": {}
       },
       "id": "parser-llm",
       "name": "Parser LLM",
-      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-      "typeVersion": 1.3,
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
       "position": [
         1540,
         580
       ],
       "credentials": {
-        "anthropicApi": {
-          "id": "iKUsIHimnjBUibjJ",
-          "name": "Anthropic account"
+        "googlePalmApi": {
+          "id": "RCgc0A6PRXghMDMb",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     }
@@ -1209,26 +1204,21 @@
       },
       {
         "parameters": {
-          "model": {
-            "__rl": true,
-            "mode": "list",
-            "value": "claude-3-5-haiku-20241022",
-            "cachedResultName": "Claude 3.5 Haiku"
-          },
+          "modelName": "models/gemini-3-flash-preview",
           "options": {}
         },
         "id": "parser-llm",
         "name": "Parser LLM",
-        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-        "typeVersion": 1.3,
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
         "position": [
           1540,
           580
         ],
         "credentials": {
-          "anthropicApi": {
-            "id": "iKUsIHimnjBUibjJ",
-            "name": "Anthropic account"
+          "googlePalmApi": {
+            "id": "RCgc0A6PRXghMDMb",
+            "name": "Google Gemini(PaLM) Api account"
           }
         }
       }

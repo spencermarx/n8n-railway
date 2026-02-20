@@ -45,29 +45,24 @@
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "claude-haiku-4-5-20251001",
-          "mode": "list",
-          "cachedResultName": "Claude Haiku 4.5"
-        },
+        "modelName": "models/gemini-3-flash-preview",
         "options": {
-          "maxTokensToSample": 50,
+          "maxOutputTokens": 50,
           "temperature": 0
         }
       },
       "id": "classifier-model",
-      "name": "Haiku Classifier",
-      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-      "typeVersion": 1.3,
+      "name": "Gemini Flash Classifier",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
       "position": [
         688,
         480
       ],
       "credentials": {
-        "anthropicApi": {
-          "id": "iKUsIHimnjBUibjJ",
-          "name": "Anthropic account"
+        "googlePalmApi": {
+          "id": "RCgc0A6PRXghMDMb",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
@@ -126,7 +121,7 @@
         ]
       ]
     },
-    "Haiku Classifier": {
+    "Gemini Flash Classifier": {
       "ai_languageModel": [
         [
           {
@@ -218,29 +213,24 @@
       },
       {
         "parameters": {
-          "model": {
-            "__rl": true,
-            "value": "claude-haiku-4-5-20251001",
-            "mode": "list",
-            "cachedResultName": "Claude Haiku 4.5"
-          },
+          "modelName": "models/gemini-3-flash-preview",
           "options": {
-            "maxTokensToSample": 50,
+            "maxOutputTokens": 50,
             "temperature": 0
           }
         },
         "id": "classifier-model",
-        "name": "Haiku Classifier",
-        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
-        "typeVersion": 1.3,
+        "name": "Gemini Flash Classifier",
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
         "position": [
           688,
           480
         ],
         "credentials": {
-          "anthropicApi": {
-            "id": "iKUsIHimnjBUibjJ",
-            "name": "Anthropic account"
+          "googlePalmApi": {
+            "id": "RCgc0A6PRXghMDMb",
+            "name": "Google Gemini(PaLM) Api account"
           }
         }
       },
@@ -299,7 +289,7 @@
           ]
         ]
       },
-      "Haiku Classifier": {
+      "Gemini Flash Classifier": {
         "ai_languageModel": [
           [
             {
