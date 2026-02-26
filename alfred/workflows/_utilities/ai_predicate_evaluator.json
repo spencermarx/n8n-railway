@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-23T10:39:06.297Z",
+    "updatedAt": "2026-02-26T09:31:45.787Z",
     "createdAt": "2026-02-05T09:56:33.755Z",
     "id": "Rw7786cYTYOTQhH9",
     "name": "\ud83d\udd27 Utility | AI Predicate Evaluator",
@@ -94,7 +94,10 @@
                     "id": "RCgc0A6PRXghMDMb",
                     "name": "Google Gemini(PaLM) Api account"
                 }
-            }
+            },
+            "retryOnFail": true,
+            "maxTries": 3,
+            "waitBetweenTries": 2000
         }
     ],
     "connections": {
@@ -163,9 +166,9 @@
             }
         ]
     },
-    "versionId": "00d226d1-625b-42a5-b50f-3196286eded1",
-    "activeVersionId": "00d226d1-625b-42a5-b50f-3196286eded1",
-    "versionCounter": 32,
+    "versionId": "c2c60c5b-b06a-4589-8ccc-f8019869d5d3",
+    "activeVersionId": "c2c60c5b-b06a-4589-8ccc-f8019869d5d3",
+    "versionCounter": 36,
     "triggerCount": 0,
     "shared": [
         {
@@ -190,7 +193,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-23T09:51:19.650Z",
+                            "updatedAt": "2026-02-26T09:24:41.991Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -217,7 +220,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-23",
+                            "lastActiveAt": "2026-02-26",
                             "isPending": false
                         }
                     }
@@ -227,9 +230,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-23T10:39:06.298Z",
-        "createdAt": "2026-02-23T10:39:06.298Z",
-        "versionId": "00d226d1-625b-42a5-b50f-3196286eded1",
+        "updatedAt": "2026-02-26T09:31:45.787Z",
+        "createdAt": "2026-02-26T09:31:45.787Z",
+        "versionId": "c2c60c5b-b06a-4589-8ccc-f8019869d5d3",
         "workflowId": "Rw7786cYTYOTQhH9",
         "nodes": [
             {
@@ -319,7 +322,10 @@
                         "id": "RCgc0A6PRXghMDMb",
                         "name": "Google Gemini(PaLM) Api account"
                     }
-                }
+                },
+                "retryOnFail": true,
+                "maxTries": 3,
+                "waitBetweenTries": 2000
             }
         ],
         "connections": {
@@ -374,10 +380,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-23T10:39:06.393Z",
-                "id": 630,
+                "createdAt": "2026-02-26T09:31:45.880Z",
+                "id": 639,
                 "workflowId": "Rw7786cYTYOTQhH9",
-                "versionId": "00d226d1-625b-42a5-b50f-3196286eded1",
+                "versionId": "c2c60c5b-b06a-4589-8ccc-f8019869d5d3",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }

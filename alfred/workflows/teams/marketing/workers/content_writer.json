@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-02-23T10:07:22.643Z",
+    "updatedAt": "2026-02-26T09:31:29.023Z",
     "createdAt": "2026-02-05T13:47:27.044Z",
     "id": "U5C3B4S9SIyXNGtH",
     "name": "Worker | Content Writer",
@@ -116,7 +116,10 @@
                     "id": "iKUsIHimnjBUibjJ",
                     "name": "Anthropic account"
                 }
-            }
+            },
+            "retryOnFail": true,
+            "maxTries": 3,
+            "waitBetweenTries": 2000
         },
         {
             "parameters": {
@@ -228,7 +231,10 @@
                     "id": "RCgc0A6PRXghMDMb",
                     "name": "Google Gemini(PaLM) Api account"
                 }
-            }
+            },
+            "retryOnFail": true,
+            "maxTries": 3,
+            "waitBetweenTries": 2000
         }
     ],
     "connections": {
@@ -329,9 +335,9 @@
     "staticData": null,
     "meta": null,
     "pinData": {},
-    "versionId": "3cb091f0-97fe-4922-ab3a-92177e0b8769",
-    "activeVersionId": "3cb091f0-97fe-4922-ab3a-92177e0b8769",
-    "versionCounter": 101,
+    "versionId": "1990b630-6733-49e8-9e91-29f2357802eb",
+    "activeVersionId": "1990b630-6733-49e8-9e91-29f2357802eb",
+    "versionCounter": 105,
     "triggerCount": 0,
     "shared": [
         {
@@ -356,7 +362,7 @@
                         "userId": "e498ff06-ba9d-4721-8454-492195be8229",
                         "projectId": "Jd992SEPuokf8o5Z",
                         "user": {
-                            "updatedAt": "2026-02-23T09:51:19.650Z",
+                            "updatedAt": "2026-02-26T09:24:41.991Z",
                             "createdAt": "2026-02-02T12:20:29.217Z",
                             "id": "e498ff06-ba9d-4721-8454-492195be8229",
                             "email": "spencer@aclarify.com",
@@ -383,7 +389,7 @@
                             },
                             "disabled": false,
                             "mfaEnabled": false,
-                            "lastActiveAt": "2026-02-23",
+                            "lastActiveAt": "2026-02-26",
                             "isPending": false
                         }
                     }
@@ -393,9 +399,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-02-23T10:07:22.645Z",
-        "createdAt": "2026-02-23T10:07:22.645Z",
-        "versionId": "3cb091f0-97fe-4922-ab3a-92177e0b8769",
+        "updatedAt": "2026-02-26T09:31:29.026Z",
+        "createdAt": "2026-02-26T09:31:29.026Z",
+        "versionId": "1990b630-6733-49e8-9e91-29f2357802eb",
         "workflowId": "U5C3B4S9SIyXNGtH",
         "nodes": [
             {
@@ -507,7 +513,10 @@
                         "id": "iKUsIHimnjBUibjJ",
                         "name": "Anthropic account"
                     }
-                }
+                },
+                "retryOnFail": true,
+                "maxTries": 3,
+                "waitBetweenTries": 2000
             },
             {
                 "parameters": {
@@ -619,7 +628,10 @@
                         "id": "RCgc0A6PRXghMDMb",
                         "name": "Google Gemini(PaLM) Api account"
                     }
-                }
+                },
+                "retryOnFail": true,
+                "maxTries": 3,
+                "waitBetweenTries": 2000
             }
         ],
         "connections": {
@@ -718,10 +730,10 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-02-23T10:07:22.772Z",
-                "id": 623,
+                "createdAt": "2026-02-26T09:31:29.179Z",
+                "id": 636,
                 "workflowId": "U5C3B4S9SIyXNGtH",
-                "versionId": "3cb091f0-97fe-4922-ab3a-92177e0b8769",
+                "versionId": "1990b630-6733-49e8-9e91-29f2357802eb",
                 "event": "activated",
                 "userId": "e498ff06-ba9d-4721-8454-492195be8229"
             }
